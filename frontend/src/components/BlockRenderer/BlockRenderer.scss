@@ -1,0 +1,134 @@
+.block {
+  padding: $spacing-xl 0;
+
+  &__inner {
+    &--contained {
+      @include container;
+    }
+
+    &--wide {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 $spacing-md;
+    }
+
+    &--full {
+      width: 100%;
+    }
+  }
+}
+
+.hero-block {
+  text-align: center;
+  padding: $spacing-3xl 0;
+
+  &__title {
+    font-size: $font-size-4xl;
+    margin-bottom: $spacing-md;
+
+    @include md {
+      font-size: 3.5rem;
+    }
+  }
+
+  &__content {
+    font-size: $font-size-xl;
+    color: $text-light;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+.rich-text-block {
+  &__title {
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.image-block {
+  &__title {
+    margin-bottom: $spacing-lg;
+  }
+
+  &__images {
+    display: grid;
+    gap: $spacing-md;
+
+    img {
+      width: 100%;
+      border-radius: $border-radius-lg;
+    }
+  }
+}
+
+.video-block {
+  &__title {
+    margin-bottom: $spacing-lg;
+  }
+
+  &__wrapper {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: $border-radius-lg;
+  }
+
+  &__iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.post-block {
+  &__image {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: $border-radius-lg;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__title {
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.campaign-block {
+  background: $background-dark;
+  padding: $spacing-xl;
+  border-radius: $border-radius-lg;
+  text-align: center;
+
+  &__title {
+    margin-bottom: $spacing-sm;
+  }
+
+  &__desc {
+    color: $text-light;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__progress {
+    height: 12px;
+    background: $border-color;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__progress-bar {
+    height: 100%;
+    background: $primary-color;
+    border-radius: $border-radius-full;
+  }
+
+  &__stats {
+    font-weight: 600;
+    color: $text-color;
+    margin: 0;
+  }
+}

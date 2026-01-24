@@ -1,0 +1,491 @@
+# Surge Media Website
+
+A modern, fast-loading website for Surge Media news organization with a comprehensive admin portal.
+
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Administrator Guide](#administrator-guide)
+  - [Accessing the Admin Portal](#accessing-the-admin-portal)
+  - [Dashboard Overview](#dashboard-overview)
+  - [Managing Pages](#managing-pages)
+  - [Managing Posts (Blog)](#managing-posts-blog)
+  - [Managing Campaigns (Donations)](#managing-campaigns-donations)
+  - [Managing Forms/Questionnaires](#managing-formsquestionnaires)
+  - [Managing Users](#managing-users)
+  - [Viewing Contact Messages](#viewing-contact-messages)
+  - [Media Library](#media-library)
+  - [Site Settings](#site-settings)
+- [Technical Setup](#technical-setup)
+
+---
+
+## Getting Started
+
+### For Administrators
+
+If you're an administrator looking to manage the website content, skip to the [Administrator Guide](#administrator-guide) section.
+
+### For Developers
+
+See the [Technical Setup](#technical-setup) section at the end of this document.
+
+---
+
+## Administrator Guide
+
+### Accessing the Admin Portal
+
+1. Navigate to `https://yoursite.com/admin` in your web browser
+2. Log in with your administrator email and password
+3. You'll see the Admin Dashboard with quick stats and navigation
+
+**Note:** Only users with the "admin" role can access the admin portal. Regular users and Patreon members cannot access this area.
+
+---
+
+### Dashboard Overview
+
+The Dashboard is your home base in the admin portal. It shows:
+
+- **Total Pages**: Number of pages on your site
+- **Total Posts**: Number of blog posts published
+- **Active Campaigns**: Donation campaigns currently running
+- **Pending Messages**: Contact form submissions awaiting review
+
+Use the sidebar navigation on the left to access different sections.
+
+---
+
+### Managing Pages
+
+Pages are the main content sections of your website (like "About Us", "Team", etc.).
+
+#### Viewing All Pages
+
+1. Click **"Pages"** in the sidebar
+2. You'll see a table with all pages showing:
+   - Title
+   - URL Slug (the part after yoursite.com/)
+   - Status (draft or published)
+
+#### Creating a New Page
+
+1. Click the **"New Page"** button
+2. Fill in the page details:
+   - **Title**: The page name (shown in browser tab and heading)
+   - **Slug**: The URL path (e.g., "about-us" creates yoursite.com/about-us)
+   - **Status**: Choose "draft" to hide or "published" to make visible
+
+#### Editing a Page
+
+1. Click on a page title to open the editor
+2. Modify the title, slug, or status as needed
+3. Click **"Save"** to apply changes
+
+#### Working with Blocks
+
+Pages are built using "blocks" - individual content sections. Available block types:
+
+| Block Type | Description |
+|------------|-------------|
+| **Rich Text** | Formatted text content (paragraphs, headings, lists, links) |
+| **Posts** | Displays a list of your blog posts |
+| **Form** | Embeds a form/questionnaire |
+| **Media** | Images, videos, or other media files |
+| **Social Feed** | Shows posts from connected social media accounts |
+| **Campaign** | Displays a donation campaign with progress |
+| **HTML** | Custom HTML code (advanced users only) |
+
+**To add a block:**
+1. In the page editor, click **"Add Block"**
+2. Select the block type
+3. Configure the block settings
+4. Drag blocks to reorder them
+
+**To remove a block:**
+1. Click the trash icon next to the block
+2. Confirm deletion
+
+---
+
+### Managing Posts (Blog)
+
+Posts are blog articles or news updates.
+
+#### Viewing All Posts
+
+1. Click **"Posts"** in the sidebar
+2. You'll see a table with:
+   - Title
+   - Status (draft/published)
+   - Category
+   - Publication date
+
+#### Creating a New Post
+
+1. Click **"New Post"** button
+2. Fill in the post details:
+   - **Title**: The headline of your post
+   - **Slug**: URL path (auto-generated from title, but editable)
+   - **Category**: Assign to a category for organization
+   - **Excerpt**: Short summary shown in post listings
+   - **Content**: The main body of your post (supports rich text formatting)
+   - **Featured Image**: Select from Media Library or upload new
+   - **Status**: "draft" (hidden) or "published" (visible)
+
+#### Editing a Post
+
+1. Click on a post title to open the editor
+2. Make your changes
+3. Click **"Save"** or **"Publish"**
+
+#### Post Statuses
+
+- **Draft**: Only visible in admin, not on public site
+- **Published**: Visible to all visitors
+- **Archived**: Hidden from listings but accessible via direct URL
+
+---
+
+### Managing Campaigns (Donations)
+
+Campaigns are fundraising initiatives displayed on the Donate page.
+
+#### Viewing All Campaigns
+
+1. Click **"Campaigns"** in the sidebar
+2. See all campaigns with:
+   - Title
+   - Goal amount
+   - Amount raised
+   - Status
+
+#### Creating a Campaign
+
+1. Click **"New Campaign"**
+2. Fill in campaign details:
+   - **Title**: Campaign name
+   - **Slug**: URL path for campaign page
+   - **Description**: Explain what you're raising money for
+   - **Goal Amount**: Target amount in dollars
+   - **Featured Image**: Visual for the campaign
+   - **Status**: "draft", "active", or "completed"
+
+#### Understanding Campaign Stats
+
+- **Goal**: Target amount to raise
+- **Raised**: Current total from all donations
+- **Progress**: Percentage of goal reached
+- **Donors**: Number of people who contributed
+
+#### How Donations Work
+
+1. Visitors click "Donate" on a campaign
+2. They enter their amount and payment details
+3. Payment is processed securely via Stripe
+4. The campaign total updates automatically
+5. If donor chose to be public, they appear in the donor list
+
+---
+
+### Managing Forms/Questionnaires
+
+Forms collect information from visitors through custom questionnaires.
+
+#### Viewing All Forms
+
+1. Click **"Forms"** in the sidebar
+2. See forms with:
+   - Title
+   - Status
+   - Number of submissions
+
+#### Creating a Form
+
+1. Click **"New Form"**
+2. Set form properties:
+   - **Title**: Form name
+   - **Slug**: URL path (yoursite.com/forms/your-slug)
+   - **Description**: Instructions for respondents
+   - **Status**: "draft" or "active"
+
+#### Adding Questions
+
+Each form contains questions. Question types:
+
+| Type | Use Case |
+|------|----------|
+| **Text** | Short answers (name, email, etc.) |
+| **Textarea** | Long answers (comments, descriptions) |
+| **Select** | Dropdown with predefined choices |
+| **Radio** | Single choice from options |
+| **Checkbox** | Multiple choices allowed |
+| **Number** | Numeric values only |
+| **Date** | Date picker |
+
+**To add a question:**
+1. Click **"Add Question"**
+2. Enter the question text
+3. Select the question type
+4. If applicable, add answer options
+5. Check "Required" if answer is mandatory
+6. Drag to reorder questions
+
+#### Viewing Form Submissions
+
+1. Click on a form to open it
+2. Click **"View Submissions"** tab
+3. See all responses in a table format
+4. Click a submission to see full details
+5. Export to CSV for spreadsheet analysis
+
+---
+
+### Managing Users
+
+View and manage registered users.
+
+#### Viewing All Users
+
+1. Click **"Users"** in the sidebar
+2. See users with:
+   - Email address
+   - Display name
+   - Role (user/admin)
+   - Status (Active/Inactive/Banned)
+
+#### User Statuses
+
+- **Active**: Normal account in good standing
+- **Inactive**: Account not yet activated or deactivated
+- **Banned**: User is blocked from the site
+
+#### Banning a User
+
+1. Click on a user to view details
+2. Click **"Ban User"**
+3. Enter a reason for the ban
+4. Set ban duration (temporary or permanent)
+5. Click **"Confirm Ban"**
+
+Banned users cannot log in or interact with the site.
+
+#### Unbanning a User
+
+1. Find the banned user
+2. Click **"Unban User"**
+3. Confirm the action
+
+#### User Roles
+
+| Role | Access Level |
+|------|-------------|
+| **user** | Public site only, can donate and submit forms |
+| **editor** | Can manage content (pages, posts) |
+| **admin** | Full access to all admin features |
+
+---
+
+### Viewing Contact Messages
+
+Messages submitted through the Contact page.
+
+#### Viewing Messages
+
+1. Click **"Messages"** in the sidebar
+2. See all messages with:
+   - Sender name
+   - Email address
+   - Subject
+   - Status
+   - Date received
+
+#### Message Statuses
+
+- **new**: Unread message
+- **read**: Message has been viewed
+- **replied**: You've responded to this message
+- **archived**: Stored but hidden from main list
+
+#### Responding to Messages
+
+1. Click on a message to read the full content
+2. Note the sender's email address
+3. Send your reply via your regular email client
+4. Mark the message as "replied" to track your response
+
+---
+
+### Media Library
+
+Store and manage images, videos, and files.
+
+#### Viewing Media
+
+1. Click **"Media"** in the sidebar
+2. Browse all uploaded files
+3. Use search to find specific files
+
+#### Uploading Files
+
+1. Click **"Upload"** or drag files into the media area
+2. Supported formats:
+   - **Images**: JPG, PNG, GIF, WebP, SVG
+   - **Videos**: MP4, WebM
+   - **Documents**: PDF
+
+3. Files are automatically optimized for web
+
+#### Using Media in Content
+
+When editing pages or posts:
+1. Click the media/image button
+2. Select from existing files or upload new
+3. The file is inserted into your content
+
+#### Deleting Media
+
+1. Select the file(s) to delete
+2. Click **"Delete"**
+3. Confirm deletion
+
+**Warning:** Deleting media may break pages or posts using those files.
+
+---
+
+### Site Settings
+
+Global configuration for your website.
+
+#### Accessing Settings
+
+1. Click **"Settings"** in the sidebar
+
+#### Available Settings
+
+| Setting | Description |
+|---------|-------------|
+| **Site Name** | Your organization name (shown in browser tab, header) |
+| **Tagline** | Short description/slogan |
+| **Contact Email** | Email shown on Contact page |
+| **Analytics ID** | Google Analytics tracking ID |
+| **Maintenance Mode** | Enable to show "Under Maintenance" message to visitors |
+
+#### Saving Settings
+
+1. Make your changes
+2. Click **"Save Settings"**
+3. Changes take effect immediately
+
+---
+
+## Technical Setup
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 6+
+
+### Environment Variables
+
+Copy `.env.example` to `.env` in the backend folder and configure:
+
+```env
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/surge
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Authentication
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Patreon OAuth
+PATREON_CLIENT_ID=your-client-id
+PATREON_CLIENT_SECRET=your-client-secret
+PATREON_REDIRECT_URI=https://yoursite.com/api/auth/patreon/callback
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# Email
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-user
+SMTP_PASS=your-password
+SMTP_FROM=noreply@yoursite.com
+
+# Social Media APIs (optional)
+YOUTUBE_API_KEY=xxx
+TWITTER_BEARER_TOKEN=xxx
+INSTAGRAM_ACCESS_TOKEN=xxx
+FACEBOOK_PAGE_TOKEN=xxx
+```
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Run database migrations
+npm run db:migrate -w backend
+
+# Seed initial data
+npm run db:seed -w backend
+
+# Start development servers
+npm run dev
+```
+
+### Building for Production
+
+```bash
+# Build all packages
+npm run build
+
+# Start production server
+npm start -w backend
+```
+
+### Project Structure
+
+```
+surge/
+├── frontend/          # SolidJS frontend application
+│   ├── src/
+│   │   ├── components/  # Reusable UI components
+│   │   ├── pages/       # Page components
+│   │   ├── services/    # API client
+│   │   ├── stores/      # State management
+│   │   └── styles/      # SCSS stylesheets
+│   └── vite.config.ts
+├── backend/           # Express.js API server
+│   ├── src/
+│   │   ├── routes/      # API endpoints
+│   │   ├── services/    # Business logic
+│   │   ├── middleware/  # Auth, error handling
+│   │   └── db/          # Database schema & queries
+│   └── package.json
+└── shared/            # Shared TypeScript types
+    └── src/types/
+```
+
+### Deployment
+
+The frontend builds to static files suitable for CDN hosting (CloudFront, Netlify, Vercel).
+
+The backend requires a Node.js hosting environment with PostgreSQL and Redis access.
+
+---
+
+## Support
+
+For technical issues, contact your development team.
+
+For content questions, refer to this guide or reach out to a fellow administrator.

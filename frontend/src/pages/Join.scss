@@ -1,0 +1,261 @@
+.join {
+  @include flex-center;
+  min-height: 60vh;
+  padding: $spacing-xl $spacing-md;
+
+  &__container {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  &__title {
+    text-align: center;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__subtitle {
+    text-align: center;
+    color: $text-light;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__section {
+    background: $background;
+    padding: $spacing-xl;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-md;
+    border: 1px solid $border-color;
+  }
+
+  &__section-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__section-title {
+    font-size: $font-size-xl;
+    margin: 0;
+  }
+
+  &__section-desc {
+    color: $text-light;
+    font-size: $font-size-sm;
+    line-height: 1.6;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__badge {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-full;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &--recommended {
+      background: lighten($success-color, 40%);
+      color: darken($success-color, 10%);
+    }
+  }
+
+  &__perks {
+    margin-top: $spacing-lg;
+    padding: 0;
+    list-style: none;
+
+    li {
+      position: relative;
+      padding-left: $spacing-lg;
+      font-size: $font-size-sm;
+      color: $text-light;
+      margin-bottom: $spacing-sm;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 6px;
+        width: 16px;
+        height: 16px;
+        background: $success-color;
+        border-radius: $border-radius-full;
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      }
+    }
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin: $spacing-xl 0;
+    color: $text-light;
+    font-size: $font-size-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $border-color;
+    }
+  }
+
+  &__notice {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    background: lighten($warning-color, 38%);
+    border: 1px solid lighten($warning-color, 25%);
+    border-radius: $border-radius-md;
+    padding: $spacing-md;
+    margin-bottom: $spacing-lg;
+    font-size: $font-size-sm;
+    color: darken($warning-color, 20%);
+    line-height: 1.5;
+  }
+
+  &__notice-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: $warning-color;
+  }
+
+  &__error {
+    background: lighten($error-color, 40%);
+    color: $error-color;
+    padding: $spacing-md;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-lg;
+    font-size: $font-size-sm;
+    text-align: center;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $text-color;
+  }
+
+  &__input {
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    font-size: $font-size-base;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+
+    &:disabled {
+      background: $background-dark;
+      cursor: not-allowed;
+    }
+
+    &::placeholder {
+      color: lighten($text-light, 15%);
+    }
+  }
+
+  &__btn {
+    width: 100%;
+    padding: $spacing-md;
+    border: none;
+    border-radius: $border-radius-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    transition: all $transition-fast;
+    text-decoration: none;
+
+    &--patreon {
+      background: #f96854;
+      color: white;
+
+      &:hover {
+        background: darken(#f96854, 10%);
+      }
+    }
+
+    &--primary {
+      background: $primary-color;
+      color: white;
+      margin-top: $spacing-sm;
+
+      &:hover:not(:disabled) {
+        background: darken($primary-color, 10%);
+      }
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  &__btn-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  &__login-prompt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-top: $spacing-xl;
+    font-size: $font-size-sm;
+    color: $text-light;
+  }
+
+  &__login-link {
+    color: $primary-color;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__success {
+    text-align: center;
+    background: $background;
+    padding: $spacing-2xl;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-md;
+    border: 1px solid $border-color;
+  }
+
+  &__success-icon {
+    width: 48px;
+    height: 48px;
+    color: $success-color;
+    margin-bottom: $spacing-md;
+  }
+}

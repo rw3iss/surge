@@ -1,0 +1,187 @@
+.home {
+  &__loading {
+    @include flex-center;
+    min-height: 400px;
+    color: $text-light;
+  }
+
+  &__section-title {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+    font-size: $font-size-3xl;
+  }
+
+  &__social {
+    padding: $spacing-3xl 0;
+    background: $background-dark;
+  }
+
+  &__social-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+
+    @include sm {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include lg {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__social-card {
+    display: flex;
+    flex-direction: column;
+    background: $background;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+    text-decoration: none;
+    color: $text-color;
+    box-shadow: $shadow-md;
+    transition: all $transition-base;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: $shadow-lg;
+    }
+
+    &--youtube { border-top: 4px solid #ff0000; }
+    &--twitter { border-top: 4px solid #1da1f2; }
+    &--instagram { border-top: 4px solid #e4405f; }
+    &--facebook { border-top: 4px solid #1877f2; }
+    &--tiktok { border-top: 4px solid #000000; }
+    &--patreon { border-top: 4px solid #f96854; }
+  }
+
+  &__social-thumbnail {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  &__social-content {
+    padding: $spacing-md;
+  }
+
+  &__social-platform {
+    display: inline-block;
+    padding: $spacing-xs $spacing-sm;
+    background: $background-dark;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    text-transform: capitalize;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__social-text {
+    font-size: $font-size-sm;
+    color: $text-light;
+    margin: 0;
+    @include line-clamp(3);
+  }
+
+  &__campaigns {
+    padding: $spacing-3xl 0;
+  }
+
+  &__campaigns-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+
+    @include md {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include lg {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__campaign-card {
+    display: flex;
+    flex-direction: column;
+    background: $background;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+    text-decoration: none;
+    color: $text-color;
+    border: 1px solid $border-color;
+    transition: all $transition-base;
+
+    &:hover {
+      border-color: $primary-color;
+      box-shadow: $shadow-md;
+    }
+  }
+
+  &__campaign-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  &__campaign-content {
+    padding: $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__campaign-title {
+    font-size: $font-size-lg;
+    margin: 0;
+    color: $text-color;
+  }
+
+  &__campaign-desc {
+    font-size: $font-size-sm;
+    color: $text-light;
+    margin: 0;
+    @include line-clamp(2);
+  }
+
+  &__campaign-progress {
+    height: 8px;
+    background: $background-dark;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+  }
+
+  &__campaign-progress-bar {
+    height: 100%;
+    background: $primary-color;
+    border-radius: $border-radius-full;
+    transition: width $transition-slow;
+  }
+
+  &__campaign-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: $font-size-sm;
+    color: $text-light;
+  }
+
+  &__campaigns-cta {
+    text-align: center;
+  }
+
+  &__btn {
+    display: inline-block;
+    padding: $spacing-md $spacing-xl;
+    background: $primary-color;
+    color: white;
+    text-decoration: none;
+    border-radius: $border-radius-md;
+    font-weight: 600;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: darken($primary-color, 10%);
+      color: white;
+    }
+  }
+}

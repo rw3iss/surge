@@ -1,0 +1,207 @@
+.login {
+  @include flex-center;
+  min-height: 60vh;
+  padding: $spacing-xl $spacing-md;
+
+  &__container {
+    width: 100%;
+    max-width: 400px;
+    background: $background;
+    padding: $spacing-xl;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-lg;
+    border: 1px solid $border-color;
+  }
+
+  &__title {
+    text-align: center;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__subtitle {
+    text-align: center;
+    color: $text-light;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__error {
+    background: lighten($error-color, 40%);
+    color: $error-color;
+    padding: $spacing-md;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-lg;
+    font-size: $font-size-sm;
+    text-align: center;
+  }
+
+  &__btn {
+    width: 100%;
+    padding: $spacing-md;
+    border: none;
+    border-radius: $border-radius-md;
+    font-size: $font-size-base;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    transition: all $transition-fast;
+
+    &--patreon {
+      background: #f96854;
+      color: white;
+
+      &:hover {
+        background: darken(#f96854, 10%);
+      }
+    }
+
+    &--primary {
+      background: $primary-color;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: darken($primary-color, 10%);
+      }
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  &__btn-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  &__join-prompt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+    font-size: $font-size-sm;
+    color: $text-light;
+  }
+
+  &__join-link {
+    color: $primary-color;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__admin-toggle {
+    margin-top: $spacing-xl;
+    text-align: center;
+  }
+
+  &__admin-link {
+    background: none;
+    border: none;
+    color: $text-light;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $text-color;
+    }
+  }
+
+  &__admin-form {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.35s ease;
+    margin-top: 0;
+
+    &--visible {
+      max-height: 400px;
+      opacity: 1;
+      margin-top: $spacing-md;
+    }
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin: $spacing-lg 0;
+    color: $text-light;
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $border-color;
+    }
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $text-color;
+  }
+
+  &__input {
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    font-size: $font-size-base;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+
+    &:disabled {
+      background: $background-dark;
+      cursor: not-allowed;
+    }
+  }
+
+  &__remember {
+    margin-top: $spacing-xs;
+  }
+
+  &__remember-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-light;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+  }
+}

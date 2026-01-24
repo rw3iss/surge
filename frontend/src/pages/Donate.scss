@@ -1,0 +1,66 @@
+.donate-page {
+  padding: $spacing-xl 0;
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-2xl;
+
+    h1 { margin-bottom: $spacing-sm; }
+    p { color: $text-light; font-size: $font-size-lg; }
+  }
+
+  &__section {
+    margin-bottom: $spacing-2xl;
+    h2 { margin-bottom: $spacing-lg; }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: $spacing-lg;
+  }
+
+  &__card {
+    display: block;
+    text-decoration: none;
+    color: $text-color;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $primary-color;
+      box-shadow: $shadow-md;
+    }
+
+    img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+    }
+
+    &--past { opacity: 0.7; }
+  }
+
+  &__card-content {
+    padding: $spacing-md;
+    h3 { margin-bottom: $spacing-sm; }
+    p { color: $text-light; font-size: $font-size-sm; margin-bottom: $spacing-md; }
+    span { font-size: $font-size-sm; color: $text-light; }
+  }
+
+  &__progress {
+    height: 8px;
+    background: $background-dark;
+    border-radius: $border-radius-full;
+    margin-bottom: $spacing-sm;
+    overflow: hidden;
+  }
+
+  &__progress-bar {
+    height: 100%;
+    background: $primary-color;
+    border-radius: $border-radius-full;
+  }
+}

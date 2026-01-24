@@ -1,0 +1,22 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  &__header-skeleton {
+    height: 64px;
+    background: $background-dark;
+  }
+
+  &__main {
+    flex: 1;
+    padding-top: $spacing-lg;
+    padding-bottom: $spacing-3xl;
+  }
+
+  &__loading {
+    @include flex-center;
+    min-height: 200px;
+    color: $text-light;
+  }
+}
