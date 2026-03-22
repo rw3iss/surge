@@ -1,3 +1,5 @@
+export type ContentAccessLevel = 'public' | 'member' | 'patron';
+
 export type PageStatus = 'draft' | 'published' | 'archived';
 
 export interface Page {
@@ -14,6 +16,7 @@ export interface Page {
   showInNav: boolean;
   navOrder: number;
   isPrivate: boolean;
+  accessLevel?: ContentAccessLevel;
   blocks: Block[];
   createdBy: string;
   createdAt: Date;
@@ -73,6 +76,7 @@ export interface Post {
   authorId: string;
   status: PostStatus;
   isPrivate: boolean;
+  accessLevel?: ContentAccessLevel;
   tags: string[];
   categories: string[];
   metaTitle?: string;

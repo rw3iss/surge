@@ -73,6 +73,21 @@ export const Header: Component<HeaderProps> = (props) => {
             </For>
           </ul>
 
+          {/* Admin link - inline with other nav links, no special styling */}
+          <Show when={auth.isAuthenticated && auth.user?.role === 'admin'}>
+            <ul class="header__nav-list">
+              <li class="header__nav-item">
+                <A
+                  href="/admin"
+                  class={`header__nav-link ${isActive('admin') ? 'header__nav-link--active' : ''}`}
+                  onClick={closeMobileMenu}
+                >
+                  Admin
+                </A>
+              </li>
+            </ul>
+          </Show>
+
           <div class="header__actions">
             <Show
               when={auth.isAuthenticated}
@@ -91,22 +106,21 @@ export const Header: Component<HeaderProps> = (props) => {
                   />
                 </Show>
                 <span class="header__user-name">{auth.user?.displayName}</span>
-                <div class="header__user-dropdown">
-                  <Show when={auth.user?.role === 'admin'}>
-                    <A href="/admin" class="header__dropdown-item" onClick={closeMobileMenu}>
-                      Admin Portal
-                    </A>
-                  </Show>
-                  <button
-                    class="header__dropdown-item"
-                    onClick={() => {
-                      auth.logout();
-                      closeMobileMenu();
-                    }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
+                <button
+                  class="header__logout-btn"
+                  onClick={() => {
+                    auth.logout();
+                    closeMobileMenu();
+                  }}
+                  title="Sign Out"
+                  aria-label="Sign Out"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                </button>
               </div>
             </Show>
           </div>

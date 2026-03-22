@@ -1,6 +1,7 @@
-import { Component, Show, Switch, Match, createResource } from 'solid-js';
-import type { Block, Post, Form, Campaign } from '@surge/shared';
-import { api } from '../../services/api';
+import { Component, Show, Switch, Match, For, createResource } from 'solid-js';
+import type { Block, Post, Form, Campaign, SocialPost, SocialPlatform } from '@surge/shared';
+import { api, fetchSocialPosts } from '../../services/api';
+import SocialEmbed from '../SocialEmbed';
 import './BlockRenderer.scss';
 
 interface BlockRendererProps {
@@ -40,6 +41,9 @@ export const BlockRenderer: Component<BlockRendererProps> = (props) => {
           <Match when={props.block.type === 'campaign'}>
             <CampaignBlock block={props.block} />
           </Match>
+          <Match when={props.block.type === 'social_feed'}>
+            <SocialFeedBlock block={props.block} />
+          </Match>
           <Match when={props.block.type === 'html'}>
             <HTMLBlock block={props.block} />
           </Match>
@@ -70,17 +74,33 @@ const RichTextBlock: Component<{ block: Block }> = (props) => (
 );
 
 const ImageBlock: Component<{ block: Block }> = (props) => {
-  const mediaIds = () => props.block.settings.mediaIds as string[] || [];
+  // Image URL can come from content field, settings.url, or settings.mediaIds
+  const imageUrl = () =>
+    props.block.content ||
+    (props.block.settings.url as string) ||
+    '';
+  const altText = () =>
+    (props.block.settings.alt as string) || props.block.title || '';
 
   return (
     <div class="image-block">
       <Show when={props.block.title}>
         <h2 class="image-block__title">{props.block.title}</h2>
       </Show>
-      <Show when={mediaIds().length > 0}>
-        <div class="image-block__images">
-          {/* Would load images from media IDs */}
-        </div>
+      <Show when={imageUrl()}>
+        <img
+          src={imageUrl()}
+          alt={altText()}
+          class="image-block__img"
+          loading="lazy"
+          style={{
+            'max-width': (props.block.settings.maxWidth as string) || '100%',
+            'max-height': (props.block.settings.maxHeight as string) || undefined,
+          }}
+        />
+      </Show>
+      <Show when={props.block.settings.caption}>
+        <p class="image-block__caption">{props.block.settings.caption as string}</p>
       </Show>
     </div>
   );
@@ -95,8 +115,8 @@ const VideoBlock: Component<{ block: Block }> = (props) => (
       <div class="video-block__wrapper">
         <iframe
           src={props.block.content}
-          frameBorder="0"
-          allowFullScreen
+          frameborder="0"
+          allowfullscreen
           class="video-block__iframe"
         />
       </div>
@@ -166,6 +186,43 @@ const CampaignBlock: Component<{ block: Block }> = (props) => {
         </p>
       </div>
     </Show>
+  );
+};
+
+const SocialFeedBlock: Component<{ block: Block }> = (props) => {
+  const platform = () => props.block.settings.socialPlatform as SocialPlatform | undefined;
+
+  const [posts] = createResource(platform, async (p) => {
+    const response = await fetchSocialPosts(p, 6);
+    return response.success ? (response.data as SocialPost[]) : [];
+  });
+
+  return (
+    <div class="social-feed-block">
+      <Show when={props.block.title}>
+        <h2 class="social-feed-block__title">{props.block.title}</h2>
+      </Show>
+      <Show when={posts()?.length} fallback={
+        <Show when={!posts.loading}>
+          <p class="social-feed-block__empty">No social posts available.</p>
+        </Show>
+      }>
+        <div class="social-feed-block__grid">
+          <For each={posts()}>
+            {(post) => (
+              <SocialEmbed
+                platform={post.platform}
+                externalId={post.externalId}
+                mediaUrl={post.mediaUrl}
+                content={post.content}
+                thumbnailUrl={post.thumbnailUrl}
+                authorName={post.authorName}
+              />
+            )}
+          </For>
+        </div>
+      </Show>
+    </div>
   );
 };
 

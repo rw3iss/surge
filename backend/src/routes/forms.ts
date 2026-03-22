@@ -1,18 +1,18 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { query } from '../db';
 import { cache } from '../services/cache';
 import { authenticate, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
-import { NotFoundError, ValidationError } from '../middleware/error';
-import { logger } from '../utils/logger';
-import type { Form, FormQuestion, FormSubmission, FormStatus, QuestionType } from '@surge/shared';
+import { ValidationError } from '../middleware/error';
+import { sendSuccess, sendCreated, sendPaginated, handleRouteError } from '../utils/response';
+import * as formsRepo from '../repositories/forms.repo';
+import type { Form } from '@surge/shared';
 
 const router = Router();
 
 const questionSchema = z.object({
   type: z.enum(['radio', 'checkbox', 'text', 'textarea', 'select', 'number', 'email', 'date']),
   question: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullish(),
   options: z.array(z.string()).optional(),
   isRequired: z.boolean().optional(),
   order: z.number().int().optional(),
@@ -45,67 +45,22 @@ const submissionSchema = z.object({
   })),
 });
 
-function toForm(row: Record<string, unknown>): Form {
-  return {
-    id: row.id as string,
-    title: row.title as string,
-    slug: row.slug as string,
-    description: row.description as string | undefined,
-    status: row.status as FormStatus,
-    showResults: row.show_results as boolean,
-    allowMultipleSubmissions: row.allow_multiple_submissions as boolean,
-    requiresAuth: row.requires_auth as boolean,
-    successMessage: row.success_message as string | undefined,
-    questions: [],
-    submissionCount: row.submission_count as number,
-    createdBy: row.created_by as string,
-    createdAt: new Date(row.created_at as string),
-    updatedAt: new Date(row.updated_at as string),
-    closedAt: row.closed_at ? new Date(row.closed_at as string) : undefined,
-  };
-}
-
-function toQuestion(row: Record<string, unknown>): FormQuestion {
-  return {
-    id: row.id as string,
-    formId: row.form_id as string,
-    type: row.type as QuestionType,
-    question: row.question as string,
-    description: row.description as string | undefined,
-    options: row.options as string[] | undefined,
-    isRequired: row.is_required as boolean,
-    order: row.order as number,
-    validation: row.validation as FormQuestion['validation'],
-    createdAt: new Date(row.created_at as string),
-    updatedAt: new Date(row.updated_at as string),
-  };
-}
+// ─── Public Routes ───
 
 // Get published forms (public)
-router.get('/public', async (req, res) => {
+router.get('/public', async (_req, res) => {
   try {
     const cacheKey = 'forms:public';
 
     const cached = await cache.get(cacheKey);
-    if (cached) {
-      return res.json({ success: true, data: cached });
-    }
+    if (cached) return sendSuccess(res, cached);
 
-    const result = await query(
-      `SELECT * FROM forms WHERE status = 'published' ORDER BY created_at DESC`
-    );
-
-    const forms = result.rows.map(toForm);
-
+    const forms = await formsRepo.findPublishedForms();
     await cache.set(cacheKey, forms, 300);
 
-    res.json({ success: true, data: forms });
+    sendSuccess(res, forms);
   } catch (error) {
-    logger.error('Error fetching public forms', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch forms' },
-    });
+    handleRouteError(res, error, 'fetch public forms');
   }
 });
 
@@ -116,55 +71,29 @@ router.get('/slug/:slug', authenticate(false), async (req: AuthenticatedRequest,
     const cacheKey = `form:slug:${slug}`;
 
     const cached = await cache.get<Form>(cacheKey);
-    if (cached && !cached.requiresAuth) {
-      return res.json({ success: true, data: cached });
+    if (cached && !cached.requiresAuth) return sendSuccess(res, cached);
+
+    const form = await formsRepo.findFormBySlug(slug);
+    if (!form) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Form not found' } });
     }
 
-    const formResult = await query(
-      `SELECT * FROM forms WHERE slug = $1 AND status = 'published'`,
-      [slug]
-    );
-
-    if (formResult.rows.length === 0) {
-      throw new NotFoundError('Form');
-    }
-
-    const formRow = formResult.rows[0];
-
-    if (formRow.requires_auth && !req.user) {
+    if (form.requiresAuth && !req.user) {
       return res.status(401).json({
         success: false,
         error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
       });
     }
 
-    const form = toForm(formRow);
-
-    // Get questions
-    const questionsResult = await query(
-      `SELECT * FROM form_questions WHERE form_id = $1 ORDER BY "order" ASC`,
-      [form.id]
-    );
-
-    form.questions = questionsResult.rows.map(toQuestion);
+    form.questions = await formsRepo.findQuestionsByFormId(form.id);
 
     if (!form.requiresAuth) {
       await cache.set(cacheKey, form, 300);
     }
 
-    res.json({ success: true, data: form });
+    sendSuccess(res, form);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error fetching form', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch form' },
-    });
+    handleRouteError(res, error, 'fetch form');
   }
 });
 
@@ -173,33 +102,20 @@ router.get('/slug/:slug/results', async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const formResult = await query(
-      `SELECT * FROM forms WHERE slug = $1 AND status IN ('published', 'closed') AND show_results = true`,
-      [slug]
-    );
-
-    if (formResult.rows.length === 0) {
-      throw new NotFoundError('Form or results not available');
+    const form = await formsRepo.findFormBySlugWithResults(slug);
+    if (!form) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Form or results not available not found' },
+      });
     }
 
-    const form = toForm(formResult.rows[0]);
-
-    const questionsResult = await query(
-      `SELECT * FROM form_questions WHERE form_id = $1 ORDER BY "order" ASC`,
-      [form.id]
-    );
-
-    const questions = questionsResult.rows.map(toQuestion);
-
-    // Get submissions
-    const submissionsResult = await query(
-      `SELECT answers FROM form_submissions WHERE form_id = $1`,
-      [form.id]
-    );
+    const questions = await formsRepo.findQuestionsByFormId(form.id);
+    const submissionRows = await formsRepo.findSubmissionAnswers(form.id);
 
     // Calculate results for each question
     const questionResults = questions.map((q) => {
-      const answers = submissionsResult.rows
+      const answers = submissionRows
         .map((row) => {
           const ans = (row.answers as Array<{ questionId: string; value: unknown }>)
             .find((a) => a.questionId === q.id);
@@ -262,26 +178,13 @@ router.get('/slug/:slug/results', async (req, res) => {
       };
     });
 
-    res.json({
-      success: true,
-      data: {
-        formId: form.id,
-        totalSubmissions: form.submissionCount,
-        questionResults,
-      },
+    sendSuccess(res, {
+      formId: form.id,
+      totalSubmissions: form.submissionCount,
+      questionResults,
     });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error fetching form results', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch results' },
-    });
+    handleRouteError(res, error, 'fetch form results');
   }
 });
 
@@ -291,16 +194,13 @@ router.post('/slug/:slug/submit', authenticate(false), async (req: Authenticated
     const { slug } = req.params;
     const data = submissionSchema.parse(req.body);
 
-    const formResult = await query(
-      `SELECT * FROM forms WHERE slug = $1 AND status = 'published'`,
-      [slug]
-    );
-
-    if (formResult.rows.length === 0) {
-      throw new NotFoundError('Form');
+    const form = await formsRepo.findFormBySlugPublished(slug);
+    if (!form) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Form not found' },
+      });
     }
-
-    const form = toForm(formResult.rows[0]);
 
     if (form.requiresAuth && !req.user) {
       return res.status(401).json({
@@ -309,15 +209,14 @@ router.post('/slug/:slug/submit', authenticate(false), async (req: Authenticated
       });
     }
 
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+
     // Check for duplicate submissions
     if (!form.allowMultipleSubmissions) {
-      const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
-      const existing = await query(
-        `SELECT id FROM form_submissions WHERE form_id = $1 AND (user_id = $2 OR ip_address = $3)`,
-        [form.id, req.userId || null, ipAddress]
+      const isDuplicate = await formsRepo.checkDuplicateSubmission(
+        form.id, req.userId || null, ipAddress!
       );
-
-      if (existing.rows.length > 0) {
+      if (isDuplicate) {
         return res.status(409).json({
           success: false,
           error: { code: 'CONFLICT', message: 'You have already submitted this form' },
@@ -326,12 +225,7 @@ router.post('/slug/:slug/submit', authenticate(false), async (req: Authenticated
     }
 
     // Get questions and validate required fields
-    const questionsResult = await query(
-      `SELECT * FROM form_questions WHERE form_id = $1`,
-      [form.id]
-    );
-
-    const questions = questionsResult.rows.map(toQuestion);
+    const questions = await formsRepo.findQuestionsByFormId(form.id);
     const requiredQuestions = questions.filter((q) => q.isRequired);
 
     for (const rq of requiredQuestions) {
@@ -341,170 +235,125 @@ router.post('/slug/:slug/submit', authenticate(false), async (req: Authenticated
       }
     }
 
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     const userAgent = req.headers['user-agent'];
 
-    await query(
-      `INSERT INTO form_submissions (form_id, user_id, ip_address, user_agent, answers)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [form.id, req.userId || null, ipAddress, userAgent, JSON.stringify(data.answers)]
+    await formsRepo.createSubmission(
+      form.id, req.userId || null, ipAddress!, userAgent, data.answers
     );
 
     await cache.invalidateFormCache(form.id);
 
-    res.status(201).json({
-      success: true,
-      data: {
-        message: form.successMessage || 'Form submitted successfully',
-      },
+    sendCreated(res, {
+      message: form.successMessage || 'Form submitted successfully',
     });
   } catch (error) {
-    if (error instanceof NotFoundError || error instanceof ValidationError) {
-      return res.status(error instanceof NotFoundError ? 404 : 400).json({
-        success: false,
-        error: { code: error instanceof NotFoundError ? 'NOT_FOUND' : 'VALIDATION_ERROR', message: error.message },
-      });
-    }
-    logger.error('Error submitting form', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to submit form' },
-    });
+    handleRouteError(res, error, 'submit form');
   }
 });
 
-// Admin routes
+// ─── CSV Export Helpers ───
+
+function escapeCSV(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function toCSV(headers: string[], rows: string[][]): string {
+  const headerLine = headers.map(escapeCSV).join(',');
+  const dataLines = rows.map(row => row.map(escapeCSV).join(','));
+  return [headerLine, ...dataLines].join('\n');
+}
+
+// ─── Admin Routes ───
+
+// Export form submissions as CSV (admin)
+router.get('/:id/submissions/export', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const formId = req.params.id;
+
+    // Fetch form
+    const form = await formsRepo.findFormById(formId);
+
+    // Fetch questions ordered by their position
+    const questions = await formsRepo.findQuestionsByFormId(formId);
+
+    // Fetch all submissions (use a large limit to get all)
+    const result = await formsRepo.findSubmissions(formId, { page: 1, limit: 100000 });
+    const submissions = result.data;
+
+    // Build CSV headers
+    const headers = ['Submission ID', 'Submitted At', 'User ID', ...questions.map(q => q.question)];
+
+    // Build CSV rows
+    const rows = submissions.map(submission => {
+      const answers = (submission.answers || []) as Array<{ questionId: string; value: unknown }>;
+
+      const questionValues = questions.map(q => {
+        const answer = answers.find(a => a.questionId === q.id);
+        if (!answer) return '';
+        if (Array.isArray(answer.value)) return answer.value.join('; ');
+        return String(answer.value ?? '');
+      });
+
+      return [
+        submission.id,
+        submission.submittedAt ? new Date(submission.submittedAt).toISOString() : '',
+        submission.userId || '',
+        ...questionValues,
+      ];
+    });
+
+    const csv = toCSV(headers, rows);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="form-${form.slug}-submissions.csv"`);
+    res.send(csv);
+  } catch (error) {
+    handleRouteError(res, error, 'export form submissions');
+  }
+});
 
 // Get all forms (admin)
 router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
+    const pagination = { page: Number(page), limit: Number(limit) };
 
-    let whereClause = 'WHERE 1=1';
-    const params: unknown[] = [];
-
-    if (status) {
-      params.push(status);
-      whereClause += ` AND status = $${params.length}`;
-    }
-
-    const countResult = await query(`SELECT COUNT(*) FROM forms ${whereClause}`, params);
-    const total = parseInt(countResult.rows[0].count, 10);
-
-    params.push(Number(limit), offset);
-    const result = await query(
-      `SELECT * FROM forms ${whereClause} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
+    const result = await formsRepo.findForms(
+      { status: status as string },
+      pagination
     );
 
-    const forms = result.rows.map(toForm);
-
-    res.json({
-      success: true,
-      data: forms,
-      meta: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-    });
+    sendPaginated(res, result.data, pagination.page, pagination.limit, result.total);
   } catch (error) {
-    logger.error('Error fetching forms', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch forms' },
-    });
+    handleRouteError(res, error, 'fetch forms');
   }
 });
 
 // Get form by ID (admin)
 router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
-
-    const formResult = await query('SELECT * FROM forms WHERE id = $1', [id]);
-
-    if (formResult.rows.length === 0) {
-      throw new NotFoundError('Form');
-    }
-
-    const form = toForm(formResult.rows[0]);
-
-    const questionsResult = await query(
-      `SELECT * FROM form_questions WHERE form_id = $1 ORDER BY "order" ASC`,
-      [form.id]
-    );
-
-    form.questions = questionsResult.rows.map(toQuestion);
-
-    res.json({ success: true, data: form });
+    const form = await formsRepo.findFormById(req.params.id);
+    form.questions = await formsRepo.findQuestionsByFormId(form.id);
+    sendSuccess(res, form);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error fetching form', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch form' },
-    });
+    handleRouteError(res, error, 'fetch form');
   }
 });
 
 // Get form submissions (admin)
 router.get('/:id/submissions', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
     const { page = 1, limit = 50 } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
+    const pagination = { page: Number(page), limit: Number(limit) };
 
-    const countResult = await query(
-      `SELECT COUNT(*) FROM form_submissions WHERE form_id = $1`,
-      [id]
-    );
-    const total = parseInt(countResult.rows[0].count, 10);
+    const result = await formsRepo.findSubmissions(req.params.id, pagination);
 
-    const result = await query(
-      `SELECT fs.*, u.display_name as user_name, u.email as user_email
-       FROM form_submissions fs
-       LEFT JOIN users u ON fs.user_id = u.id
-       WHERE fs.form_id = $1
-       ORDER BY fs.submitted_at DESC
-       LIMIT $2 OFFSET $3`,
-      [id, Number(limit), offset]
-    );
-
-    const submissions = result.rows.map((row) => ({
-      id: row.id,
-      formId: row.form_id,
-      userId: row.user_id,
-      userName: row.user_name,
-      userEmail: row.user_email,
-      ipAddress: row.ip_address,
-      answers: row.answers,
-      submittedAt: row.submitted_at,
-    }));
-
-    res.json({
-      success: true,
-      data: submissions,
-      meta: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-    });
+    sendPaginated(res, result.data, pagination.page, pagination.limit, result.total);
   } catch (error) {
-    logger.error('Error fetching form submissions', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch submissions' },
-    });
+    handleRouteError(res, error, 'fetch form submissions');
   }
 });
 
@@ -512,198 +361,50 @@ router.get('/:id/submissions', authenticate(), requireAdmin, async (req: Authent
 router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const data = formSchema.parse(req.body);
-
-    const formResult = await query(
-      `INSERT INTO forms (title, slug, description, status, show_results,
-                          allow_multiple_submissions, requires_auth, success_message, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [
-        data.title,
-        data.slug,
-        data.description,
-        data.status || 'draft',
-        data.showResults ?? false,
-        data.allowMultipleSubmissions ?? false,
-        data.requiresAuth ?? false,
-        data.successMessage,
-        req.userId,
-      ]
-    );
-
-    const form = toForm(formResult.rows[0]);
+    const form = await formsRepo.createForm(data, req.userId!);
 
     // Create questions if provided
     if (data.questions && data.questions.length > 0) {
       for (let i = 0; i < data.questions.length; i++) {
         const q = data.questions[i];
-        const questionResult = await query(
-          `INSERT INTO form_questions (form_id, type, question, description, options,
-                                       is_required, "order", validation)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING *`,
-          [
-            form.id,
-            q.type,
-            q.question,
-            q.description,
-            q.options || null,
-            q.isRequired ?? false,
-            q.order ?? i,
-            q.validation ? JSON.stringify(q.validation) : null,
-          ]
-        );
-        form.questions.push(toQuestion(questionResult.rows[0]));
+        const question = await formsRepo.createQuestion(form.id, { ...q, order: q.order ?? i });
+        form.questions.push(question);
       }
     }
 
     await cache.invalidateFormCache();
 
-    res.status(201).json({ success: true, data: form });
+    sendCreated(res, form);
   } catch (error) {
-    logger.error('Error creating form', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to create form' },
-    });
+    handleRouteError(res, error, 'create form');
   }
 });
 
 // Update form (admin)
 router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
     const data = formSchema.partial().parse(req.body);
+    const form = await formsRepo.updateForm(req.params.id, data);
 
-    const existing = await query('SELECT id FROM forms WHERE id = $1', [id]);
-    if (existing.rows.length === 0) {
-      throw new NotFoundError('Form');
-    }
+    await cache.invalidateFormCache(req.params.id);
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-
-    if (data.title !== undefined) {
-      values.push(data.title);
-      updates.push(`title = $${values.length}`);
-    }
-    if (data.slug !== undefined) {
-      values.push(data.slug);
-      updates.push(`slug = $${values.length}`);
-    }
-    if (data.description !== undefined) {
-      values.push(data.description);
-      updates.push(`description = $${values.length}`);
-    }
-    if (data.status !== undefined) {
-      values.push(data.status);
-      updates.push(`status = $${values.length}`);
-      if (data.status === 'closed') {
-        values.push(new Date().toISOString());
-        updates.push(`closed_at = $${values.length}`);
-      }
-    }
-    if (data.showResults !== undefined) {
-      values.push(data.showResults);
-      updates.push(`show_results = $${values.length}`);
-    }
-    if (data.allowMultipleSubmissions !== undefined) {
-      values.push(data.allowMultipleSubmissions);
-      updates.push(`allow_multiple_submissions = $${values.length}`);
-    }
-    if (data.requiresAuth !== undefined) {
-      values.push(data.requiresAuth);
-      updates.push(`requires_auth = $${values.length}`);
-    }
-    if (data.successMessage !== undefined) {
-      values.push(data.successMessage);
-      updates.push(`success_message = $${values.length}`);
-    }
-
-    if (updates.length > 0) {
-      values.push(id);
-      await query(
-        `UPDATE forms SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${values.length}`,
-        values
-      );
-    }
-
-    await cache.invalidateFormCache(id);
-
-    // Fetch updated form
-    const formResult = await query('SELECT * FROM forms WHERE id = $1', [id]);
-    const form = toForm(formResult.rows[0]);
-
-    const questionsResult = await query(
-      `SELECT * FROM form_questions WHERE form_id = $1 ORDER BY "order" ASC`,
-      [form.id]
-    );
-    form.questions = questionsResult.rows.map(toQuestion);
-
-    res.json({ success: true, data: form });
+    sendSuccess(res, form);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error updating form', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update form' },
-    });
+    handleRouteError(res, error, 'update form');
   }
 });
 
 // Add question to form (admin)
 router.post('/:id/questions', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
     const data = questionSchema.parse(req.body);
+    const question = await formsRepo.createQuestion(req.params.id, data);
 
-    const formExists = await query('SELECT id FROM forms WHERE id = $1', [id]);
-    if (formExists.rows.length === 0) {
-      throw new NotFoundError('Form');
-    }
+    await cache.invalidateFormCache(req.params.id);
 
-    const maxOrder = await query(
-      'SELECT COALESCE(MAX("order"), -1) + 1 as next_order FROM form_questions WHERE form_id = $1',
-      [id]
-    );
-
-    const result = await query(
-      `INSERT INTO form_questions (form_id, type, question, description, options,
-                                   is_required, "order", validation)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        id,
-        data.type,
-        data.question,
-        data.description,
-        data.options || null,
-        data.isRequired ?? false,
-        data.order ?? maxOrder.rows[0].next_order,
-        data.validation ? JSON.stringify(data.validation) : null,
-      ]
-    );
-
-    await cache.invalidateFormCache(id);
-
-    res.status(201).json({ success: true, data: toQuestion(result.rows[0]) });
+    sendCreated(res, question);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error adding question', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to add question' },
-    });
+    handleRouteError(res, error, 'add question');
   }
 });
 
@@ -712,73 +413,13 @@ router.put('/:formId/questions/:questionId', authenticate(), requireAdmin, async
   try {
     const { formId, questionId } = req.params;
     const data = questionSchema.partial().parse(req.body);
-
-    const updates: string[] = [];
-    const values: unknown[] = [];
-
-    if (data.type !== undefined) {
-      values.push(data.type);
-      updates.push(`type = $${values.length}`);
-    }
-    if (data.question !== undefined) {
-      values.push(data.question);
-      updates.push(`question = $${values.length}`);
-    }
-    if (data.description !== undefined) {
-      values.push(data.description);
-      updates.push(`description = $${values.length}`);
-    }
-    if (data.options !== undefined) {
-      values.push(data.options);
-      updates.push(`options = $${values.length}`);
-    }
-    if (data.isRequired !== undefined) {
-      values.push(data.isRequired);
-      updates.push(`is_required = $${values.length}`);
-    }
-    if (data.order !== undefined) {
-      values.push(data.order);
-      updates.push(`"order" = $${values.length}`);
-    }
-    if (data.validation !== undefined) {
-      values.push(JSON.stringify(data.validation));
-      updates.push(`validation = $${values.length}`);
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'BAD_REQUEST', message: 'No fields to update' },
-      });
-    }
-
-    values.push(questionId, formId);
-    const result = await query(
-      `UPDATE form_questions SET ${updates.join(', ')}, updated_at = NOW()
-       WHERE id = $${values.length - 1} AND form_id = $${values.length}
-       RETURNING *`,
-      values
-    );
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Question');
-    }
+    const question = await formsRepo.updateQuestion(formId, questionId, data);
 
     await cache.invalidateFormCache(formId);
 
-    res.json({ success: true, data: toQuestion(result.rows[0]) });
+    sendSuccess(res, question);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error updating question', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update question' },
-    });
+    handleRouteError(res, error, 'update question');
   }
 });
 
@@ -786,60 +427,26 @@ router.put('/:formId/questions/:questionId', authenticate(), requireAdmin, async
 router.delete('/:formId/questions/:questionId', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { formId, questionId } = req.params;
-
-    const result = await query(
-      'DELETE FROM form_questions WHERE id = $1 AND form_id = $2 RETURNING id',
-      [questionId, formId]
-    );
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Question');
-    }
+    await formsRepo.deleteQuestion(formId, questionId);
 
     await cache.invalidateFormCache(formId);
 
-    res.json({ success: true, data: { message: 'Question deleted' } });
+    sendSuccess(res, { message: 'Question deleted' });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error deleting question', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete question' },
-    });
+    handleRouteError(res, error, 'delete question');
   }
 });
 
 // Delete form (admin)
 router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
+    await formsRepo.deleteForm(req.params.id);
 
-    const result = await query('DELETE FROM forms WHERE id = $1 RETURNING id', [id]);
+    await cache.invalidateFormCache(req.params.id);
 
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Form');
-    }
-
-    await cache.invalidateFormCache(id);
-
-    res.json({ success: true, data: { message: 'Form deleted' } });
+    sendSuccess(res, { message: 'Form deleted' });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error deleting form', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete form' },
-    });
+    handleRouteError(res, error, 'delete form');
   }
 });
 

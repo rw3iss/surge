@@ -65,13 +65,33 @@ async function seed() {
          title = EXCLUDED.title,
          updated_at = NOW()
        RETURNING id`,
-      ['about', 'About Us', 'Learn about Surge Media', 'published', true, 1, adminId]
+      ['about', 'About Surge Media', 'Independent media organization delivering unfiltered news rooted in truth, faith, and accountability.', 'published', true, 1, adminId]
     );
 
     const aboutId = aboutResult.rows[0].id;
     logger.info('Created about page', { aboutId });
 
-    // Create about page content block
+    // Create about page hero block
+    await query(
+      `INSERT INTO blocks (page_id, type, title, content, settings, "order", is_visible)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT DO NOTHING`,
+      [
+        aboutId,
+        'hero',
+        'About Surge Media',
+        'Truth, Faith, and Accountability.',
+        JSON.stringify({
+          layout: 'full',
+          backgroundColor: '#1a1a1a',
+          textColor: '#ffffff',
+        }),
+        0,
+        true,
+      ]
+    );
+
+    // Create about page mission block
     await query(
       `INSERT INTO blocks (page_id, type, title, content, settings, "order", is_visible)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -79,10 +99,41 @@ async function seed() {
       [
         aboutId,
         'rich_text',
-        'About Surge Media',
-        '<p>Surge Media is an independent news organization dedicated to delivering honest, impactful journalism.</p><p>We cover stories that matter to our community and beyond.</p>',
+        'Our Mission',
+        `<p>Surge Media is an independent media organization on a mission to deliver unfiltered news, real interviews, and on-the-ground coverage that the mainstream media refuses to show.</p>
+<p>We spread information rooted in truth, faith, and accountability. Founded out of frustration with one-sided and often false narratives pushed by legacy media outlets, we set out to report directly from the source.</p>
+<h3>What We Stand For</h3>
+<ul>
+  <li>Unbiased, unfiltered reporting</li>
+  <li>Authentic voices from real Americans</li>
+  <li>Accurate information and transparent sourcing</li>
+</ul>
+<p>We specialize in original video reporting, raw footage, and man-on-the-street interviews designed to show the reality of every situation. From national protests and demonstrations to immigration policy, tax policy, and investigations into waste, fraud, and abuse — we cover the stories that matter.</p>
+<p>Legacy networks put narrative first and Americans last. Our work helps create a more informed and empowered citizenry by documenting history as it happens, creating a record that future generations can study and trust.</p>`,
         JSON.stringify({ layout: 'contained' }),
-        0,
+        1,
+        true,
+      ]
+    );
+
+    // Create about page team block
+    await query(
+      `INSERT INTO blocks (page_id, type, title, content, settings, "order", is_visible)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT DO NOTHING`,
+      [
+        aboutId,
+        'rich_text',
+        'Meet the Dream Team',
+        `<h3>From Students to Activists</h3>
+<p><strong>Frank Scales</strong> — Co-Founder</p>
+<p>Frank co-founded Surge Media with a passion for investigative journalism and holding those in power accountable. He leads on-the-ground reporting efforts and editorial direction.</p>
+<p><strong>Ian McGinnis</strong> — Co-Founder</p>
+<p>Ian co-founded Surge Media to bring authentic, unfiltered coverage to audiences who demand the truth. He oversees video production, content strategy, and audience growth.</p>
+<h3>Join Us</h3>
+<p>Our mission is not free. It takes time, money, and manpower. Whether you want to provide a tip, contribute financially, or join the team, we invite you to become a part of a growing movement committed to truth and accountability.</p>`,
+        JSON.stringify({ layout: 'contained' }),
+        2,
         true,
       ]
     );

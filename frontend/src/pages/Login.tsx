@@ -90,28 +90,36 @@ const Login: Component = () => {
             <span>Admin</span>
           </div>
 
-          <form class="login__form" onSubmit={handleEmailLogin}>
+          <form class="login__form" onSubmit={handleEmailLogin} action="/login" method="post">
             <div class="login__field">
-              <label for="email" class="login__label">Email</label>
+              <label for="login-email" class="login__label">Email</label>
               <input
                 type="email"
-                id="email"
+                id="login-email"
+                name="email"
+                autocomplete="email"
                 class="login__input"
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
+                onChange={(e) => setEmail(e.currentTarget.value)}
+                placeholder="you@example.com"
                 required
                 disabled={isLoading()}
               />
             </div>
 
             <div class="login__field">
-              <label for="password" class="login__label">Password</label>
+              <label for="login-password" class="login__label">Password</label>
               <input
                 type="password"
-                id="password"
+                id="login-password"
+                name="password"
+                autocomplete="current-password"
                 class="login__input"
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
+                onChange={(e) => setPassword(e.currentTarget.value)}
+                placeholder="Enter your password"
                 required
                 disabled={isLoading()}
               />

@@ -1,4 +1,5 @@
 import { Component, createResource, For, Show } from 'solid-js';
+import { A } from '@solidjs/router';
 import { Title } from '@solidjs/meta';
 import { api } from '../../services/api';
 
@@ -35,6 +36,7 @@ const AdminMessages: Component = () => {
                 <th>Subject</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -46,6 +48,7 @@ const AdminMessages: Component = () => {
                     <td>{m.subject || '(no subject)'}</td>
                     <td><span class={`badge ${statusBadge(m.status)}`}>{m.status}</span></td>
                     <td>{new Date(m.createdAt).toLocaleDateString()}</td>
+                    <td><A href={`/admin/messages/${m.id}`} class="btn btn--small btn--secondary">View</A></td>
                   </tr>
                 )}
               </For>

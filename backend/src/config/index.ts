@@ -25,6 +25,7 @@ const envSchema = z.object({
   PATREON_CLIENT_SECRET: z.string(),
   PATREON_REDIRECT_URI: z.string().url(),
   PATREON_CAMPAIGN_ID: z.string().optional(),
+  PATREON_CREATOR_ACCESS_TOKEN: z.string().optional(),
 
   STRIPE_SECRET_KEY: z.string(),
   STRIPE_PUBLISHABLE_KEY: z.string(),
@@ -67,6 +68,9 @@ const envSchema = z.object({
 
   TIKTOK_CLIENT_KEY: z.string().optional(),
   TIKTOK_CLIENT_SECRET: z.string().optional(),
+
+  SHOPIFY_STORE_DOMAIN: z.string().optional(),
+  SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().optional(),
 
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'),
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
@@ -114,6 +118,7 @@ export const config = {
     clientSecret: parsed.data.PATREON_CLIENT_SECRET,
     redirectUri: parsed.data.PATREON_REDIRECT_URI,
     campaignId: parsed.data.PATREON_CAMPAIGN_ID,
+    creatorAccessToken: parsed.data.PATREON_CREATOR_ACCESS_TOKEN || '',
   },
 
   stripe: {
@@ -170,6 +175,11 @@ export const config = {
       clientKey: parsed.data.TIKTOK_CLIENT_KEY,
       clientSecret: parsed.data.TIKTOK_CLIENT_SECRET,
     },
+  },
+
+  shopify: {
+    storeDomain: parsed.data.SHOPIFY_STORE_DOMAIN,
+    storefrontAccessToken: parsed.data.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
   },
 
   rateLimit: {

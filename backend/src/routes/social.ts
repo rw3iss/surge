@@ -4,7 +4,8 @@ import { query } from '../db';
 import { cache } from '../services/cache';
 import { syncSocialPosts, syncAllPlatforms, getSocialPosts } from '../services/social';
 import { authenticate, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
-import { logger } from '../utils/logger';
+import { mapRows } from '../utils/mapRow';
+import { sendSuccess, handleRouteError } from '../utils/response';
 import type { SocialPlatform, SocialPost } from '@surge/shared';
 
 const router = Router();
@@ -18,9 +19,7 @@ router.get('/posts', async (req, res) => {
     const cacheKey = `social:posts:${platform || 'all'}:${page}:${limit}`;
 
     const cached = await cache.get(cacheKey);
-    if (cached) {
-      return res.json({ success: true, data: cached });
-    }
+    if (cached) return sendSuccess(res, cached);
 
     const posts = await getSocialPosts(
       platform as SocialPlatform | undefined,
@@ -49,15 +48,16 @@ router.get('/posts', async (req, res) => {
       },
     };
 
-    await cache.set(cacheKey, response, 600); // Cache for 10 minutes
+    await cache.set(cacheKey, response, 600);
 
-    res.json({ success: true, ...response });
-  } catch (error) {
-    logger.error('Error fetching social posts', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch social posts' },
+    sendSuccess(res, posts, {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      totalPages: Math.ceil(total / Number(limit)),
     });
+  } catch (error) {
+    handleRouteError(res, error, 'fetch social posts');
   }
 });
 
@@ -80,9 +80,7 @@ router.get('/posts/:platform', async (req, res) => {
     const cacheKey = `social:${platform}:${page}:${limit}`;
 
     const cached = await cache.get(cacheKey);
-    if (cached) {
-      return res.json({ success: true, data: cached });
-    }
+    if (cached) return sendSuccess(res, cached);
 
     const posts = await getSocialPosts(platform as SocialPlatform, Number(limit), offset);
 
@@ -104,13 +102,14 @@ router.get('/posts/:platform', async (req, res) => {
 
     await cache.set(cacheKey, response, 600);
 
-    res.json({ success: true, ...response });
-  } catch (error) {
-    logger.error('Error fetching platform posts', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch posts' },
+    sendSuccess(res, posts, {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      totalPages: Math.ceil(total / Number(limit)),
     });
+  } catch (error) {
+    handleRouteError(res, error, 'fetch platform posts');
   }
 });
 
@@ -131,31 +130,22 @@ router.post('/sync', authenticate(), requireAdmin, async (req: AuthenticatedRequ
     // Invalidate cache
     await cache.delPattern('social:*');
 
-    res.json({
-      success: true,
-      data: {
-        message: 'Sync completed',
-        results,
-      },
+    sendSuccess(res, {
+      message: 'Sync completed',
+      results,
     });
   } catch (error) {
-    logger.error('Error syncing social posts', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to sync social posts' },
-    });
+    handleRouteError(res, error, 'sync social posts');
   }
 });
 
 // Get selected posts for homepage (admin can configure)
-router.get('/homepage', async (req, res) => {
+router.get('/homepage', async (_req, res) => {
   try {
     const cacheKey = 'social:homepage';
 
     const cached = await cache.get(cacheKey);
-    if (cached) {
-      return res.json({ success: true, data: cached });
-    }
+    if (cached) return sendSuccess(res, cached);
 
     // Get homepage block settings to see which posts are selected
     const settingsResult = await query(
@@ -174,22 +164,7 @@ router.get('/homepage', async (req, res) => {
           [postIds]
         );
 
-        selectedPosts = postsResult.rows.map((row) => ({
-          id: row.id,
-          platform: row.platform,
-          externalId: row.external_id,
-          content: row.content,
-          mediaUrl: row.media_url,
-          thumbnailUrl: row.thumbnail_url,
-          authorName: row.author_name,
-          authorAvatar: row.author_avatar,
-          likes: row.likes,
-          comments: row.comments,
-          shares: row.shares,
-          publishedAt: row.published_at,
-          fetchedAt: row.fetched_at,
-          rawData: row.raw_data,
-        }));
+        selectedPosts = mapRows<SocialPost>(postsResult.rows);
       }
     }
 
@@ -201,33 +176,14 @@ router.get('/homepage', async (req, res) => {
          LIMIT 6`
       );
 
-      selectedPosts = latestResult.rows.map((row) => ({
-        id: row.id,
-        platform: row.platform,
-        externalId: row.external_id,
-        content: row.content,
-        mediaUrl: row.media_url,
-        thumbnailUrl: row.thumbnail_url,
-        authorName: row.author_name,
-        authorAvatar: row.author_avatar,
-        likes: row.likes,
-        comments: row.comments,
-        shares: row.shares,
-        publishedAt: row.published_at,
-        fetchedAt: row.fetched_at,
-        rawData: row.raw_data,
-      }));
+      selectedPosts = mapRows<SocialPost>(latestResult.rows);
     }
 
     await cache.set(cacheKey, selectedPosts, 300);
 
-    res.json({ success: true, data: selectedPosts });
+    sendSuccess(res, selectedPosts);
   } catch (error) {
-    logger.error('Error fetching homepage social posts', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch posts' },
-    });
+    handleRouteError(res, error, 'fetch homepage social posts');
   }
 });
 
@@ -250,13 +206,9 @@ router.put('/homepage', authenticate(), requireAdmin, async (req: AuthenticatedR
 
     await cache.del('social:homepage');
 
-    res.json({ success: true, data: { message: 'Homepage posts updated' } });
+    sendSuccess(res, { message: 'Homepage posts updated' });
   } catch (error) {
-    logger.error('Error updating homepage posts', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update homepage posts' },
-    });
+    handleRouteError(res, error, 'update homepage posts');
   }
 });
 
@@ -279,13 +231,9 @@ router.delete('/posts/:id', authenticate(), requireAdmin, async (req: Authentica
 
     await cache.delPattern('social:*');
 
-    res.json({ success: true, data: { message: 'Post deleted' } });
+    sendSuccess(res, { message: 'Post deleted' });
   } catch (error) {
-    logger.error('Error deleting social post', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete post' },
-    });
+    handleRouteError(res, error, 'delete social post');
   }
 });
 

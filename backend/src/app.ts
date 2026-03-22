@@ -7,7 +7,9 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { config } from './config';
 import routes from './routes';
+import sitemapRoutes from './routes/sitemap';
 import { errorHandler, notFoundHandler } from './middleware/error';
+import { csrfToken, csrfProtection } from './middleware/csrf';
 import { logger } from './utils/logger';
 
 export function createApp(): Express {
@@ -51,7 +53,7 @@ export function createApp(): Express {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
     })
   );
 
@@ -60,6 +62,9 @@ export function createApp(): Express {
 
   // Cookie parser
   app.use(cookieParser());
+
+  // CSRF token generation (sets cookie on every request)
+  app.use(csrfToken);
 
   // Rate limiting
   const limiter = rateLimit({
@@ -75,8 +80,8 @@ export function createApp(): Express {
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-      // Skip rate limiting for health checks
-      return req.path.startsWith('/api/v1/health');
+      // Skip rate limiting in development and for health checks
+      return config.isDevelopment || req.path.startsWith('/api/v1/health');
     },
   });
 
@@ -84,9 +89,12 @@ export function createApp(): Express {
 
   // Body parsers
   // Stripe webhook needs raw body
-  app.use('/api/v1/campaigns/webhook', raw({ type: 'application/json' }));
+  app.use('/api/v1/payments/webhook', raw({ type: 'application/json' }));
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
+
+  // CSRF protection (validates token on state-changing requests)
+  app.use(csrfProtection);
 
   // Request logging
   app.use((req, res, next) => {
@@ -104,6 +112,10 @@ export function createApp(): Express {
 
   // Static files (uploads)
   app.use('/uploads', express.static(path.join(process.cwd(), config.upload.dir)));
+
+  // Sitemap route (mounted before API prefix so it's accessible at /sitemap.xml and /api/v1/sitemap.xml)
+  app.use(sitemapRoutes);
+  app.use(`/api/${config.apiVersion}`, sitemapRoutes);
 
   // API routes
   app.use(`/api/${config.apiVersion}`, routes);

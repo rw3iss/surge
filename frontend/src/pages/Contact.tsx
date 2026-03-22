@@ -1,5 +1,5 @@
 import { Component, createSignal, Show } from 'solid-js';
-import { Title } from '@solidjs/meta';
+import { Title, Meta, Link } from '@solidjs/meta';
 import { submitContactMessage } from '../services/api';
 import './Contact.scss';
 
@@ -47,7 +47,16 @@ const ContactPage: Component = () => {
 
   return (
     <div class="contact">
-      <Title>Contact Us - Surge Media</Title>
+      <Title>Contact | Surge Media</Title>
+      <Meta name="description" content="Get in touch with Surge Media" />
+      <Link rel="canonical" href={`${window.location.origin}/contact`} />
+      <Meta property="og:title" content="Contact | Surge Media" />
+      <Meta property="og:description" content="Get in touch with Surge Media" />
+      <Meta property="og:type" content="website" />
+      <Meta property="og:url" content={`${window.location.origin}/contact`} />
+      <Meta name="twitter:card" content="summary_large_image" />
+      <Meta name="twitter:title" content="Contact | Surge Media" />
+      <Meta name="twitter:description" content="Get in touch with Surge Media" />
 
       <div class="contact__container">
         <div class="contact__header">

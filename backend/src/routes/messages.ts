@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { query } from '../db';
 import { authenticate, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
-import { NotFoundError } from '../middleware/error';
 import { sendEmail } from '../services/email';
-import { logger } from '../utils/logger';
 import { config } from '../config';
-import type { ContactMessage, MessageStatus } from '@surge/shared';
+import { logger } from '../utils/logger';
+import { sendSuccess, sendCreated, handleRouteError } from '../utils/response';
+import { sanitize } from '../utils/sanitize';
+import * as messagesRepo from '../repositories/messages.repo';
 
 const router = Router();
 
@@ -21,37 +21,20 @@ const updateStatusSchema = z.object({
   status: z.enum(['unread', 'read', 'replied', 'archived', 'spam']),
 });
 
-function toMessage(row: Record<string, unknown>): ContactMessage {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    email: row.email as string,
-    subject: row.subject as string | undefined,
-    message: row.message as string,
-    userId: row.user_id as string | undefined,
-    ipAddress: row.ip_address as string,
-    userAgent: row.user_agent as string | undefined,
-    status: row.status as MessageStatus,
-    repliedAt: row.replied_at ? new Date(row.replied_at as string) : undefined,
-    repliedBy: row.replied_by as string | undefined,
-    createdAt: new Date(row.created_at as string),
-  };
-}
-
 // Submit contact message (public)
 router.post('/', authenticate(false), async (req: AuthenticatedRequest, res) => {
   try {
     const data = messageSchema.parse(req.body);
 
+    // Sanitize user-submitted content
+    data.name = sanitize(data.name);
+    data.message = sanitize(data.message);
+    if (data.subject) data.subject = sanitize(data.subject);
+
     const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     const userAgent = req.headers['user-agent'];
 
-    const result = await query(
-      `INSERT INTO contact_messages (name, email, subject, message, user_id, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [data.name, data.email, data.subject, data.message, req.userId || null, ipAddress, userAgent]
-    );
+    await messagesRepo.createMessage(data, req.userId || null, ipAddress!, userAgent);
 
     // Send email notification to admin
     try {
@@ -72,16 +55,9 @@ router.post('/', authenticate(false), async (req: AuthenticatedRequest, res) => 
       logger.warn('Failed to send email notification', { error: emailError });
     }
 
-    res.status(201).json({
-      success: true,
-      data: { message: 'Message sent successfully' },
-    });
+    sendCreated(res, { message: 'Message sent successfully' });
   } catch (error) {
-    logger.error('Error submitting contact message', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to send message' },
-    });
+    handleRouteError(res, error, 'submit contact message');
   }
 });
 
@@ -89,169 +65,52 @@ router.post('/', authenticate(false), async (req: AuthenticatedRequest, res) => 
 router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { status, search, page = 1, limit = 50 } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
+    const pagination = { page: Number(page), limit: Number(limit) };
 
-    let whereClause = 'WHERE 1=1';
-    const params: unknown[] = [];
-
-    if (status) {
-      params.push(status);
-      whereClause += ` AND status = $${params.length}`;
-    }
-
-    if (search) {
-      params.push(`%${search}%`);
-      whereClause += ` AND (name ILIKE $${params.length} OR email ILIKE $${params.length} OR subject ILIKE $${params.length} OR message ILIKE $${params.length})`;
-    }
-
-    const countResult = await query(`SELECT COUNT(*) FROM contact_messages ${whereClause}`, params);
-    const total = parseInt(countResult.rows[0].count, 10);
-
-    params.push(Number(limit), offset);
-    const result = await query(
-      `SELECT * FROM contact_messages ${whereClause}
-       ORDER BY created_at DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
+    const result = await messagesRepo.findMessages(
+      { status: status as string, search: search as string },
+      pagination
     );
 
-    const messages = result.rows.map(toMessage);
-
-    // Get unread count
-    const unreadResult = await query(
-      `SELECT COUNT(*) FROM contact_messages WHERE status = 'unread'`
-    );
-    const unreadCount = parseInt(unreadResult.rows[0].count, 10);
-
-    res.json({
-      success: true,
-      data: messages,
-      meta: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-        unreadCount,
-      },
+    sendSuccess(res, result.data, {
+      page: pagination.page,
+      limit: pagination.limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / pagination.limit),
     });
   } catch (error) {
-    logger.error('Error fetching messages', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch messages' },
-    });
+    handleRouteError(res, error, 'fetch messages');
   }
 });
 
 // Get message by ID (admin)
 router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
-
-    const result = await query('SELECT * FROM contact_messages WHERE id = $1', [id]);
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Message');
-    }
-
-    // Mark as read if unread
-    if (result.rows[0].status === 'unread') {
-      await query(
-        `UPDATE contact_messages SET status = 'read' WHERE id = $1`,
-        [id]
-      );
-      result.rows[0].status = 'read';
-    }
-
-    const message = toMessage(result.rows[0]);
-
-    res.json({ success: true, data: message });
+    const message = await messagesRepo.findMessageById(req.params.id);
+    sendSuccess(res, message);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error fetching message', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch message' },
-    });
+    handleRouteError(res, error, 'fetch message');
   }
 });
 
 // Update message status (admin)
 router.put('/:id/status', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
     const { status } = updateStatusSchema.parse(req.body);
-
-    const updates: string[] = [`status = $1`];
-    const values: unknown[] = [status];
-
-    if (status === 'replied') {
-      values.push(new Date().toISOString());
-      updates.push(`replied_at = $${values.length}`);
-      values.push(req.userId);
-      updates.push(`replied_by = $${values.length}`);
-    }
-
-    values.push(id);
-    const result = await query(
-      `UPDATE contact_messages SET ${updates.join(', ')} WHERE id = $${values.length} RETURNING *`,
-      values
-    );
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Message');
-    }
-
-    const message = toMessage(result.rows[0]);
-
-    res.json({ success: true, data: message });
+    const message = await messagesRepo.updateMessageStatus(req.params.id, status, req.userId);
+    sendSuccess(res, message);
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error updating message status', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update message' },
-    });
+    handleRouteError(res, error, 'update message status');
   }
 });
 
 // Delete message (admin)
 router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { id } = req.params;
-
-    const result = await query(
-      'DELETE FROM contact_messages WHERE id = $1 RETURNING id',
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Message');
-    }
-
-    res.json({ success: true, data: { message: 'Message deleted' } });
+    await messagesRepo.deleteMessage(req.params.id);
+    sendSuccess(res, { message: 'Message deleted' });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error deleting message', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete message' },
-    });
+    handleRouteError(res, error, 'delete message');
   }
 });
 
@@ -263,18 +122,11 @@ router.post('/bulk-status', authenticate(), requireAdmin, async (req: Authentica
       status: z.enum(['unread', 'read', 'replied', 'archived', 'spam']),
     }).parse(req.body);
 
-    await query(
-      `UPDATE contact_messages SET status = $1 WHERE id = ANY($2)`,
-      [status, messageIds]
-    );
+    await messagesRepo.bulkUpdateStatus(messageIds, status);
 
-    res.json({ success: true, data: { message: `${messageIds.length} messages updated` } });
+    sendSuccess(res, { message: `${messageIds.length} messages updated` });
   } catch (error) {
-    logger.error('Error bulk updating messages', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update messages' },
-    });
+    handleRouteError(res, error, 'bulk update messages');
   }
 });
 
@@ -285,18 +137,11 @@ router.post('/bulk-delete', authenticate(), requireAdmin, async (req: Authentica
       messageIds: z.array(z.string().uuid()),
     }).parse(req.body);
 
-    await query(
-      `DELETE FROM contact_messages WHERE id = ANY($1)`,
-      [messageIds]
-    );
+    await messagesRepo.bulkDelete(messageIds);
 
-    res.json({ success: true, data: { message: `${messageIds.length} messages deleted` } });
+    sendSuccess(res, { message: `${messageIds.length} messages deleted` });
   } catch (error) {
-    logger.error('Error bulk deleting messages', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete messages' },
-    });
+    handleRouteError(res, error, 'bulk delete messages');
   }
 });
 

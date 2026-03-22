@@ -1,12 +1,15 @@
 import { Component, createResource, For, Show, Suspense } from 'solid-js';
 import { A } from '@solidjs/router';
-import { Title, Meta } from '@solidjs/meta';
+import { Title, Meta, Link } from '@solidjs/meta';
 import { fetchPage, fetchHomepageSocialPosts, fetchCampaigns } from '../services/api';
 import { BlockRenderer } from '../components/BlockRenderer';
+import SocialEmbed from '../components/SocialEmbed';
 import type { Page, SocialPost, Campaign } from '@surge/shared';
+import { JsonLd } from '../components/JsonLd';
 import './Home.scss';
 
 const Home: Component = () => {
+  const canonicalUrl = window.location.origin;
   const [page] = createResource(async () => {
     const response = await fetchPage('home');
     return response.success ? response.data as Page : null;
@@ -26,6 +29,21 @@ const Home: Component = () => {
     <div class="home">
       <Title>Surge Media - Independent Journalism</Title>
       <Meta name="description" content="Surge Media - Independent journalism for the people" />
+      <Link rel="canonical" href={canonicalUrl} />
+      <Meta property="og:title" content="Surge Media" />
+      <Meta property="og:description" content="Independent journalism for the people" />
+      <Meta property="og:type" content="website" />
+      <Meta property="og:url" content={canonicalUrl} />
+      <Meta name="twitter:card" content="summary_large_image" />
+      <Meta name="twitter:title" content="Surge Media" />
+      <Meta name="twitter:description" content="Independent journalism for the people" />
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "NewsMediaOrganization",
+        "name": "Surge Media",
+        "url": "https://surgemedia.us",
+        "description": "Philadelphia-based news organization"
+      }} />
 
       <Show when={page()} fallback={<div class="home__loading">Loading...</div>}>
         {(pageData) => (
@@ -41,7 +59,7 @@ const Home: Component = () => {
         )}
       </Show>
 
-      {/* Social Media Section */}
+      {/* Social Media Section - Embedded Content */}
       <Show when={socialPosts()?.length}>
         <section class="home__social">
           <div class="container">
@@ -49,25 +67,14 @@ const Home: Component = () => {
             <div class="home__social-grid">
               <For each={socialPosts()}>
                 {(post) => (
-                  <a
-                    href={post.mediaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class={`home__social-card home__social-card--${post.platform}`}
-                  >
-                    <Show when={post.thumbnailUrl}>
-                      <img
-                        src={post.thumbnailUrl}
-                        alt=""
-                        class="home__social-thumbnail"
-                        loading="lazy"
-                      />
-                    </Show>
-                    <div class="home__social-content">
-                      <span class="home__social-platform">{post.platform}</span>
-                      <p class="home__social-text">{post.content?.substring(0, 100)}...</p>
-                    </div>
-                  </a>
+                  <SocialEmbed
+                    platform={post.platform}
+                    externalId={post.externalId}
+                    mediaUrl={post.mediaUrl}
+                    content={post.content}
+                    thumbnailUrl={post.thumbnailUrl}
+                    authorName={post.authorName}
+                  />
                 )}
               </For>
             </div>

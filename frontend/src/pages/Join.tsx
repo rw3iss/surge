@@ -121,15 +121,18 @@ const Join: Component = () => {
               <div class="join__error">{error()}</div>
             </Show>
 
-            <form class="join__form" onSubmit={handleRegister}>
+            <form class="join__form" onSubmit={handleRegister} action="/join" method="post">
               <div class="join__field">
-                <label for="name" class="join__label">Full Name</label>
+                <label for="register-name" class="join__label">Full Name</label>
                 <input
                   type="text"
-                  id="name"
+                  id="register-name"
+                  name="name"
+                  autocomplete="name"
                   class="join__input"
                   value={name()}
                   onInput={(e) => setName(e.currentTarget.value)}
+                  onChange={(e) => setName(e.currentTarget.value)}
                   required
                   disabled={isLoading()}
                   placeholder="Your name"
@@ -137,13 +140,16 @@ const Join: Component = () => {
               </div>
 
               <div class="join__field">
-                <label for="email" class="join__label">Email Address</label>
+                <label for="register-email" class="join__label">Email Address</label>
                 <input
                   type="email"
-                  id="email"
+                  id="register-email"
+                  name="email"
+                  autocomplete="email"
                   class="join__input"
                   value={email()}
                   onInput={(e) => setEmail(e.currentTarget.value)}
+                  onChange={(e) => setEmail(e.currentTarget.value)}
                   required
                   disabled={isLoading()}
                   placeholder="you@example.com"
@@ -151,13 +157,16 @@ const Join: Component = () => {
               </div>
 
               <div class="join__field">
-                <label for="password" class="join__label">Password</label>
+                <label for="register-password" class="join__label">Password</label>
                 <input
                   type="password"
-                  id="password"
+                  id="register-password"
+                  name="password"
+                  autocomplete="new-password"
                   class="join__input"
                   value={password()}
                   onInput={(e) => setPassword(e.currentTarget.value)}
+                  onChange={(e) => setPassword(e.currentTarget.value)}
                   required
                   disabled={isLoading()}
                   placeholder="At least 8 characters"
@@ -166,13 +175,16 @@ const Join: Component = () => {
               </div>
 
               <div class="join__field">
-                <label for="confirm-password" class="join__label">Confirm Password</label>
+                <label for="register-confirm-password" class="join__label">Confirm Password</label>
                 <input
                   type="password"
-                  id="confirm-password"
+                  id="register-confirm-password"
+                  name="confirm-password"
+                  autocomplete="new-password"
                   class="join__input"
                   value={confirmPassword()}
                   onInput={(e) => setConfirmPassword(e.currentTarget.value)}
+                  onChange={(e) => setConfirmPassword(e.currentTarget.value)}
                   required
                   disabled={isLoading()}
                   placeholder="Re-enter your password"

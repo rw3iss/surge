@@ -6,9 +6,8 @@ let redis: Redis | null = null;
 
 export function getRedis(): Redis {
   if (!redis) {
-    redis = new Redis(config.redis.url, {
+    redis = new Redis(config.redis.url as string, {
       maxRetriesPerRequest: 3,
-      retryDelayOnFailover: 100,
       lazyConnect: true,
     });
 

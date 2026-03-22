@@ -1,0 +1,2 @@
+ALTER TABLE media ADD COLUMN IF NOT EXISTS title VARCHAR(255);
+CREATE INDEX IF NOT EXISTS idx_media_title ON media(title);

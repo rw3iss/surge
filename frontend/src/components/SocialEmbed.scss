@@ -1,0 +1,163 @@
+.social-embed {
+  position: relative;
+  background: $background;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-md;
+  transition: box-shadow $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-lg;
+  }
+
+  // Platform accent borders
+  &--youtube { border-top: 3px solid #ff0000; }
+  &--instagram { border-top: 3px solid #e4405f; }
+  &--facebook { border-top: 3px solid #1877f2; }
+  &--twitter { border-top: 3px solid #1da1f2; }
+  &--tiktok { border-top: 3px solid #000000; }
+  &--patreon { border-top: 3px solid #f96854; }
+
+  // Platform badge overlay
+  &__badge {
+    position: absolute;
+    top: $spacing-sm;
+    right: $spacing-sm;
+    z-index: 2;
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-full;
+    color: white;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+    pointer-events: none;
+  }
+
+  // Content area
+  &__content {
+    position: relative;
+    min-height: 120px;
+
+    // Loading placeholder via pseudo-element
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(
+        110deg,
+        $background-dark 8%,
+        lighten($background-dark, 5%) 18%,
+        $background-dark 33%
+      );
+      background-size: 200% 100%;
+      animation: social-embed-shimmer 1.5s linear infinite;
+    }
+  }
+
+  // Iframes sit above the shimmer placeholder
+  &__iframe-wrapper,
+  &__iframe,
+  &__fallback {
+    position: relative;
+    z-index: 1;
+  }
+
+  // 16:9 wrapper for YouTube
+  &__iframe-wrapper--16x9 {
+    iframe {
+      display: block;
+      width: 100%;
+      border: 0;
+    }
+  }
+
+  // Generic iframe styling
+  &__iframe {
+    display: block;
+    width: 100%;
+    border: 0;
+  }
+
+  // Fallback card (for Patreon and unsupported platforms)
+  &__fallback {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: $text-color;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $background-dark;
+    }
+  }
+
+  &__fallback-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  &__fallback-body {
+    padding: $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__fallback-author {
+    font-weight: 600;
+    font-size: $font-size-sm;
+  }
+
+  &__fallback-text {
+    font-size: $font-size-sm;
+    color: $text-light;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__fallback-link {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $primary-color;
+    margin-top: $spacing-xs;
+  }
+}
+
+@keyframes social-embed-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+// Grid for social_feed block in BlockRenderer
+.social-feed-block {
+  &__title {
+    margin-bottom: $spacing-lg;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+
+    @include sm {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include lg {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    padding: $spacing-xl;
+    color: $text-light;
+  }
+}

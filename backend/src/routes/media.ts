@@ -8,9 +8,11 @@ import { nanoid } from 'nanoid';
 import { query } from '../db';
 import { config } from '../config';
 import { authenticate, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
-import { NotFoundError, ValidationError } from '../middleware/error';
+import { ValidationError } from '../middleware/error';
 import { logger } from '../utils/logger';
 import { getStorageProvider } from '../services/storage';
+import { mapRow, mapRows } from '../utils/mapRow';
+import { sendSuccess, sendCreated, sendPaginated, handleRouteError } from '../utils/response';
 import type { Media } from '@surge/shared';
 
 const router = Router();
@@ -50,22 +52,6 @@ const upload = multer({
     }
   },
 });
-
-function toMedia(row: Record<string, unknown>): Media {
-  return {
-    id: row.id as string,
-    filename: row.filename as string,
-    originalName: row.original_name as string,
-    mimeType: row.mime_type as string,
-    size: row.size as number,
-    url: row.url as string,
-    thumbnailUrl: row.thumbnail_url as string | undefined,
-    alt: row.alt as string | undefined,
-    caption: row.caption as string | undefined,
-    uploadedBy: row.uploaded_by as string,
-    createdAt: new Date(row.created_at as string),
-  };
-}
 
 async function createThumbnail(
   filePath: string,
@@ -139,7 +125,7 @@ router.post('/', authenticate(), requireAdmin, upload.single('file'), async (req
       ]
     );
 
-    const media = toMedia(result.rows[0]);
+    const media = mapRow<Media>(result.rows[0]);
 
     // Cleanup temp files if using non-local storage
     if (config.upload.storageProvider !== 'local') {
@@ -147,23 +133,13 @@ router.post('/', authenticate(), requireAdmin, upload.single('file'), async (req
       if (tempThumbPath) await cleanupTemp(tempThumbPath);
     }
 
-    res.status(201).json({ success: true, data: media });
+    sendCreated(res, media);
   } catch (error) {
     // Cleanup temp files on error
     if (tempFilePath) await cleanupTemp(tempFilePath);
     if (tempThumbPath) await cleanupTemp(tempThumbPath);
 
-    logger.error('Error uploading file', { error });
-    if (error instanceof ValidationError) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: error.message },
-      });
-    }
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to upload file' },
-    });
+    handleRouteError(res, error, 'upload file');
   }
 });
 
@@ -219,7 +195,7 @@ router.post('/block-upload', authenticate(), requireAdmin, upload.single('file')
       ]
     );
 
-    const media = toMedia(result.rows[0]);
+    const media = mapRow<Media>(result.rows[0]);
 
     // Cleanup temp files if using non-local storage
     if (config.upload.storageProvider !== 'local') {
@@ -227,29 +203,16 @@ router.post('/block-upload', authenticate(), requireAdmin, upload.single('file')
       if (tempThumbPath) await cleanupTemp(tempThumbPath);
     }
 
-    res.status(201).json({
-      success: true,
-      data: {
-        ...media,
-        postId: postId || null,
-        blockId: blockId || null,
-      },
+    sendCreated(res, {
+      ...media,
+      postId: postId || null,
+      blockId: blockId || null,
     });
   } catch (error) {
     if (tempFilePath) await cleanupTemp(tempFilePath);
     if (tempThumbPath) await cleanupTemp(tempThumbPath);
 
-    logger.error('Error uploading block file', { error });
-    if (error instanceof ValidationError) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: error.message },
-      });
-    }
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to upload file' },
-    });
+    handleRouteError(res, error, 'upload block file');
   }
 });
 
@@ -296,7 +259,7 @@ router.post('/bulk', authenticate(), requireAdmin, upload.array('files', 10), as
         [file.filename, file.originalname, file.mimetype, file.size, url, thumbnailUrl, req.userId]
       );
 
-      mediaItems.push(toMedia(result.rows[0]));
+      mediaItems.push(mapRow<Media>(result.rows[0]));
     }
 
     // Cleanup temp files if using non-local storage
@@ -304,37 +267,45 @@ router.post('/bulk', authenticate(), requireAdmin, upload.array('files', 10), as
       for (const f of tempFiles) await cleanupTemp(f);
     }
 
-    res.status(201).json({ success: true, data: mediaItems });
+    sendCreated(res, mediaItems);
   } catch (error) {
     if (config.upload.storageProvider !== 'local') {
       for (const f of tempFiles) await cleanupTemp(f);
     }
-    logger.error('Error uploading files', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to upload files' },
-    });
+    handleRouteError(res, error, 'upload files');
   }
 });
 
 // Get all media (admin)
 router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { type, search, page = 1, limit = 50 } = req.query;
+    const { type, search, sort, page = 1, limit = 50 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let whereClause = 'WHERE 1=1';
     const params: unknown[] = [];
 
     if (type) {
-      params.push(`${type}/%`);
-      whereClause += ` AND mime_type LIKE $${params.length}`;
+      if (type === 'document') {
+        whereClause += ` AND mime_type NOT LIKE 'image/%' AND mime_type NOT LIKE 'video/%' AND mime_type NOT LIKE 'audio/%'`;
+      } else {
+        params.push(`${type}/%`);
+        whereClause += ` AND mime_type LIKE $${params.length}`;
+      }
     }
 
     if (search) {
       params.push(`%${search}%`);
-      whereClause += ` AND (original_name ILIKE $${params.length} OR alt ILIKE $${params.length} OR caption ILIKE $${params.length})`;
+      whereClause += ` AND (original_name ILIKE $${params.length} OR COALESCE(title, '') ILIKE $${params.length} OR COALESCE(caption, '') ILIKE $${params.length})`;
     }
+
+    let orderClause = 'ORDER BY created_at DESC';
+    if (sort === 'title_asc') orderClause = 'ORDER BY COALESCE(title, original_name) ASC';
+    else if (sort === 'title_desc') orderClause = 'ORDER BY COALESCE(title, original_name) DESC';
+    else if (sort === 'date_asc') orderClause = 'ORDER BY created_at ASC';
+    else if (sort === 'date_desc') orderClause = 'ORDER BY created_at DESC';
+    else if (sort === 'size_desc') orderClause = 'ORDER BY size DESC';
+    else if (sort === 'size_asc') orderClause = 'ORDER BY size ASC';
 
     const countResult = await query(`SELECT COUNT(*) FROM media ${whereClause}`, params);
     const total = parseInt(countResult.rows[0].count, 10);
@@ -342,29 +313,16 @@ router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
     params.push(Number(limit), offset);
     const result = await query(
       `SELECT * FROM media ${whereClause}
-       ORDER BY created_at DESC
+       ${orderClause}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
 
-    const media = result.rows.map(toMedia);
+    const media = mapRows<Media>(result.rows);
 
-    res.json({
-      success: true,
-      data: media,
-      meta: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-    });
+    sendPaginated(res, media, Number(page), Number(limit), total);
   } catch (error) {
-    logger.error('Error fetching media', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch media' },
-    });
+    handleRouteError(res, error, 'fetch media');
   }
 });
 
@@ -376,24 +334,17 @@ router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedReques
     const result = await query('SELECT * FROM media WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
-      throw new NotFoundError('Media');
-    }
-
-    const media = toMedia(result.rows[0]);
-
-    res.json({ success: true, data: media });
-  } catch (error) {
-    if (error instanceof NotFoundError) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
+        error: { code: 'NOT_FOUND', message: 'Media not found' },
       });
     }
-    logger.error('Error fetching media', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch media' },
-    });
+
+    const media = mapRow<Media>(result.rows[0]);
+
+    sendSuccess(res, media);
+  } catch (error) {
+    handleRouteError(res, error, 'fetch media');
   }
 });
 
@@ -401,11 +352,15 @@ router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedReques
 router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    const { alt, caption } = req.body;
+    const { title, alt, caption } = req.body;
 
     const updates: string[] = [];
     const values: unknown[] = [];
 
+    if (title !== undefined) {
+      values.push(title || null);
+      updates.push(`title = $${values.length}`);
+    }
     if (alt !== undefined) {
       values.push(alt);
       updates.push(`alt = $${values.length}`);
@@ -429,24 +384,17 @@ router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedReques
     );
 
     if (result.rows.length === 0) {
-      throw new NotFoundError('Media');
-    }
-
-    const media = toMedia(result.rows[0]);
-
-    res.json({ success: true, data: media });
-  } catch (error) {
-    if (error instanceof NotFoundError) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
+        error: { code: 'NOT_FOUND', message: 'Media not found' },
       });
     }
-    logger.error('Error updating media', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update media' },
-    });
+
+    const media = mapRow<Media>(result.rows[0]);
+
+    sendSuccess(res, media);
+  } catch (error) {
+    handleRouteError(res, error, 'update media');
   }
 });
 
@@ -461,7 +409,10 @@ router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedReq
     );
 
     if (result.rows.length === 0) {
-      throw new NotFoundError('Media');
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Media not found' },
+      });
     }
 
     const { filename, thumbnail_url } = result.rows[0];
@@ -472,19 +423,9 @@ router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedReq
       await storageProvider.deleteThumbnail(filename);
     }
 
-    res.json({ success: true, data: { message: 'Media deleted' } });
+    sendSuccess(res, { message: 'Media deleted' });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: error.message },
-      });
-    }
-    logger.error('Error deleting media', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete media' },
-    });
+    handleRouteError(res, error, 'delete media');
   }
 });
 

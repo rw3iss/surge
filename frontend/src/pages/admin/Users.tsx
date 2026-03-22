@@ -155,6 +155,7 @@ const AdminUsers: Component = () => {
                 <th>Name</th>
                 <th>Role</th>
                 <th>Provider</th>
+                <th>Subscription</th>
                 <th>Status</th>
                 <th>Joined</th>
               </tr>
@@ -169,6 +170,13 @@ const AdminUsers: Component = () => {
                       <td>{user.displayName || '—'}</td>
                       <td><span class={`badge ${roleBadge(user.role)}`}>{user.role}</span></td>
                       <td>{user.authProvider}</td>
+                      <td>
+                        {user.subscription
+                          ? <span class={`badge ${user.subscription.status === 'active' ? 'badge--success' : 'badge--muted'}`}>
+                              {user.subscription.planName}
+                            </span>
+                          : '—'}
+                      </td>
                       <td><span class={`badge ${status.class}`}>{status.label}</span></td>
                       <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                     </tr>

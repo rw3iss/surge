@@ -50,6 +50,20 @@
     margin-bottom: $spacing-lg;
   }
 
+  &__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: $border-radius-lg;
+  }
+
+  &__caption {
+    margin-top: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-light;
+    text-align: center;
+  }
+
   &__images {
     display: grid;
     gap: $spacing-md;

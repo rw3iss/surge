@@ -1,6 +1,6 @@
 import { Component, createResource, For, Show } from 'solid-js';
 import { A, useSearchParams } from '@solidjs/router';
-import { Title } from '@solidjs/meta';
+import { Title, Meta, Link } from '@solidjs/meta';
 import { fetchPosts } from '../services/api';
 import type { Post } from '@surge/shared';
 
@@ -21,7 +21,16 @@ const PostsPage: Component = () => {
 
   return (
     <div class="posts-page container">
-      <Title>Posts - Surge Media</Title>
+      <Title>Blog | Surge Media</Title>
+      <Meta name="description" content="Latest posts and articles from Surge Media" />
+      <Link rel="canonical" href={`${window.location.origin}/posts`} />
+      <Meta property="og:title" content="Blog | Surge Media" />
+      <Meta property="og:description" content="Latest posts and articles from Surge Media" />
+      <Meta property="og:type" content="website" />
+      <Meta property="og:url" content={`${window.location.origin}/posts`} />
+      <Meta name="twitter:card" content="summary_large_image" />
+      <Meta name="twitter:title" content="Blog | Surge Media" />
+      <Meta name="twitter:description" content="Latest posts and articles from Surge Media" />
       <h1>Latest Posts</h1>
 
       <Show when={posts()?.data} fallback={<div>Loading...</div>}>

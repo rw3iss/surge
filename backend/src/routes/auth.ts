@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import { config } from '../config';
 import {
   getPatreonAuthUrl,
@@ -9,11 +10,27 @@ import {
   invalidateSession,
   invalidateAllUserSessions,
   generateState,
+  syncPatreonMembership,
 } from '../services/auth';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
 const router = Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many login attempts. Please try again in 15 minutes.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || 'unknown',
+});
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -83,7 +100,7 @@ router.get('/patreon/callback', async (req, res: Response) => {
 });
 
 // Email/password login
-router.post('/login', async (req: AuthenticatedRequest, res) => {
+router.post('/login', loginLimiter, async (req: AuthenticatedRequest, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
@@ -226,6 +243,34 @@ router.get('/me', authenticate(), (req: AuthenticatedRequest, res) => {
     success: true,
     data: { user: req.user },
   });
+});
+
+// Sync Patreon membership data
+router.post('/patreon/sync', authenticate(), async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user || !req.user.patreonId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'No Patreon account linked' },
+      });
+    }
+
+    const membership = await syncPatreonMembership(req.user.id);
+
+    res.json({
+      success: true,
+      data: { membership },
+    });
+  } catch (error) {
+    logger.error('Patreon sync error', { error });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to sync Patreon membership',
+      },
+    });
+  }
 });
 
 export default router;

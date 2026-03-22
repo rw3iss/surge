@@ -32,7 +32,7 @@ export async function fetchYouTubeVideos(maxResults = 10): Promise<FetchedPost[]
       throw new Error(`YouTube API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     return data.items.map((item: Record<string, unknown>) => {
       const snippet = item.snippet as Record<string, unknown>;
@@ -73,7 +73,7 @@ export async function fetchTwitterPosts(maxResults = 10): Promise<FetchedPost[]>
       throw new Error(`Twitter API error: ${userResponse.statusText}`);
     }
 
-    const userData = await userResponse.json();
+    const userData = await userResponse.json() as any;
     const userId = userData.data.id;
 
     // Get tweets
@@ -88,7 +88,7 @@ export async function fetchTwitterPosts(maxResults = 10): Promise<FetchedPost[]>
       throw new Error(`Twitter API error: ${tweetsResponse.statusText}`);
     }
 
-    const tweetsData = await tweetsResponse.json();
+    const tweetsData = await tweetsResponse.json() as any;
     const mediaMap = new Map<string, string>();
 
     if (tweetsData.includes?.media) {
@@ -135,7 +135,7 @@ export async function fetchInstagramPosts(maxResults = 10): Promise<FetchedPost[
       throw new Error(`Instagram API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     return (data.data || []).map((post: Record<string, unknown>) => ({
       id: post.id as string,
@@ -168,7 +168,7 @@ export async function fetchFacebookPosts(maxResults = 10): Promise<FetchedPost[]
       throw new Error(`Facebook API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     return (data.data || []).map((post: Record<string, unknown>) => ({
       id: post.id as string,

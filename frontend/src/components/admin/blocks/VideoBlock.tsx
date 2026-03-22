@@ -1,5 +1,6 @@
 import { Component, Show, createSignal } from 'solid-js';
 import MediaPickerModal, { MediaItem } from '../MediaPickerModal';
+import VideoPlayer from '../../VideoPlayer';
 
 interface VideoBlockProps {
   data: Record<string, any>;
@@ -59,9 +60,9 @@ const VideoBlock: Component<VideoBlockProps> = (props) => {
       <Show when={props.mode === 'edit'} fallback={
         <div class="block-video__preview">
           <Show when={props.data.url} fallback={<span class="block-text__empty">No video selected. Click Edit to upload or link one.</span>}>
-            <video
+            <VideoPlayer
               src={props.data.url}
-              controls
+              controls={true}
               autoplay={props.data.autoplay}
               loop={props.data.loop}
               muted={props.data.autoplay}
@@ -76,7 +77,11 @@ const VideoBlock: Component<VideoBlockProps> = (props) => {
         <div class="form-group">
           <label>Video</label>
           <Show when={props.data.url}>
-            <video src={props.data.url} controls style={{ "max-width": "300px", "margin-bottom": "0.5rem", "border-radius": "4px" }} />
+            <VideoPlayer
+              src={props.data.url}
+              controls={true}
+              style={{ "max-width": "300px", "margin-bottom": "0.5rem", "border-radius": "4px" }}
+            />
           </Show>
           <Show when={uploading()}>
             <div class="block-upload-spinner">Uploading...</div>

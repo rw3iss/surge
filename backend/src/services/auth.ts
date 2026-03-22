@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { config } from '../config';
 import { query, transaction } from '../db';
+import { mapRow } from '../utils/mapRow';
 import { logger } from '../utils/logger';
 import type { User, AuthResponse, UserRole } from '@surge/shared';
 
@@ -35,13 +36,13 @@ export function generateTokens(userId: string, role: UserRole): { accessToken: s
   const accessToken = jwt.sign(
     { userId, role },
     config.jwt.secret,
-    { expiresIn: config.jwt.accessTokenExpires }
+    { expiresIn: config.jwt.accessTokenExpires as any }
   );
 
   const refreshToken = jwt.sign(
     { userId, role, type: 'refresh' },
     config.jwt.secret,
-    { expiresIn: config.jwt.refreshTokenExpires }
+    { expiresIn: config.jwt.refreshTokenExpires as any }
   );
 
   const decoded = jwt.decode(accessToken) as { exp: number };
@@ -104,7 +105,7 @@ export async function exchangePatreonCode(code: string): Promise<PatreonTokenRes
     throw new Error('Failed to exchange Patreon authorization code');
   }
 
-  return response.json();
+  return response.json() as Promise<PatreonTokenResponse>;
 }
 
 export async function getPatreonUser(accessToken: string): Promise<PatreonUser> {
@@ -126,7 +127,7 @@ export async function getPatreonUser(accessToken: string): Promise<PatreonUser> 
     throw new Error('Failed to fetch Patreon user');
   }
 
-  return response.json();
+  return response.json() as Promise<PatreonUser>;
 }
 
 export async function authenticateWithPatreon(
@@ -165,7 +166,7 @@ export async function authenticateWithPatreon(
 
   // Upsert user
   const userResult = await transaction(async (client) => {
-    const result = await client.query<User>(
+    const result = await client.query(
       `INSERT INTO users (email, display_name, avatar_url, role, auth_provider, patreon_id, patreon_tier, last_login_at)
        VALUES ($1, $2, $3, $4, 'patreon', $5, $6, NOW())
        ON CONFLICT (patreon_id) DO UPDATE SET
@@ -181,24 +182,17 @@ export async function authenticateWithPatreon(
       [email, displayName, avatarUrl, role, patreonId, patreonTier]
     );
 
-    return result.rows[0];
+    return result.rows[0] as Record<string, unknown>;
   });
 
-  const user: User = {
-    id: userResult.id,
-    email: userResult.email,
-    displayName: userResult.display_name,
-    avatarUrl: userResult.avatar_url,
-    role: userResult.role,
-    authProvider: 'patreon',
-    patreonId: userResult.patreon_id,
-    patreonTier: userResult.patreon_tier,
-    isActive: userResult.is_active,
-    isBanned: userResult.is_banned,
-    lastLoginAt: userResult.last_login_at,
-    createdAt: userResult.created_at,
-    updatedAt: userResult.updated_at,
-  };
+  const user = mapRow<User>(userResult);
+
+  // Store/update Patreon membership data
+  try {
+    await upsertPatreonMembership(user.id, patreonId, patreonUser);
+  } catch (err) {
+    logger.warn('Failed to upsert Patreon membership on login', { error: err });
+  }
 
   const { accessToken, refreshToken, expiresAt } = generateTokens(user.id, user.role);
 
@@ -249,21 +243,7 @@ export async function authenticateWithEmail(
   // Update last login
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [dbUser.id]);
 
-  const user: User = {
-    id: dbUser.id,
-    email: dbUser.email,
-    displayName: dbUser.display_name,
-    avatarUrl: dbUser.avatar_url,
-    role: dbUser.role,
-    authProvider: 'email',
-    patreonId: dbUser.patreon_id,
-    patreonTier: dbUser.patreon_tier,
-    isActive: dbUser.is_active,
-    isBanned: dbUser.is_banned,
-    lastLoginAt: new Date(),
-    createdAt: dbUser.created_at,
-    updatedAt: dbUser.updated_at,
-  };
+  const user = mapRow<User>(dbUser);
 
   const { accessToken, refreshToken, expiresAt } = generateTokens(user.id, user.role);
 
@@ -297,7 +277,7 @@ export async function refreshTokens(
       throw new Error('Session not found');
     }
 
-    const userResult = await query<User>(
+    const userResult = await query(
       `SELECT id, email, display_name, avatar_url, role, auth_provider,
               patreon_id, patreon_tier, is_active, is_banned,
               last_login_at, created_at, updated_at
@@ -305,7 +285,7 @@ export async function refreshTokens(
       [decoded.userId]
     );
 
-    const dbUser = userResult.rows[0];
+    const dbUser = userResult.rows[0] as Record<string, unknown> | undefined;
 
     if (!dbUser || !dbUser.is_active || dbUser.is_banned) {
       await invalidateSession(currentRefreshToken);
@@ -315,21 +295,7 @@ export async function refreshTokens(
     // Delete old session
     await invalidateSession(currentRefreshToken);
 
-    const user: User = {
-      id: dbUser.id,
-      email: dbUser.email,
-      displayName: dbUser.display_name,
-      avatarUrl: dbUser.avatar_url,
-      role: dbUser.role,
-      authProvider: dbUser.auth_provider,
-      patreonId: dbUser.patreon_id,
-      patreonTier: dbUser.patreon_tier,
-      isActive: dbUser.is_active,
-      isBanned: dbUser.is_banned,
-      lastLoginAt: dbUser.last_login_at,
-      createdAt: dbUser.created_at,
-      updatedAt: dbUser.updated_at,
-    };
+    const user = mapRow<User>(dbUser);
 
     const { accessToken, refreshToken, expiresAt } = generateTokens(user.id, user.role);
 
@@ -357,22 +323,185 @@ export async function createAdminUser(
     [email, passwordHash, displayName]
   );
 
-  const dbUser = result.rows[0];
-
-  return {
-    id: dbUser.id,
-    email: dbUser.email,
-    displayName: dbUser.display_name,
-    avatarUrl: dbUser.avatar_url,
-    role: dbUser.role,
-    authProvider: 'email',
-    isActive: dbUser.is_active,
-    isBanned: dbUser.is_banned,
-    createdAt: dbUser.created_at,
-    updatedAt: dbUser.updated_at,
-  };
+  return mapRow<User>(result.rows[0]);
 }
 
 export function generateState(): string {
   return nanoid(32);
+}
+
+/**
+ * Upsert Patreon membership data for a user based on the Patreon API response.
+ */
+export async function upsertPatreonMembership(
+  userId: string,
+  patreonUserId: string,
+  patreonUserData: {
+    included?: Array<{
+      type: string;
+      id: string;
+      attributes: Record<string, unknown>;
+    }>;
+  }
+): Promise<void> {
+  const memberships = patreonUserData.included?.filter((inc) => inc.type === 'member') || [];
+
+  for (const membership of memberships) {
+    const attrs = membership.attributes;
+    const patronStatus = (attrs.patron_status as string) || null;
+    const entitledTiers = (attrs.currently_entitled_tiers as string[]) || [];
+    const lifetimeSupportCents = (attrs.lifetime_support_cents as number) || 0;
+    const lastChargeDate = attrs.last_charge_date ? new Date(attrs.last_charge_date as string) : null;
+    const lastChargeStatus = (attrs.last_charge_status as string) || null;
+    const pledgeCadence = (attrs.pledge_cadence as number) || null;
+
+    await query(
+      `INSERT INTO patreon_memberships (user_id, patreon_user_id, patron_status,
+        currently_entitled_tiers, lifetime_support_cents, last_charge_date,
+        last_charge_status, pledge_cadence, raw_data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (user_id) WHERE patreon_user_id = $2
+       DO UPDATE SET
+         patron_status = EXCLUDED.patron_status,
+         currently_entitled_tiers = EXCLUDED.currently_entitled_tiers,
+         lifetime_support_cents = EXCLUDED.lifetime_support_cents,
+         last_charge_date = EXCLUDED.last_charge_date,
+         last_charge_status = EXCLUDED.last_charge_status,
+         pledge_cadence = EXCLUDED.pledge_cadence,
+         raw_data = EXCLUDED.raw_data,
+         updated_at = NOW()`,
+      [
+        userId,
+        patreonUserId,
+        patronStatus,
+        JSON.stringify(entitledTiers),
+        lifetimeSupportCents,
+        lastChargeDate,
+        lastChargeStatus,
+        pledgeCadence,
+        JSON.stringify(membership),
+      ]
+    );
+  }
+
+  // If no memberships found in the response, try a simpler upsert based on user info
+  if (memberships.length === 0) {
+    // Delete stale membership records if no active membership found
+    await query(
+      `UPDATE patreon_memberships SET patron_status = 'former_patron', updated_at = NOW()
+       WHERE user_id = $1 AND patron_status = 'active_patron'`,
+      [userId]
+    );
+  }
+}
+
+/**
+ * Refresh a user's Patreon membership by calling the Patreon API
+ * with their stored tokens.
+ */
+export async function syncPatreonMembership(userId: string): Promise<Record<string, unknown> | null> {
+  // Get the user's Patreon tokens from the most recent session or stored credentials
+  const userResult = await query(
+    `SELECT patreon_id FROM users WHERE id = $1`,
+    [userId]
+  );
+
+  if (userResult.rows.length === 0 || !userResult.rows[0].patreon_id) {
+    throw new Error('User has no linked Patreon account');
+  }
+
+  const patreonUserId = userResult.rows[0].patreon_id;
+
+  // Fetch membership data directly from the Patreon API using the campaign members endpoint
+  // Since we may not have stored access tokens, we use the campaign API with the site's credentials
+  try {
+    const params = new URLSearchParams({
+      'fields[member]': 'patron_status,currently_entitled_tiers,lifetime_support_cents,last_charge_date,last_charge_status,pledge_cadence',
+      'fields[user]': 'email,full_name',
+    });
+
+    const response = await fetch(
+      `https://www.patreon.com/api/oauth2/v2/campaigns/${config.patreon.campaignId}/members?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${config.patreon.creatorAccessToken}` },
+      }
+    );
+
+    if (!response.ok) {
+      logger.warn('Patreon campaign members API failed, falling back to stored data');
+      // Return current stored membership
+      const existing = await query(
+        'SELECT * FROM patreon_memberships WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+        [userId]
+      );
+      return existing.rows[0] || null;
+    }
+
+    const data = await response.json() as Record<string, any>;
+    const members = data.data || [];
+
+    // Find this user's membership
+    const userMembership = members.find((m: any) =>
+      m.relationships?.user?.data?.id === patreonUserId
+    );
+
+    if (userMembership) {
+      const attrs = userMembership.attributes;
+      await query(
+        `INSERT INTO patreon_memberships (user_id, patreon_user_id, patron_status,
+          currently_entitled_tiers, lifetime_support_cents, last_charge_date,
+          last_charge_status, pledge_cadence, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (user_id) WHERE patreon_user_id = $2
+         DO UPDATE SET
+           patron_status = EXCLUDED.patron_status,
+           currently_entitled_tiers = EXCLUDED.currently_entitled_tiers,
+           lifetime_support_cents = EXCLUDED.lifetime_support_cents,
+           last_charge_date = EXCLUDED.last_charge_date,
+           last_charge_status = EXCLUDED.last_charge_status,
+           pledge_cadence = EXCLUDED.pledge_cadence,
+           raw_data = EXCLUDED.raw_data,
+           updated_at = NOW()`,
+        [
+          userId,
+          patreonUserId,
+          attrs.patron_status || null,
+          JSON.stringify(attrs.currently_entitled_tiers || []),
+          attrs.lifetime_support_cents || 0,
+          attrs.last_charge_date ? new Date(attrs.last_charge_date) : null,
+          attrs.last_charge_status || null,
+          attrs.pledge_cadence || null,
+          JSON.stringify(userMembership),
+        ]
+      );
+
+      // Also update the user's patreon_tier
+      const tiers = attrs.currently_entitled_tiers || [];
+      const tierStr = tiers.length > 0 ? tiers.join(',') : null;
+      await query(
+        'UPDATE users SET patreon_tier = $1, updated_at = NOW() WHERE id = $2',
+        [tierStr, userId]
+      );
+    } else {
+      // User not found as active member
+      await query(
+        `UPDATE patreon_memberships SET patron_status = 'former_patron', updated_at = NOW()
+         WHERE user_id = $1 AND patron_status = 'active_patron'`,
+        [userId]
+      );
+      await query(
+        'UPDATE users SET patreon_tier = NULL, updated_at = NOW() WHERE id = $1',
+        [userId]
+      );
+    }
+
+    const result = await query(
+      'SELECT * FROM patreon_memberships WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+      [userId]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    logger.error('Error syncing Patreon membership', { error });
+    throw new Error('Failed to sync Patreon membership');
+  }
 }

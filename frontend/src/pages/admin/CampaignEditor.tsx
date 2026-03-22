@@ -2,11 +2,13 @@ import { Component, createResource, createSignal, Show } from 'solid-js';
 import { useParams, useNavigate } from '@solidjs/router';
 import { Title } from '@solidjs/meta';
 import { api } from '../../services/api';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 const CampaignEditor: Component = () => {
   const params = useParams();
   const navigate = useNavigate();
-  const isNew = () => params.id === 'new';
+  const isNew = () => !params.id || params.id === 'new';
+  const { markDirty, markClean } = useUnsavedChanges();
 
   const [saving, setSaving] = createSignal(false);
   const [error, setError] = createSignal('');
@@ -60,6 +62,7 @@ const CampaignEditor: Component = () => {
     if (isNew()) {
       setSlug(generateSlug(value));
     }
+    markDirty();
   };
 
   const handleSubmit = async (e: Event) => {
@@ -86,6 +89,7 @@ const CampaignEditor: Component = () => {
       }
 
       if (response.success) {
+        markClean();
         navigate('/admin/campaigns');
       } else {
         setError(response.error?.message || 'Failed to save campaign');
@@ -146,7 +150,7 @@ const CampaignEditor: Component = () => {
               type="text"
               id="slug"
               value={slug()}
-              onInput={(e) => setSlug((e.target as HTMLInputElement).value)}
+              onInput={(e) => { setSlug((e.target as HTMLInputElement).value); markDirty(); }}
               required
               placeholder="campaign-url-slug"
             />
@@ -159,7 +163,7 @@ const CampaignEditor: Component = () => {
               type="text"
               id="shortDescription"
               value={shortDescription()}
-              onInput={(e) => setShortDescription((e.target as HTMLInputElement).value)}
+              onInput={(e) => { setShortDescription((e.target as HTMLInputElement).value); markDirty(); }}
               placeholder="Brief description for listings"
               maxLength={200}
             />
@@ -170,7 +174,7 @@ const CampaignEditor: Component = () => {
             <textarea
               id="description"
               value={description()}
-              onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+              onInput={(e) => { setDescription((e.target as HTMLTextAreaElement).value); markDirty(); }}
               required
               placeholder="Detailed description of the campaign..."
               rows={6}
@@ -182,7 +186,7 @@ const CampaignEditor: Component = () => {
               <input
                 type="checkbox"
                 checked={hasGoal()}
-                onChange={(e) => setHasGoal((e.target as HTMLInputElement).checked)}
+                onChange={(e) => { setHasGoal((e.target as HTMLInputElement).checked); markDirty(); }}
               />
               <span>Set a fundraising goal</span>
             </label>
@@ -195,7 +199,7 @@ const CampaignEditor: Component = () => {
                 type="number"
                 id="goalAmount"
                 value={goalAmount()}
-                onInput={(e) => setGoalAmount((e.target as HTMLInputElement).value)}
+                onInput={(e) => { setGoalAmount((e.target as HTMLInputElement).value); markDirty(); }}
                 placeholder="10000"
                 min="0"
                 step="0.01"
@@ -210,7 +214,7 @@ const CampaignEditor: Component = () => {
               type="url"
               id="featuredImage"
               value={featuredImage()}
-              onInput={(e) => setFeaturedImage((e.target as HTMLInputElement).value)}
+              onInput={(e) => { setFeaturedImage((e.target as HTMLInputElement).value); markDirty(); }}
               placeholder="https://..."
             />
           </div>
@@ -220,7 +224,7 @@ const CampaignEditor: Component = () => {
             <select
               id="status"
               value={status()}
-              onChange={(e) => setStatus((e.target as HTMLSelectElement).value)}
+              onChange={(e) => { setStatus((e.target as HTMLSelectElement).value); markDirty(); }}
             >
               <option value="draft">Draft</option>
               <option value="active">Active</option>

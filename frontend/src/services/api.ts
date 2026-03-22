@@ -2,6 +2,11 @@ import type { ApiResponse } from '@surge/shared';
 
 const API_BASE = '/api/v1';
 
+function getCsrfToken(): string {
+  const match = document.cookie.match(/csrf-token=([^;]+)/);
+  return match ? match[1] : '';
+}
+
 interface RequestOptions extends RequestInit {
   timeout?: number;
 }
@@ -32,6 +37,7 @@ class ApiService {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken(),
           ...fetchOptions.headers,
         },
         credentials: 'include',
@@ -41,9 +47,15 @@ class ApiService {
 
       const data = await response.json();
 
+      if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+        window.location.href = '/login';
+        return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired' } };
+      }
+
       if (!response.ok) {
         return {
           success: false,
+          ...data,
           error: data.error || {
             code: 'UNKNOWN_ERROR',
             message: 'An unknown error occurred',
@@ -148,6 +160,9 @@ class ApiService {
       method: 'POST',
       body: formData,
       credentials: 'include',
+      headers: {
+        'X-CSRF-Token': getCsrfToken(),
+      },
     });
 
     const data = await response.json();
@@ -169,11 +184,13 @@ class ApiService {
 export const api = new ApiService();
 
 // Utility functions for common API calls
-export const fetchPage = (slug: string) =>
-  api.get(`/pages/slug/${slug}`);
+export const fetchPage = (slug: string, preview?: string) => {
+  const params = preview ? `?preview=${encodeURIComponent(preview)}` : '';
+  return api.get(`/pages/slug/${slug}${params}`);
+};
 
-export const fetchPost = (slug: string) =>
-  api.get(`/posts/slug/${slug}`);
+export const fetchPost = (slug: string, preview?: string) =>
+  api.get(`/posts/slug/${slug}${preview ? `?preview=${preview}` : ''}`);
 
 export const fetchPosts = (params?: { page?: number; limit?: number; tag?: string; category?: string }) => {
   const searchParams = new URLSearchParams();
@@ -201,6 +218,9 @@ export const fetchForm = (slug: string) =>
 
 export const submitForm = (slug: string, answers: unknown[]) =>
   api.post(`/forms/slug/${slug}/submit`, { answers });
+
+export const fetchFormResults = (slug: string) =>
+  api.get(`/forms/slug/${slug}/results`);
 
 export const submitContactMessage = (data: {
   name: string;

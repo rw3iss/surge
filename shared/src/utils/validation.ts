@@ -44,6 +44,8 @@ export function generateSlug(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+// Basic client-side fallback sanitizer. The real sanitization happens server-side
+// using the sanitize-html package in backend/src/utils/sanitize.ts.
 export function sanitizeHtml(html: string): string {
   const tagWhitelist = ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'img'];
   const attrWhitelist = ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'];

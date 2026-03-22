@@ -2,6 +2,7 @@ import { Component, createResource, createSignal, For, Show } from 'solid-js';
 import { useParams, useNavigate } from '@solidjs/router';
 import { Title } from '@solidjs/meta';
 import { api } from '../../services/api';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 interface FormQuestion {
   id?: string;
@@ -16,7 +17,8 @@ interface FormQuestion {
 const FormEditor: Component = () => {
   const params = useParams();
   const navigate = useNavigate();
-  const isNew = () => params.id === 'new';
+  const isNew = () => !params.id || params.id === 'new';
+  const { markDirty, markClean } = useUnsavedChanges();
 
   const [saving, setSaving] = createSignal(false);
   const [error, setError] = createSignal('');
@@ -80,6 +82,7 @@ const FormEditor: Component = () => {
     if (isNew()) {
       setSlug(generateSlug(value));
     }
+    markDirty();
   };
 
   // Question management
@@ -93,17 +96,20 @@ const FormEditor: Component = () => {
       order: questions().length,
     };
     setQuestions([...questions(), newQuestion]);
+    markDirty();
   };
 
   const updateQuestion = (index: number, updates: Partial<FormQuestion>) => {
     setQuestions(questions().map((q, i) =>
       i === index ? { ...q, ...updates } : q
     ));
+    markDirty();
   };
 
   const removeQuestion = (index: number) => {
     if (confirm('Remove this question?')) {
       setQuestions(questions().filter((_, i) => i !== index));
+      markDirty();
     }
   };
 
@@ -187,6 +193,7 @@ const FormEditor: Component = () => {
       }
 
       if (response.success) {
+        markClean();
         navigate('/admin/forms');
       } else {
         setError(response.error?.message || 'Failed to save form');
@@ -261,7 +268,7 @@ const FormEditor: Component = () => {
                 type="text"
                 id="slug"
                 value={slug()}
-                onInput={(e) => setSlug((e.target as HTMLInputElement).value)}
+                onInput={(e) => { setSlug((e.target as HTMLInputElement).value); markDirty(); }}
                 required
                 placeholder="form-url-slug"
               />
@@ -273,7 +280,7 @@ const FormEditor: Component = () => {
               <textarea
                 id="description"
                 value={description()}
-                onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+                onInput={(e) => { setDescription((e.target as HTMLTextAreaElement).value); markDirty(); }}
                 placeholder="Instructions or description for respondents..."
                 rows={3}
               />
@@ -285,7 +292,7 @@ const FormEditor: Component = () => {
                 type="text"
                 id="successMessage"
                 value={successMessage()}
-                onInput={(e) => setSuccessMessage((e.target as HTMLInputElement).value)}
+                onInput={(e) => { setSuccessMessage((e.target as HTMLInputElement).value); markDirty(); }}
                 placeholder="Thank you for your submission!"
               />
             </div>
@@ -296,7 +303,7 @@ const FormEditor: Component = () => {
                 <select
                   id="status"
                   value={status()}
-                  onChange={(e) => setStatus((e.target as HTMLSelectElement).value)}
+                  onChange={(e) => { setStatus((e.target as HTMLSelectElement).value); markDirty(); }}
                 >
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
@@ -311,7 +318,7 @@ const FormEditor: Component = () => {
                 <input
                   type="checkbox"
                   checked={showResults()}
-                  onChange={(e) => setShowResults((e.target as HTMLInputElement).checked)}
+                  onChange={(e) => { setShowResults((e.target as HTMLInputElement).checked); markDirty(); }}
                 />
                 <span>Show results to respondents after submission</span>
               </label>
@@ -322,7 +329,7 @@ const FormEditor: Component = () => {
                 <input
                   type="checkbox"
                   checked={allowMultiple()}
-                  onChange={(e) => setAllowMultiple((e.target as HTMLInputElement).checked)}
+                  onChange={(e) => { setAllowMultiple((e.target as HTMLInputElement).checked); markDirty(); }}
                 />
                 <span>Allow multiple submissions per user</span>
               </label>

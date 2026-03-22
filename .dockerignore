@@ -1,0 +1,9 @@
+node_modules
+frontend/dist
+backend/dist
+shared/dist
+.git
+.env
+*.log
+uploads/*
+!uploads/.gitkeep

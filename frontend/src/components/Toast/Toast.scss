@@ -1,0 +1,91 @@
+@import '../../styles/variables';
+
+.toast-container {
+  position: fixed;
+  top: $spacing-lg;
+  right: $spacing-lg;
+  z-index: $z-index-tooltip;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  pointer-events: none;
+
+  @include mobile-only {
+    top: $spacing-md;
+    right: $spacing-md;
+    left: $spacing-md;
+  }
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-width: 280px;
+  max-width: 420px;
+  padding: $spacing-md $spacing-lg;
+  border-radius: $border-radius-md;
+  box-shadow: $shadow-lg;
+  color: #fff;
+  font-size: $font-size-sm;
+  pointer-events: auto;
+  animation: toast-slide-in 0.3s ease forwards;
+
+  @include mobile-only {
+    min-width: unset;
+    max-width: 100%;
+  }
+
+  &--success {
+    background-color: $success-color;
+  }
+
+  &--error {
+    background-color: $error-color;
+  }
+
+  &--info {
+    background-color: $secondary-color;
+  }
+
+  &--warning {
+    background-color: $warning-color;
+    color: $text-color;
+  }
+
+  &__message {
+    flex: 1;
+    line-height: $line-height-base;
+  }
+
+  &__close {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: $border-radius-full;
+    background: rgba(255, 255, 255, 0.2);
+    color: inherit;
+    font-size: $font-size-lg;
+    line-height: 1;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+  }
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

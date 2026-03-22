@@ -1,6 +1,6 @@
 import { Component, createResource, For, Show } from 'solid-js';
 import { A } from '@solidjs/router';
-import { Title } from '@solidjs/meta';
+import { Title, Meta, Link } from '@solidjs/meta';
 import { fetchCampaigns } from '../services/api';
 import type { Campaign } from '@surge/shared';
 import './Donate.scss';
@@ -16,7 +16,16 @@ const DonatePage: Component = () => {
 
   return (
     <div class="donate-page container">
-      <Title>Support Us - Surge Media</Title>
+      <Title>Donate | Surge Media</Title>
+      <Meta name="description" content="Support our independent journalism with a donation" />
+      <Link rel="canonical" href={`${window.location.origin}/donate`} />
+      <Meta property="og:title" content="Donate | Surge Media" />
+      <Meta property="og:description" content="Support our independent journalism with a donation" />
+      <Meta property="og:type" content="website" />
+      <Meta property="og:url" content={`${window.location.origin}/donate`} />
+      <Meta name="twitter:card" content="summary_large_image" />
+      <Meta name="twitter:title" content="Donate | Surge Media" />
+      <Meta name="twitter:description" content="Support our independent journalism with a donation" />
 
       <header class="donate-page__header">
         <h1>Support Our Mission</h1>

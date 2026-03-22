@@ -3,7 +3,10 @@ import { z } from 'zod';
 import { query } from '../db';
 import { cache } from '../services/cache';
 import { authenticate, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
-import { logger } from '../utils/logger';
+import { config } from '../config';
+import { logAudit } from '../services/audit';
+import { sendSuccess, handleRouteError } from '../utils/response';
+import { ValidationError } from '../middleware/error';
 import type { SiteSettings } from '@surge/shared';
 
 const router = Router();
@@ -27,14 +30,12 @@ const settingsSchema = z.object({
 });
 
 // Get public settings (public)
-router.get('/public', async (req, res) => {
+router.get('/public', async (_req, res) => {
   try {
     const cacheKey = 'settings:public';
 
     const cached = await cache.get(cacheKey);
-    if (cached) {
-      return res.json({ success: true, data: cached });
-    }
+    if (cached) return sendSuccess(res, cached);
 
     const result = await query(`SELECT key, value FROM site_settings`);
 
@@ -54,23 +55,25 @@ router.get('/public', async (req, res) => {
       theme: settings.theme as SiteSettings['theme'],
     };
 
+    // Include Shopify config if configured (storefront tokens are public)
+    if (config.shopify.storeDomain && config.shopify.storefrontAccessToken) {
+      (publicSettings as any).shopifyDomain = config.shopify.storeDomain;
+      (publicSettings as any).shopifyStorefrontToken = config.shopify.storefrontAccessToken;
+    }
+
     await cache.set(cacheKey, publicSettings, 600);
 
-    res.json({ success: true, data: publicSettings });
+    sendSuccess(res, publicSettings);
   } catch (error) {
-    logger.error('Error fetching public settings', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch settings' },
-    });
+    handleRouteError(res, error, 'fetch public settings');
   }
 });
 
 // Get all settings (admin)
-router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/', authenticate(), requireAdmin, async (_req: AuthenticatedRequest, res) => {
   try {
     const result = await query(
-      `SELECT key, value, updated_at, u.display_name as updated_by_name
+      `SELECT s.key, s.value, s.updated_at, u.display_name as updated_by_name
        FROM site_settings s
        LEFT JOIN users u ON s.updated_by = u.id`
     );
@@ -84,13 +87,9 @@ router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
       };
     }
 
-    res.json({ success: true, data: settings });
+    sendSuccess(res, settings);
   } catch (error) {
-    logger.error('Error fetching settings', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch settings' },
-    });
+    handleRouteError(res, error, 'fetch settings');
   }
 });
 
@@ -126,13 +125,18 @@ router.put('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
 
     await cache.invalidateSettingsCache();
 
-    res.json({ success: true, data: { message: 'Settings updated' } });
-  } catch (error) {
-    logger.error('Error updating settings', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update settings' },
+    await logAudit({
+      userId: req.userId!,
+      action: 'update',
+      entityType: 'settings',
+      newValues: data,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
     });
+
+    sendSuccess(res, { message: 'Settings updated' });
+  } catch (error) {
+    handleRouteError(res, error, 'update settings');
   }
 });
 
@@ -143,10 +147,7 @@ router.put('/:key', authenticate(), requireAdmin, async (req: AuthenticatedReque
     const { value } = req.body;
 
     if (value === undefined) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'BAD_REQUEST', message: 'Value is required' },
-      });
+      throw new ValidationError('Value is required');
     }
 
     await query(
@@ -161,13 +162,19 @@ router.put('/:key', authenticate(), requireAdmin, async (req: AuthenticatedReque
 
     await cache.invalidateSettingsCache();
 
-    res.json({ success: true, data: { message: 'Setting updated' } });
-  } catch (error) {
-    logger.error('Error updating setting', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to update setting' },
+    await logAudit({
+      userId: req.userId!,
+      action: 'update',
+      entityType: 'settings',
+      entityId: key,
+      newValues: { [key]: value },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
     });
+
+    sendSuccess(res, { message: 'Setting updated' });
+  } catch (error) {
+    handleRouteError(res, error, 'update setting');
   }
 });
 
@@ -180,13 +187,9 @@ router.delete('/:key', authenticate(), requireAdmin, async (req: AuthenticatedRe
 
     await cache.invalidateSettingsCache();
 
-    res.json({ success: true, data: { message: 'Setting deleted' } });
+    sendSuccess(res, { message: 'Setting deleted' });
   } catch (error) {
-    logger.error('Error deleting setting', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Failed to delete setting' },
-    });
+    handleRouteError(res, error, 'delete setting');
   }
 });
 

@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { query } from '../db';
 import { authenticate, requireAdmin, AuthenticatedRequest } from '../middleware/auth';
-import { logger } from '../utils/logger';
+import { sendSuccess, handleRouteError } from '../utils/response';
+import { ValidationError } from '../middleware/error';
 
 const router = Router();
 
@@ -11,10 +12,7 @@ router.get('/', async (req, res) => {
     const { q, type, page = 1, limit = 20 } = req.query;
 
     if (!q || typeof q !== 'string' || q.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'BAD_REQUEST', message: 'Search query must be at least 2 characters' },
-      });
+      throw new ValidationError('Search query must be at least 2 characters');
     }
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -118,22 +116,13 @@ router.get('/', async (req, res) => {
       total += parseInt(campaignsCount.rows[0].count, 10);
     }
 
-    res.json({
-      success: true,
-      data: results,
-      meta: {
-        query: q,
-        page: Number(page),
-        limit: Number(limit),
-        total,
-      },
+    sendSuccess(res, results, {
+      page: Number(page),
+      limit: Number(limit),
+      total,
     });
   } catch (error) {
-    logger.error('Search error', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Search failed' },
-    });
+    handleRouteError(res, error, 'search');
   }
 });
 
@@ -143,10 +132,7 @@ router.get('/admin', authenticate(), requireAdmin, async (req: AuthenticatedRequ
     const { q, type, page = 1, limit = 50 } = req.query;
 
     if (!q || typeof q !== 'string' || q.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'BAD_REQUEST', message: 'Search query must be at least 2 characters' },
-      });
+      throw new ValidationError('Search query must be at least 2 characters');
     }
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -268,22 +254,13 @@ router.get('/admin', authenticate(), requireAdmin, async (req: AuthenticatedRequ
       total += parseInt(messagesCount.rows[0].count, 10);
     }
 
-    res.json({
-      success: true,
-      data: results,
-      meta: {
-        query: q,
-        page: Number(page),
-        limit: Number(limit),
-        total,
-      },
+    sendSuccess(res, results, {
+      page: Number(page),
+      limit: Number(limit),
+      total,
     });
   } catch (error) {
-    logger.error('Admin search error', { error });
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Search failed' },
-    });
+    handleRouteError(res, error, 'admin search');
   }
 });
 
