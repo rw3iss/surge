@@ -91,7 +91,7 @@ router.post('/', authenticate(), requireAdmin, upload.single('file'), async (req
 
     // Create and upload thumbnail for images
     let thumbnailUrl: string | undefined;
-    if (file.mimetype.startsWith('image/') && !file.mimetype.includes('gif')) {
+    if (file.mimetype.startsWith('image/') && !file.mimetype.includes('gif') && !file.mimetype.includes('svg')) {
       tempThumbPath = path.join(multerDestDir, `thumb_${file.filename}`);
       try {
         await createThumbnail(file.path, tempThumbPath);
@@ -162,7 +162,7 @@ router.post('/block-upload', authenticate(), requireAdmin, upload.single('file')
 
     // Create and upload thumbnail for images
     let thumbnailUrl: string | undefined;
-    if (file.mimetype.startsWith('image/') && !file.mimetype.includes('gif')) {
+    if (file.mimetype.startsWith('image/') && !file.mimetype.includes('gif') && !file.mimetype.includes('svg')) {
       tempThumbPath = path.join(multerDestDir, `thumb_${file.filename}`);
       try {
         await createThumbnail(file.path, tempThumbPath);
@@ -234,7 +234,7 @@ router.post('/bulk', authenticate(), requireAdmin, upload.array('files', 10), as
       const url = await storageProvider.upload(file.path, uploadOptions);
 
       let thumbnailUrl: string | undefined;
-      if (file.mimetype.startsWith('image/') && !file.mimetype.includes('gif')) {
+      if (file.mimetype.startsWith('image/') && !file.mimetype.includes('gif') && !file.mimetype.includes('svg')) {
         const tempThumbPath = path.join(multerDestDir, `thumb_${file.filename}`);
         tempFiles.push(tempThumbPath);
         try {
