@@ -24,6 +24,11 @@ git pull --ff-only || git pull
 # ── 2. Install dependencies (including dev for build tools like tsc) ──
 echo ""
 echo "--- npm install ---"
+# Clean install if tsc is missing (e.g. after --omit=dev)
+if [ ! -f node_modules/.bin/tsc ]; then
+  echo "tsc not found, doing clean install..."
+  rm -rf node_modules
+fi
 npm install
 
 # ── 3. Build all workspaces ──
