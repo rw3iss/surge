@@ -79,7 +79,7 @@ const AdminPageEditor: Component = () => {
       if (p.blocks?.length) {
         const converted = p.blocks.map((b: any) => pageBlockToBlockData(b));
         setBlocks(converted);
-        setOriginalBlockIds(new Set(p.blocks.map((b: any) => b.id)));
+        setOriginalBlockIds(new Set<string>(p.blocks.map((b: any) => String(b.id))));
       }
     }
   });

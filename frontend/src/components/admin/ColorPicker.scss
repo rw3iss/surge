@@ -1,0 +1,95 @@
+.color-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+
+  &__hex-input {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-family: monospace;
+
+    &--invalid {
+      border-color: $error-color;
+    }
+  }
+
+  &__swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-sm;
+    border: 2px solid $border-color;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+
+    &:hover {
+      border-color: $text-color;
+    }
+  }
+
+  &__popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    padding: 12px;
+    z-index: $z-index-popover;
+    min-width: 220px;
+  }
+
+  &__presets {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  &__preset {
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-sm;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.1s, transform 0.1s;
+
+    &:hover {
+      transform: scale(1.15);
+    }
+
+    &--active {
+      border-color: $text-color;
+      box-shadow: 0 0 0 1px white, 0 0 0 3px $text-color;
+    }
+  }
+
+  &__custom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid $border-color;
+    padding-top: 10px;
+
+    label {
+      font-size: $font-size-xs;
+      color: $text-light;
+      white-space: nowrap;
+    }
+
+    input {
+      flex: 1;
+      padding: 4px 8px;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-sm;
+      font-family: monospace;
+    }
+  }
+}

@@ -239,6 +239,12 @@ export const fetchSocialPosts = (platform?: string, limit = 10) => {
 export const fetchHomepageSocialPosts = () =>
   api.get('/social/homepage');
 
+export const fetchHeroSettings = () =>
+  api.get('/settings/homepage-hero');
+
+export const saveHeroSettings = (data: any) =>
+  api.put('/settings/homepage-hero', data);
+
 export const search = (query: string, type?: string) => {
   const params = new URLSearchParams();
   params.set('q', query);

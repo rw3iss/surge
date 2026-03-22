@@ -1,10 +1,11 @@
 import { Component, createResource, For, Show, Suspense } from 'solid-js';
 import { A } from '@solidjs/router';
 import { Title, Meta, Link } from '@solidjs/meta';
-import { fetchPage, fetchHomepageSocialPosts, fetchCampaigns } from '../services/api';
+import { fetchPage, fetchHomepageSocialPosts, fetchCampaigns, fetchHeroSettings } from '../services/api';
 import { BlockRenderer } from '../components/BlockRenderer';
+import HeroCarousel from '../components/HeroCarousel';
 import SocialEmbed from '../components/SocialEmbed';
-import type { Page, SocialPost, Campaign } from '@surge/shared';
+import type { Page, SocialPost, Campaign, HeroCarouselSettings } from '@surge/shared';
 import { JsonLd } from '../components/JsonLd';
 import './Home.scss';
 
@@ -23,6 +24,11 @@ const Home: Component = () => {
   const [campaigns] = createResource(async () => {
     const response = await fetchCampaigns(false);
     return response.success ? response.data as Campaign[] : [];
+  });
+
+  const [heroSettings] = createResource(async () => {
+    const response = await fetchHeroSettings();
+    return response.success ? response.data as HeroCarouselSettings : null;
   });
 
   return (
@@ -44,6 +50,14 @@ const Home: Component = () => {
         "url": "https://surgemedia.us",
         "description": "Philadelphia-based news organization"
       }} />
+
+      {/* Hero Carousel */}
+      <Show when={heroSettings()?.items?.length}>
+        <HeroCarousel
+          items={heroSettings()!.items}
+          options={heroSettings()!.options}
+        />
+      </Show>
 
       <Show when={page()} fallback={<div class="home__loading">Loading...</div>}>
         {(pageData) => (

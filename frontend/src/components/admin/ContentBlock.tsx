@@ -131,7 +131,7 @@ const HeroBlock: Component<{ data: Record<string, any>; mode: string; onUpdate: 
             placeholder="https://..."
           />
         </div>
-        <TextBlock data={props.data} mode={props.mode} onUpdate={props.onUpdate} />
+        <TextBlock data={props.data} mode={props.mode as 'view' | 'edit'} onUpdate={props.onUpdate} />
       </Show>
     </div>
   );

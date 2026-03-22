@@ -24,9 +24,9 @@ const Login: Component = () => {
       await auth.login(email(), password(), rememberMe());
 
       // Signal Chrome to save the credential
-      if (window.PasswordCredential) {
+      if ((window as any).PasswordCredential) {
         try {
-          const cred = new window.PasswordCredential({
+          const cred = new (window as any).PasswordCredential({
             id: email(),
             password: password(),
             name: email(),

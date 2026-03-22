@@ -1,6 +1,8 @@
-import { Component, createResource, createSignal, createEffect, Show, For } from 'solid-js';
+import { Component, createResource, createSignal, createEffect, Show, For, lazy } from 'solid-js';
 import { Title } from '@solidjs/meta';
 import { api } from '../../services/api';
+
+const HeroContentEditor = lazy(() => import('../../components/admin/HeroContentEditor'));
 
 // ─── Collapsible Section ───
 
@@ -294,6 +296,10 @@ const AdminSettings: Component = () => {
               </button>
             </div>
           </form>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Home Page" defaultOpen={true}>
+          <HeroContentEditor />
         </CollapsibleSection>
 
         <CollapsibleSection title="Connections" defaultOpen={true}>

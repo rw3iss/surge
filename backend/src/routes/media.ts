@@ -279,13 +279,26 @@ router.post('/bulk', authenticate(), requireAdmin, upload.array('files', 10), as
 // Get all media (admin)
 router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { type, search, sort, page = 1, limit = 50 } = req.query;
+    const { type, types, search, sort, page = 1, limit = 50 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let whereClause = 'WHERE 1=1';
     const params: unknown[] = [];
 
-    if (type) {
+    if (types) {
+      // Support comma-separated types, e.g. ?types=image,video
+      const typeList = (types as string).split(',').map(t => t.trim()).filter(Boolean);
+      if (typeList.length > 0) {
+        const orConditions = typeList.map(t => {
+          if (t === 'document') {
+            return `(mime_type NOT LIKE 'image/%' AND mime_type NOT LIKE 'video/%' AND mime_type NOT LIKE 'audio/%')`;
+          }
+          params.push(`${t}/%`);
+          return `mime_type LIKE $${params.length}`;
+        });
+        whereClause += ` AND (${orConditions.join(' OR ')})`;
+      }
+    } else if (type) {
       if (type === 'document') {
         whereClause += ` AND mime_type NOT LIKE 'image/%' AND mime_type NOT LIKE 'video/%' AND mime_type NOT LIKE 'audio/%'`;
       } else {
@@ -306,6 +319,8 @@ router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
     else if (sort === 'date_desc') orderClause = 'ORDER BY created_at DESC';
     else if (sort === 'size_desc') orderClause = 'ORDER BY size DESC';
     else if (sort === 'size_asc') orderClause = 'ORDER BY size ASC';
+    else if (sort === 'updated_asc') orderClause = 'ORDER BY COALESCE(updated_at, created_at) ASC';
+    else if (sort === 'updated_desc') orderClause = 'ORDER BY COALESCE(updated_at, created_at) DESC';
 
     const countResult = await query(`SELECT COUNT(*) FROM media ${whereClause}`, params);
     const total = parseInt(countResult.rows[0].count, 10);

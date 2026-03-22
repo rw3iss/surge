@@ -140,6 +140,60 @@ router.put('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
   }
 });
 
+// Get homepage hero settings (public, cached)
+router.get('/homepage-hero', async (_req, res) => {
+  try {
+    const cacheKey = 'settings:homepage_hero';
+    const cached = await cache.get(cacheKey);
+    if (cached) return sendSuccess(res, cached);
+
+    const result = await query(
+      `SELECT value FROM site_settings WHERE key = 'homepage_hero'`
+    );
+
+    const data = result.rows.length > 0
+      ? result.rows[0].value
+      : { items: [], options: { autoScroll: false, autoScrollInterval: 3000, repeat: true, customHeight: false, height: '50vh' } };
+
+    await cache.set(cacheKey, data, 600);
+    sendSuccess(res, data);
+  } catch (error) {
+    handleRouteError(res, error, 'fetch homepage hero settings');
+  }
+});
+
+// Update homepage hero settings (admin)
+router.put('/homepage-hero', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const data = req.body;
+
+    await query(
+      `INSERT INTO site_settings (key, value, updated_by)
+       VALUES ('homepage_hero', $1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_by = $2, updated_at = NOW()`,
+      [JSON.stringify(data), req.userId]
+    );
+
+    await cache.del('settings:homepage_hero');
+    await cache.invalidateSettingsCache();
+
+    // Audit log
+    await logAudit({
+      userId: req.userId!,
+      action: 'update',
+      entityType: 'settings',
+      entityId: 'homepage_hero',
+      newValues: data,
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    sendSuccess(res, data);
+  } catch (error) {
+    handleRouteError(res, error, 'save homepage hero settings');
+  }
+});
+
 // Update single setting (admin)
 router.put('/:key', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {

@@ -1,0 +1,547 @@
+// Variables are auto-imported via vite.config.ts additionalData
+
+// ─── Container ───
+
+.hero-editor {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  &__header {
+    @include flex-between;
+    gap: $spacing-md;
+
+    h2 {
+      margin: 0;
+      font-size: $font-size-2xl;
+      font-weight: 600;
+    }
+  }
+
+  &__loading {
+    padding: $spacing-xl;
+    text-align: center;
+    color: $text-light;
+  }
+}
+
+// ─── Horizontal card list ───
+
+.hero-editor__items {
+  display: flex;
+  flex-direction: row;
+  gap: $spacing-md;
+  overflow-x: auto;
+  padding-bottom: $spacing-sm;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  // Scrollbar styling
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: $background-dark;
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $border-color;
+    border-radius: 3px;
+    &:hover {
+      background: $text-light;
+    }
+  }
+
+  &--dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+}
+
+// ─── Hero item card ───
+
+.hero-item-card {
+  width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: $background;
+  transition: box-shadow $transition-fast, opacity $transition-fast;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  &--dragging {
+    opacity: 0.4;
+  }
+
+  // Preview area (16:9)
+  &__preview {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; // 16:9
+    overflow: hidden;
+    background: #1a1a2e;
+
+    img,
+    video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  // Body
+  &__body {
+    padding: $spacing-sm $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    flex: 1;
+  }
+
+  // Field group
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__field-label {
+    font-size: $font-size-xs;
+    font-weight: 500;
+    color: $text-light;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  // Section (header / subheader / action)
+  &__section {
+    padding-top: $spacing-sm;
+    border-top: 1px solid $border-color;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__section-header {
+    @include flex-between;
+    gap: $spacing-xs;
+  }
+
+  &__section-label {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $text-color;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  // Inline row (e.g. size dropdown + color picker)
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  // Toggle label
+  &__toggle {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: $primary-color;
+      cursor: pointer;
+    }
+
+    span {
+      color: $text-color;
+    }
+  }
+
+  // Footer
+  &__footer {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md;
+    border-top: 1px solid $border-color;
+    background: $background-dark;
+  }
+
+  &__drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: $text-light;
+    cursor: grab;
+    border-radius: $border-radius-sm;
+    transition: background $transition-fast, color $transition-fast;
+    touch-action: none;
+
+    &:hover {
+      background: $border-color;
+      color: $text-color;
+    }
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+// ─── Drag ghost ───
+
+.hero-item-card-ghost {
+  z-index: $z-index-modal;
+  pointer-events: none;
+  opacity: 0.85;
+
+  &__inner {
+    width: 100%;
+    height: 100%;
+    background: $background;
+    border: 2px solid $primary-color;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    color: $text-light;
+    font-size: $font-size-sm;
+  }
+}
+
+// ─── Add new card ───
+
+.hero-add-card {
+  width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
+  border: 2px dashed $border-color;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  transition: border-color $transition-fast, background $transition-fast;
+
+  &:hover {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.02);
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+  }
+
+  &__icon {
+    font-size: 36px;
+    color: $text-light;
+    line-height: 1;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $text-color;
+    margin-bottom: $spacing-xs;
+  }
+}
+
+// ─── Carousel options ───
+
+.hero-options {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  &__title {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: 600;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-lg;
+    align-items: center;
+  }
+
+  &__group {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    color: $text-color;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  &__unit {
+    font-size: $font-size-xs;
+    color: $text-light;
+  }
+}
+
+// ─── Preview section ───
+
+.hero-preview {
+  margin-top: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  &__title {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: 600;
+  }
+
+  &__container {
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    border: 1px solid $border-color;
+  }
+
+  &__empty {
+    @include flex-center;
+    padding: $spacing-2xl;
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    color: $text-light;
+    font-size: $font-size-sm;
+    border: 1px dashed $border-color;
+  }
+}
+
+// ─── Toggle switch ───
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-switch__slider {
+      background: $primary-color;
+
+      &::before {
+        transform: translateX(18px);
+      }
+    }
+
+    &:disabled + .toggle-switch__slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:focus-visible + .toggle-switch__slider {
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.3);
+    }
+  }
+
+  &__slider {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: $border-color;
+    border-radius: 11px;
+    transition: background $transition-fast;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: $background;
+      border-radius: 50%;
+      transition: transform $transition-fast;
+      box-shadow: $shadow-sm;
+    }
+  }
+}
+
+// ─── Shared input overrides ───
+
+.input--sm {
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-sm;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $background;
+  color: $text-color;
+  width: 100%;
+  line-height: $line-height-base;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+  }
+}
+
+textarea.input--sm {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.input--select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.input--inline-number {
+  width: 80px;
+  text-align: center;
+}
+
+.input--inline-text {
+  width: 100px;
+}
+
+.input--error {
+  border-color: $error-color;
+  &:focus {
+    border-color: $error-color;
+    box-shadow: 0 0 0 2px rgba($error-color, 0.15);
+  }
+}
+
+// ─── Button variants ───
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  border: none;
+  cursor: pointer;
+  font-family: $font-family;
+  font-weight: 500;
+  border-radius: $border-radius-sm;
+  transition: background $transition-fast, color $transition-fast, opacity $transition-fast;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $primary-color;
+    color: #fff;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  }
+
+  &--secondary {
+    background: $secondary-color;
+    color: #fff;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  }
+
+  &--outline {
+    background: transparent;
+    color: $secondary-color;
+    border: 1px solid $border-color;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+
+    &:hover:not(:disabled) {
+      background: $background-dark;
+    }
+  }
+
+  &--sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-xs;
+  }
+
+  &--xs {
+    padding: 2px $spacing-xs;
+    font-size: $font-size-xs;
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $primary-color;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-xs;
+
+    &:hover:not(:disabled) {
+      background: rgba($primary-color, 0.06);
+    }
+  }
+
+  &--danger-ghost {
+    background: transparent;
+    color: $error-color;
+    padding: 2px $spacing-xs;
+    font-size: $font-size-xs;
+
+    &:hover:not(:disabled) {
+      background: rgba($error-color, 0.06);
+    }
+  }
+}
+
+// ─── Responsive ───
+
+@include mobile-only {
+  .hero-item-card,
+  .hero-add-card {
+    width: 240px;
+    min-width: 240px;
+  }
+
+  .hero-options__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+  }
+
+  .hero-editor__header h2 {
+    font-size: $font-size-xl;
+  }
+}
