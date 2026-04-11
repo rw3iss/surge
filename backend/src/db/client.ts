@@ -76,7 +76,15 @@ export async function healthCheck(): Promise<boolean> {
 }
 
 export async function closePool(): Promise<void> {
-    await pool.end();
+    // pool.end() waits for in-flight queries and idle clients to close. If a
+    // query is stuck (e.g. DB was restarted mid-connection), this can block
+    // longer than the shutdown deadline, so we race against a short timeout
+    // and fall through regardless.
+    const CLOSE_TIMEOUT_MS = 800;
+    await Promise.race([
+        pool.end(),
+        new Promise<void>((resolve,) => setTimeout(resolve, CLOSE_TIMEOUT_MS,)),
+    ],);
 }
 
 export { pool, };

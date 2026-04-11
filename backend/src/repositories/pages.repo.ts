@@ -76,8 +76,20 @@ export async function findPages(
         case 'date_desc':
             orderClause = 'ORDER BY created_at DESC';
             break;
+        case 'updated_desc':
+            orderClause = 'ORDER BY updated_at DESC';
+            break;
+        case 'updated_asc':
+            orderClause = 'ORDER BY updated_at ASC';
+            break;
+        case 'status_asc':
+            orderClause = 'ORDER BY status ASC, updated_at DESC';
+            break;
+        case 'status_desc':
+            orderClause = 'ORDER BY status DESC, updated_at DESC';
+            break;
         default:
-            orderClause = 'ORDER BY created_at DESC';
+            orderClause = 'ORDER BY updated_at DESC';
             break;
     }
 

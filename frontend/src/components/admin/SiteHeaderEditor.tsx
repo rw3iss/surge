@@ -489,6 +489,11 @@ const SiteHeaderEditor: Component = () => {
                                     setBgColor(hex,);
                                     markDirty();
                                 }}
+                                clearable
+                                onClear={() => {
+                                    setBgColor('',);
+                                    markDirty();
+                                }}
                             />
                         </div>
                         <div class="site-header-editor__field">
@@ -497,6 +502,11 @@ const SiteHeaderEditor: Component = () => {
                                 value={textColor()}
                                 onChange={(hex,) => {
                                     setTextColor(hex,);
+                                    markDirty();
+                                }}
+                                clearable
+                                onClear={() => {
+                                    setTextColor('',);
                                     markDirty();
                                 }}
                             />

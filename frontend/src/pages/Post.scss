@@ -38,6 +38,31 @@
 // ─── Post Content Blocks (public rendering) ───
 
 .post-block {
+  // Center media-type blocks horizontally
+  &--social_media,
+  &--social_feed,
+  &--image,
+  &--video,
+  &--document,
+  &--url_link,
+  &--campaign,
+  &--gallery {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+
+    > * {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    // Row layout needs full width to scroll within
+    .social-feed-block__grid--row {
+      max-width: 100%;
+    }
+  }
+
   &__figure {
     margin: 0;
 
@@ -93,6 +118,8 @@
     text-decoration: none;
     color: inherit;
     transition: box-shadow 0.15s;
+    margin-left: auto;
+    margin-right: auto;
 
     &:hover {
       box-shadow: $shadow-md;

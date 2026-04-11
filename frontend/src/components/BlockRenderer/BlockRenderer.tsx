@@ -18,7 +18,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
         <div
             class={`block block--${props.block.type}`}
             style={{
-                'background-color': s().backgroundColor || props.block.settings.backgroundColor as string || undefined,
+                'background-color': (s().backgroundColor || props.block.settings.backgroundColor as string) || undefined,
                 color: s().textColor || props.block.settings.textColor as string || undefined,
                 'text-align': s().textAlign || undefined,
                 display: s().verticalAlign && s().verticalAlign !== 'top' ? 'flex' : undefined,
@@ -34,16 +34,20 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                 margin: (() => {
                     const m = s().margin;
                     if (!m) return undefined;
-                    // Single value like "20px" → "20px auto" for centering
-                    // Multi-value shorthand like "10px 20px" → use as-is
                     const parts = m.trim().split(/\s+/,);
                     return parts.length === 1 && m !== 'auto' ? `${m} auto` : m;
                 })(),
+                'overflow-x': s().overflowX || undefined,
+                'overflow-y': s().overflowY || undefined,
             }}
         >
             <div
                 class={`block__inner block__inner--${props.block.settings.layout || 'contained'}`}
-                style={s().gap ? { display: 'flex', 'flex-direction': 'column', gap: s().gap, } : undefined}
+                style={{
+                    ...(s().gap ? { display: 'flex', 'flex-direction': 'column', gap: s().gap, } : {}),
+                    ...(s().overflowX ? { 'overflow-x': s().overflowX, 'max-width': '100%', } : {}),
+                    ...(s().overflowY ? { 'overflow-y': s().overflowY, } : {}),
+                }}
             >
                 <Switch>
                     <Match when={props.block.type === 'hero'}>
@@ -69,6 +73,18 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     </Match>
                     <Match when={props.block.type === 'social_feed'}>
                         <SocialFeedBlock block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'social_media'}>
+                        <SocialMediaEmbed block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'text'}>
+                        <RichTextBlock block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'document'}>
+                        <DocumentLink block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'url_link'}>
+                        <UrlLinkCard block={props.block} />
                     </Match>
                     <Match when={props.block.type === 'html'}>
                         <HTMLBlock block={props.block} />
@@ -337,13 +353,27 @@ const CampaignBlock: Component<{ block: Block; }> = (props,) => {
     );
 };
 
+const FEED_LAYOUT_CLASS: Record<string, string> = {
+    'grid': 'social-feed-block__grid',
+    '2-col': 'social-feed-block__grid social-feed-block__grid--2col',
+    '1-col': 'social-feed-block__grid social-feed-block__grid--1col',
+    'row': 'social-feed-block__grid social-feed-block__grid--row',
+};
+
 const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
     const platform = () => props.block.settings.socialPlatform as SocialPlatform | undefined;
+    const limit = () => (props.block.settings.limit as number) || 6;
+    const layout = () => (props.block.settings.layout as string) || 'grid';
 
-    const [posts,] = createResource(platform, async (p,) => {
-        const response = await fetchSocialPosts(p, 6,);
-        return response.success ? (response.data as SocialPost[]) : [];
-    },);
+    const [posts,] = createResource(
+        () => `${platform()}:${limit()}`,
+        async () => {
+            const p = platform();
+            if (!p) return [];
+            const response = await fetchSocialPosts(p, limit(),);
+            return response.success ? (response.data as SocialPost[]) : [];
+        },
+    );
 
     return (
         <div class="social-feed-block">
@@ -355,7 +385,7 @@ const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
                     </Show>
                 }
             >
-                <div class="social-feed-block__grid">
+                <div class={FEED_LAYOUT_CLASS[layout()] || FEED_LAYOUT_CLASS.grid}>
                     <For each={posts()}>
                         {(post,) => (
                             <SocialEmbed
@@ -371,6 +401,66 @@ const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
                 </div>
             </Show>
         </div>
+    );
+};
+
+const SocialMediaEmbed: Component<{ block: Block; }> = (props,) => {
+    const s = () => props.block.settings || {};
+    return (
+        <Show when={s().provider && (s().postId || s().postUrl)}>
+            <SocialEmbed
+                platform={s().provider as SocialPlatform}
+                externalId={String(s().postId || '',)}
+                mediaUrl={s().postUrl as string}
+                content={s().content as string}
+                thumbnailUrl={s().thumbnailUrl as string}
+                authorName={s().authorName as string}
+            />
+        </Show>
+    );
+};
+
+const DocumentLink: Component<{ block: Block; }> = (props,) => {
+    const s = () => props.block.settings || {};
+    return (
+        <Show when={s().url}>
+            <a
+                href={s().url as string}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="post-block__document"
+            >
+                <span>&#128196;</span>
+                <span>{(s().displayName || s().fileName || 'Download document') as string}</span>
+            </a>
+        </Show>
+    );
+};
+
+const UrlLinkCard: Component<{ block: Block; }> = (props,) => {
+    const s = () => props.block.settings || {};
+    return (
+        <Show when={s().url}>
+            <a
+                href={s().url as string}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="post-block__link-card"
+            >
+                <Show when={s().image}>
+                    <img src={s().image as string} alt="" class="post-block__link-image" loading="lazy" />
+                </Show>
+                <div class="post-block__link-body">
+                    <Show when={s().siteName}>
+                        <span class="post-block__link-site">{s().siteName as string}</span>
+                    </Show>
+                    <span class="post-block__link-title">{(s().title || s().url) as string}</span>
+                    <Show when={s().description}>
+                        <span class="post-block__link-desc">{s().description as string}</span>
+                    </Show>
+                </div>
+            </a>
+        </Show>
     );
 };
 

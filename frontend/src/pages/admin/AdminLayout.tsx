@@ -90,6 +90,13 @@ const AdminLayout: ParentComponent = (props,) => {
                             Forms
                         </A>
                         <A
+                            href="/admin/media"
+                            class={`admin-layout__nav-link ${isActive('/admin/media',) ? 'active' : ''}`}
+                            onClick={handleNavClick}
+                        >
+                            Media
+                        </A>
+                        <A
                             href="/admin/users"
                             class={`admin-layout__nav-link ${isActive('/admin/users',) ? 'active' : ''}`}
                             onClick={handleNavClick}
@@ -102,13 +109,6 @@ const AdminLayout: ParentComponent = (props,) => {
                             onClick={handleNavClick}
                         >
                             Messages
-                        </A>
-                        <A
-                            href="/admin/media"
-                            class={`admin-layout__nav-link ${isActive('/admin/media',) ? 'active' : ''}`}
-                            onClick={handleNavClick}
-                        >
-                            Media
                         </A>
                         <A
                             href="/admin/settings"

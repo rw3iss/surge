@@ -1,30 +1,42 @@
 import { Title, } from '@solidjs/meta';
 import { A, } from '@solidjs/router';
-import { Component, createResource, For, Show, } from 'solid-js';
+import { Component, createEffect, For, Show, } from 'solid-js';
+import Pagination from '../../components/admin/Pagination';
+import SortTh from '../../components/admin/SortTh';
+import { usePaginatedList, } from '../../hooks/usePaginatedList';
 import { useSearchFilter, } from '../../hooks/useSearchFilter';
-import { api, } from '../../services/api';
 import { getStatusBadgeClass, } from '../../utils/badges';
+
+function formatDate(iso: string | null | undefined,): string {
+    if (!iso) return '—';
+    const d = new Date(iso,);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', },);
+}
 
 const AdminPages: Component = () => {
     const { searchInput, handleSearchInput, searchParams, setSearchParams, } = useSearchFilter();
+    const currentSort = () => searchParams.sort || 'updated_desc';
 
-    const fetchKey = () => {
-        const s = searchParams.status || '';
-        const q = searchParams.search || '';
-        const sort = searchParams.sort || '';
-        return `${s}:${q}:${sort}`;
-    };
-
-    const [pages,] = createResource(fetchKey, async () => {
-        const params = new URLSearchParams();
-        if (searchParams.status) params.set('status', searchParams.status,);
-        if (searchParams.search) params.set('search', searchParams.search,);
-        if (searchParams.sort) params.set('sort', searchParams.sort,);
-        const response = await api.get(`/pages?${params.toString()}`,);
-        return response.success ? (response as any).data : [];
+    const list = usePaginatedList<any>({
+        endpoint: '/pages',
+        initialLimit: 20,
+        params: () => ({
+            status: searchParams.status,
+            search: searchParams.search,
+            sort: currentSort(),
+        }),
     },);
 
-    const statusBadge = getStatusBadgeClass;
+    createEffect(() => {
+        searchParams.status;
+        searchParams.search;
+        searchParams.sort;
+        list.resetPage();
+    },);
+
+    const handleSort = (sort: string,) => {
+        setSearchParams({ sort, },);
+    };
 
     return (
         <div>
@@ -52,63 +64,71 @@ const AdminPages: Component = () => {
                     <option value="archived">Archived</option>
                     <option value="deleted">Deleted</option>
                 </select>
-                <select
-                    class="admin-filter-bar__select"
-                    value={searchParams.sort || 'date_desc'}
-                    onChange={(e,) => setSearchParams({ sort: e.currentTarget.value || undefined, },)}
-                >
-                    <option value="date_desc">Newest</option>
-                    <option value="date_asc">Oldest</option>
-                    <option value="title_asc">Name A-Z</option>
-                    <option value="title_desc">Name Z-A</option>
-                </select>
             </div>
             <Show
-                when={pages()?.length}
-                fallback={<div class="empty-state">No pages found.</div>}
+                when={!list.loading()}
+                fallback={<div class="empty-state">Loading...</div>}
             >
-                <div class="admin-table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Slug</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <For each={pages()}>
-                                {(page: any,) => (
-                                    <tr>
-                                        <td>
-                                            <A href={`/admin/pages/${page.id}`} class="table-link">{page.title}</A>
-                                        </td>
-                                        <td>/{page.slug}</td>
-                                        <td>
-                                            <span class={`badge ${statusBadge(page.status,)}`}>{page.status}</span>
-                                        </td>
-                                        <td>
-                                            <A href={`/admin/pages/${page.id}`} class="btn btn--small btn--secondary">
-                                                Edit
-                                            </A>
-                                            <a
-                                                href={page.status === 'published' ?
-                                                    `/${page.slug}` :
-                                                    `/${page.slug}?preview=admin`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="btn btn--small btn--ghost"
-                                            >
-                                                View
-                                            </a>
-                                        </td>
-                                    </tr>
-                                )}
-                            </For>
-                        </tbody>
-                    </table>
-                </div>
+                <Show
+                    when={list.items().length}
+                    fallback={<div class="empty-state">No pages found.</div>}
+                >
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <SortTh label="Title" field="title" current={currentSort()} onSort={handleSort} />
+                                    <th>Slug</th>
+                                    <SortTh label="Status" field="status" current={currentSort()} onSort={handleSort} />
+                                    <SortTh label="Modified" field="updated" current={currentSort()} onSort={handleSort} />
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <For each={list.items()}>
+                                    {(page: any,) => (
+                                        <tr>
+                                            <td>
+                                                <A href={`/admin/pages/${page.id}`} class="table-link">
+                                                    {page.title}
+                                                </A>
+                                            </td>
+                                            <td>/{page.slug}</td>
+                                            <td>
+                                                <span class={`badge ${getStatusBadgeClass(page.status,)}`}>
+                                                    {page.status}
+                                                </span>
+                                            </td>
+                                            <td>{formatDate(page.updatedAt,)}</td>
+                                            <td>
+                                                <A href={`/admin/pages/${page.id}`} class="btn btn--small btn--secondary">
+                                                    Edit
+                                                </A>
+                                                <a
+                                                    href={page.status === 'published' ?
+                                                        `/${page.slug}` :
+                                                        `/${page.slug}?preview=admin`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="btn btn--small btn--ghost"
+                                                >
+                                                    View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </For>
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination
+                        page={list.page()}
+                        totalPages={list.totalPages()}
+                        total={list.total()}
+                        limit={list.limit()}
+                        onPageChange={list.setPage}
+                    />
+                </Show>
             </Show>
         </div>
     );

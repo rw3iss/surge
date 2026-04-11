@@ -17,9 +17,11 @@ export interface CampaignFilters {
 
 const VALID_SORT_COLUMNS: Record<string, string> = {
     created_at: 'created_at',
+    updated_at: 'updated_at',
     start_date: 'start_date',
     end_date: 'end_date',
     title: 'title',
+    status: 'status',
     goal_amount_cents: 'goal_amount_cents',
     current_amount_cents: 'current_amount_cents',
     donor_count: 'donor_count',
@@ -78,7 +80,7 @@ export async function findCampaignById(id: string,): Promise<Campaign> {
 }
 
 export async function findAllCampaigns(
-    filters: CampaignFilters,
+    filters: CampaignFilters & { sortBy?: string; sortOrder?: string; },
     pagination: PaginationOptions,
 ): Promise<PaginatedResult<Campaign>> {
     let whereClause = 'WHERE 1=1';
@@ -89,8 +91,10 @@ export async function findAllCampaigns(
         whereClause += ` AND status = $${params.length}`;
     }
 
+    const orderClause = buildSortClause(filters.sortBy || 'updated_at', filters.sortOrder || 'desc',);
+
     return paginatedQuery<Campaign>(
-        `SELECT * FROM campaigns ${whereClause} ORDER BY created_at DESC`,
+        `SELECT * FROM campaigns ${whereClause} ${orderClause}`,
         `SELECT COUNT(*) FROM campaigns ${whereClause}`,
         params,
         pagination,

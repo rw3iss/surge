@@ -6,6 +6,7 @@ import CampaignBlock from './blocks/CampaignBlock';
 import DocumentBlock from './blocks/DocumentBlock';
 import FormBlock from './blocks/FormBlock';
 import ImageBlock from './blocks/ImageBlock';
+import SocialFeedBlock from './blocks/SocialFeedBlock';
 import SocialMediaBlock from './blocks/SocialMediaBlock';
 import TextBlock from './blocks/TextBlock';
 import UrlLinkBlock from './blocks/UrlLinkBlock';
@@ -575,11 +576,15 @@ const ContentBlock: Component<ContentBlockProps> = (props,) => {
             'padding': s.padding || undefined,
             'margin': s.margin || undefined,
             'gap': s.gap || undefined,
+            'overflow-x': s.overflowX || undefined,
+            'overflow-y': s.overflowY || undefined,
+            'max-width': s.overflowX ? '100%' : undefined,
         };
     };
 
     return (
         <div
+            id={props.block.id}
             class={`content-block ${props.isEditing ? 'content-block--editing' : ''} ${
                 props.isDragging ? 'content-block--dragging' : ''
             } ${collapsed() ? 'content-block--collapsed' : ''}`}
@@ -793,12 +798,10 @@ const BlockContent: Component<
                 />
             </Match>
             <Match when={props.block.type === 'social_feed'}>
-                <ReferenceBlock
+                <SocialFeedBlock
                     data={props.block.data}
-                    mode={props.mode}
+                    mode={props.mode as 'view' | 'edit'}
                     onUpdate={props.onUpdate}
-                    label="Social Feed"
-                    idField="platform"
                 />
             </Match>
             <Match when={props.block.type === 'gallery'}>

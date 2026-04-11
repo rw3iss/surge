@@ -205,7 +205,12 @@ router.get('/:provider/oauth/callback', async (req, res,) => {
         }
 
         await cache.del(`oauth_state:${state}`,);
-        const { userId, } = JSON.parse(statePayload as string,);
+        // cache.get() already JSON-parses the value, so statePayload is an
+        // object — don't double-parse.
+        const parsed = typeof statePayload === 'string' ?
+            JSON.parse(statePayload,) :
+            statePayload as Record<string, unknown>;
+        const { userId, } = parsed;
 
         // Read app credentials
         const connResult = await query(
@@ -224,22 +229,57 @@ router.get('/:provider/oauth/callback', async (req, res,) => {
         // Exchange code for tokens
         const tokenResult = await oauthProvider.exchangeCode(String(code,),);
 
-        // Get user/account info
-        const userInfo = await oauthProvider.getUserInfo(tokenResult.accessToken,);
-
         // Calculate token expiry
         const tokenExpiresAt = tokenResult.expiresIn ?
             new Date(Date.now() + tokenResult.expiresIn * 1000,).toISOString() :
             null;
 
-        // Update connection in DB
+        // ALWAYS save the token first — getUserInfo can fail (e.g. no FB Page
+        // linked) but the token is still valid. If we lose it, the user has to
+        // re-authorize from scratch.
+        await query(
+            `UPDATE social_connections
+             SET credentials = credentials || $2::jsonb,
+                 connected_by = $3,
+                 updated_at = NOW()
+             WHERE provider = $1`,
+            [
+                provider,
+                JSON.stringify({
+                    ...credentials,
+                    accessToken: tokenResult.accessToken,
+                    tokenExpiresAt,
+                },),
+                userId,
+            ],
+        );
+
+        // Try to get user/account info (discovers the IG Business Account ID
+        // via the Facebook Pages API). This can fail if the user's Instagram
+        // isn't linked to a Facebook Page yet — in that case we still keep the
+        // token and redirect with a descriptive message so they can fix the
+        // link and retry.
+        let userInfo;
+        try {
+            userInfo = await oauthProvider.getUserInfo(tokenResult.accessToken,);
+        } catch (infoError) {
+            const msg = infoError instanceof Error ? infoError.message : 'Could not retrieve account info';
+            logger.warn(`OAuth ${provider}: token saved but getUserInfo failed`, { error: msg, },);
+            // Token is saved — redirect with a specific message
+            return res.redirect(
+                `${frontendUrl}?oauth_error=${encodeURIComponent(
+                    msg + '. Your token was saved — link your Instagram to a Facebook Page, then reconnect.',
+                )}`,
+            );
+        }
+
+        // Full success — save account info too
         await query(
             `UPDATE social_connections
              SET is_connected = true,
                  display_name = $2,
                  account_id = $3,
                  credentials = credentials || $4::jsonb,
-                 connected_by = $5,
                  updated_at = NOW()
              WHERE provider = $1`,
             [
@@ -247,12 +287,8 @@ router.get('/:provider/oauth/callback', async (req, res,) => {
                 userInfo.displayName,
                 userInfo.accountId,
                 JSON.stringify({
-                    ...credentials,
-                    accessToken: tokenResult.accessToken,
-                    tokenExpiresAt,
                     ...(userInfo.rawData || {}),
                 },),
-                userId,
             ],
         );
 

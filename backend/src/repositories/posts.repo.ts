@@ -179,8 +179,20 @@ export async function findAllPosts(
         case 'date_desc':
             orderClause = 'ORDER BY p.created_at DESC';
             break;
+        case 'updated_desc':
+            orderClause = 'ORDER BY p.updated_at DESC';
+            break;
+        case 'updated_asc':
+            orderClause = 'ORDER BY p.updated_at ASC';
+            break;
+        case 'status_asc':
+            orderClause = 'ORDER BY p.status ASC, p.updated_at DESC';
+            break;
+        case 'status_desc':
+            orderClause = 'ORDER BY p.status DESC, p.updated_at DESC';
+            break;
         default:
-            orderClause = 'ORDER BY p.created_at DESC';
+            orderClause = 'ORDER BY p.updated_at DESC';
             break;
     }
 

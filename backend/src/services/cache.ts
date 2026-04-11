@@ -151,9 +151,25 @@ export async function healthCheck(): Promise<boolean> {
 }
 
 export async function closeRedis(): Promise<void> {
-    if (redis) {
-        await redis.quit();
-        redis = null;
+    if (!redis) return;
+    const r = redis;
+    redis = null;
+    // Try a graceful QUIT first, but fall back to `disconnect()` if it hangs.
+    // In dev, Redis being unreachable can make quit() block until a TCP
+    // timeout, which is much longer than our shutdown deadline.
+    const CLOSE_TIMEOUT_MS = 800;
+    try {
+        await Promise.race([
+            r.quit(),
+            new Promise((_, reject,) =>
+                setTimeout(() => reject(new Error('redis quit timeout',),), CLOSE_TIMEOUT_MS,)),
+        ],);
+    } catch {
+        try {
+            r.disconnect();
+        } catch {
+            /* ignore */
+        }
     }
 }
 

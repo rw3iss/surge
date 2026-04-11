@@ -5,6 +5,8 @@
   overflow: hidden;
   box-shadow: $shadow-md;
   transition: box-shadow $transition-base;
+  margin-left: auto;
+  margin-right: auto;
 
   &:hover {
     box-shadow: $shadow-lg;
@@ -38,9 +40,9 @@
   // Content area
   &__content {
     position: relative;
-    min-height: 120px;
+    min-height: 80px;
 
-    // Loading placeholder via pseudo-element
+    // Shimmer placeholder while loading
     &::before {
       content: '';
       position: absolute;
@@ -57,10 +59,10 @@
     }
   }
 
-  // Iframes sit above the shimmer placeholder
+  // Iframes + cards sit above shimmer
   &__iframe-wrapper,
   &__iframe,
-  &__fallback {
+  &__card {
     position: relative;
     z-index: 1;
   }
@@ -74,15 +76,8 @@
     }
   }
 
-  // Generic iframe styling
-  &__iframe {
-    display: block;
-    width: 100%;
-    border: 0;
-  }
-
-  // Fallback card (for Patreon and unsupported platforms)
-  &__fallback {
+  // ─── Compact post card (replaces iframes for IG/FB/Twitter/TikTok) ───
+  &__card {
     display: flex;
     flex-direction: column;
     text-decoration: none;
@@ -94,35 +89,49 @@
     }
   }
 
-  &__fallback-thumb {
+  &__card-image {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    max-height: 320px;
     object-fit: cover;
+    display: block;
   }
 
-  &__fallback-body {
+  &__card-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #f0f0f0 0%, #ddd 100%);
+    color: #999;
+    font-size: $font-size-lg;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  &__card-body {
     padding: $spacing-md;
     display: flex;
     flex-direction: column;
     gap: $spacing-xs;
   }
 
-  &__fallback-author {
+  &__card-author {
     font-weight: 600;
     font-size: $font-size-sm;
   }
 
-  &__fallback-text {
+  &__card-text {
     font-size: $font-size-sm;
     color: $text-light;
     margin: 0;
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  &__fallback-link {
+  &__card-link {
     font-size: $font-size-sm;
     font-weight: 600;
     color: $primary-color;
@@ -137,6 +146,9 @@
 
 // Grid for social_feed block in BlockRenderer
 .social-feed-block {
+  max-width: 100%;
+  overflow: hidden;
+
   &__title {
     margin-bottom: $spacing-lg;
   }
@@ -146,12 +158,54 @@
     grid-template-columns: 1fr;
     gap: $spacing-md;
 
+    // Default: auto-fill responsive grid
     @include sm {
       grid-template-columns: repeat(2, 1fr);
     }
 
     @include lg {
       grid-template-columns: repeat(3, 1fr);
+    }
+
+    // 2-column layout
+    &--2col {
+      grid-template-columns: 1fr;
+
+      @include sm {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    // 1-column layout (single stack)
+    &--1col {
+      grid-template-columns: 1fr;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    // Horizontal scrollable row — must be width-constrained so
+    // overflow-x scrolls inside its container instead of widening the page.
+    &--row {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+      padding-bottom: $spacing-sm;
+      max-width: 100%;
+      width: 100%;
+
+      > * {
+        flex: 0 0 280px;
+        min-width: 0;
+        scroll-snap-align: start;
+
+        @include sm {
+          flex-basis: 320px;
+        }
+      }
     }
   }
 

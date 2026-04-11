@@ -193,8 +193,11 @@
   }
 
   .connection-card {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+
+    &__info {
+      flex-basis: calc(100% - 56px);
+    }
 
     &__actions {
       width: 100%;
@@ -399,6 +402,21 @@
 
   td:last-child {
     white-space: nowrap;
+  }
+
+  &__sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+
+    &:hover {
+      color: $text-color;
+    }
+  }
+
+  &__sort-icon {
+    font-size: 11px;
+    opacity: 0.7;
   }
 }
 
@@ -1444,17 +1462,70 @@
   }
 }
 
+// Social media post picker (toolbar + grid + pagination)
+.social-picker {
+  margin-top: $spacing-sm;
+
+  &__toolbar {
+    display: flex;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    align-items: center;
+  }
+
+  &__search {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+
+    &::placeholder { color: #aaa; }
+  }
+
+  &__sort {
+    width: auto;
+    padding: 6px 8px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    background: #fff;
+  }
+
+  &__dir {
+    min-width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  &__grid-wrap {
+    position: relative;
+  }
+
+  &__loading,
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 130px;
+    color: #999;
+    font-size: $font-size-sm;
+  }
+
+  .pagination {
+    padding: $spacing-xs 0;
+    justify-content: center;
+  }
+}
+
 // Social media grid for post selection
 .social-media-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: $spacing-sm;
-  overflow-x: auto;
-  padding: $spacing-sm 0;
-  -webkit-overflow-scrolling: touch;
+  padding: $spacing-xs 0;
 
   &__item {
-    flex-shrink: 0;
-    width: 140px;
     border: 2px solid $border-color;
     border-radius: $border-radius-md;
     overflow: hidden;
@@ -1474,6 +1545,7 @@
       width: 100%;
       height: 100px;
       object-fit: cover;
+      display: block;
     }
   }
 
@@ -1484,6 +1556,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  &__meta {
+    padding: 0 $spacing-sm $spacing-xs;
+    font-size: 11px;
+    color: #aaa;
   }
 }
 
@@ -1579,8 +1657,9 @@
 
 .connection-card {
   display: flex;
-  flex-direction: column;
-  padding: 0;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
   background: $background;
   border-radius: $border-radius-md;
   border: 1px solid $border-color;
@@ -1621,8 +1700,20 @@
   }
 
   &__name {
+    display: flex;
+    align-items: baseline;
+    gap: $spacing-sm;
     font-weight: 600;
     font-size: $font-size-sm;
+  }
+
+  &__username {
+    font-weight: 400;
+    font-size: $font-size-xs;
+    color: $text-light;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__status {
@@ -1630,11 +1721,22 @@
     align-items: center;
     gap: $spacing-sm;
     margin-top: 2px;
+    flex-wrap: wrap;
   }
 
-  &__auto-publish {
-    font-size: $font-size-xs;
+  &__meta {
+    font-size: 11px;
     color: $text-light;
+  }
+
+  &__expiry {
+    font-size: 11px;
+    color: #888;
+
+    &--warn {
+      color: $primary-color;
+      font-weight: 600;
+    }
   }
 
   &__actions {

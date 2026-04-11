@@ -17,6 +17,35 @@
       width: 100%;
     }
   }
+
+  // Center media / embed block types horizontally within their container
+  &--social_media,
+  &--image,
+  &--video,
+  &--document,
+  &--url_link,
+  &--campaign,
+  &--gallery,
+  &--form {
+    .block__inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  // Social feed: center normally, but constrain width for row-scroll
+  &--social_feed {
+    overflow: hidden;
+
+    .block__inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
 }
 
 .hero-block {

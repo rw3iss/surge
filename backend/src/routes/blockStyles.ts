@@ -22,6 +22,8 @@ const blockStyleSchema = z.object({
     padding: z.string().nullable().optional(),
     margin: z.string().nullable().optional(),
     gap: z.string().nullable().optional(),
+    overflowX: z.string().nullable().optional(),
+    overflowY: z.string().nullable().optional(),
 },);
 
 /** Convert null values to undefined so they match Partial<BlockStyle>. */
@@ -82,7 +84,9 @@ router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest,
 router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
     try {
         const data = blockStyleSchema.partial().parse(req.body,);
-        const style = await blockStylesRepo.update(req.params.id, nullsToUndefined(data,),);
+        // Don't strip nulls on update — null means "clear this field".
+        // buildUpdateSet skips undefined but passes null through to SET col = NULL.
+        const style = await blockStylesRepo.update(req.params.id, data as Partial<BlockStyle>,);
         await cache.del(CACHE_KEY,);
         await logAudit({
             userId: req.userId!,

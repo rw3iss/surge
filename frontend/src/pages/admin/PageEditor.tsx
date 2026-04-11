@@ -2,7 +2,7 @@ import { Title, } from '@solidjs/meta';
 import { A, useNavigate, useParams, } from '@solidjs/router';
 import { Component, createEffect, createResource, createSignal, For, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/AutoSaveIndicator';
-import BlockEditor, { BlockData, BlockType, BlockTypeOption, } from '../../components/admin/BlockEditor';
+import BlockEditor, { BlockData, } from '../../components/admin/BlockEditor';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import EditorSaveBar from '../../components/admin/EditorSaveBar';
 import PreviewOverlay from '../../components/admin/PreviewOverlay';
@@ -16,18 +16,7 @@ import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
 import { api, } from '../../services/api';
 import { BlockStyleService, } from '../../services/blockStyles';
 
-const PAGE_BLOCK_TYPES: BlockTypeOption[] = [
-    { type: 'rich_text' as BlockType, label: 'Rich Text', },
-    { type: 'image' as BlockType, label: 'Image', },
-    { type: 'video' as BlockType, label: 'Video', },
-    { type: 'hero' as BlockType, label: 'Hero Banner', },
-    { type: 'html' as BlockType, label: 'Custom HTML', },
-    { type: 'social_feed' as BlockType, label: 'Social Feed', },
-    { type: 'campaign' as BlockType, label: 'Campaign', },
-    { type: 'form' as BlockType, label: 'Form', },
-    { type: 'post' as BlockType, label: 'Post Embed', },
-    { type: 'gallery' as BlockType, label: 'Gallery', },
-];
+// Uses DEFAULT_BLOCK_TYPES from BlockEditor (unified list for all editors).
 
 let blockIdCounter = 0;
 const generateBlockId = () => `block-${Date.now()}-${++blockIdCounter}`;
@@ -376,7 +365,6 @@ const AdminPageEditor: Component = () => {
                     title="Page Content"
                     blocks={blocks()}
                     onBlocksChange={(newBlocks,) => { setBlocks(newBlocks,); markDirty(); }}
-                    blockTypes={PAGE_BLOCK_TYPES}
                 />
             </div>
 

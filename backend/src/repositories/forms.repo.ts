@@ -8,7 +8,17 @@ import { deleteById, findByIdOrThrow, paginatedQuery, PaginatedResult, Paginatio
 
 export interface FormFilters {
     status?: string;
+    sortBy?: string;
+    sortOrder?: string;
 }
+
+const FORM_SORT_COLUMNS: Record<string, string> = {
+    title: 'title',
+    status: 'status',
+    created_at: 'created_at',
+    updated_at: 'updated_at',
+    submission_count: 'submission_count',
+};
 
 export async function findPublishedForms(): Promise<Form[]> {
     const result = await query(
@@ -53,8 +63,11 @@ export async function findForms(
         whereClause += ` AND status = $${params.length}`;
     }
 
+    const col = FORM_SORT_COLUMNS[filters.sortBy || 'updated_at'] || 'updated_at';
+    const dir = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
+
     return paginatedQuery<Form>(
-        `SELECT * FROM forms ${whereClause} ORDER BY created_at DESC`,
+        `SELECT * FROM forms ${whereClause} ORDER BY ${col} ${dir}`,
         `SELECT COUNT(*) FROM forms ${whereClause}`,
         params,
         pagination,

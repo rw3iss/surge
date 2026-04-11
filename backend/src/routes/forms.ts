@@ -332,11 +332,11 @@ router.get('/:id/submissions/export', authenticate(), requireAdmin, async (req: 
 // Get all forms (admin)
 router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
     try {
-        const { status, page = 1, limit = 20, } = req.query;
+        const { status, page = 1, limit = 20, sortBy, sortOrder, } = req.query;
         const pagination = { page: Number(page,), limit: Number(limit,), };
 
         const result = await formsRepo.findForms(
-            { status: status as string, },
+            { status: status as string, sortBy: sortBy as string, sortOrder: sortOrder as string, },
             pagination,
         );
 

@@ -11,6 +11,8 @@ export interface BlockStyle {
     padding?: string; // CSS padding value
     margin?: string; // CSS margin value
     gap?: string; // CSS gap value
+    overflowX?: string; // CSS overflow-x value
+    overflowY?: string; // CSS overflow-y value
     createdAt?: Date;
     updatedAt?: Date;
 }

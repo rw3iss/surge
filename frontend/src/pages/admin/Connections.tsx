@@ -12,6 +12,23 @@ const PROVIDERS = [
     { id: 'twitter', name: 'Twitter', icon: 'TW', },
 ];
 
+function formatExpiry(iso: string | undefined | null,): string | null {
+    if (!iso) return null;
+    try {
+        const d = new Date(iso,);
+        const now = Date.now();
+        const ms = d.getTime() - now;
+        if (ms < 0) return 'Expired';
+        const days = Math.floor(ms / 86_400_000,);
+        if (days > 30) return `Expires ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', },)}`;
+        if (days > 1) return `Expires in ${days}d`;
+        const hours = Math.floor(ms / 3_600_000,);
+        return hours > 0 ? `Expires in ${hours}h` : 'Expires soon';
+    } catch {
+        return null;
+    }
+}
+
 const AdminConnections: Component = () => {
     const [connections, { refetch, },] = createResource(async () => {
         const response = await api.get('/connections',);
@@ -43,11 +60,19 @@ const AdminConnections: Component = () => {
                 <For each={PROVIDERS}>
                     {(provider, index,) => {
                         const conn = () => getConnection(provider.id,);
+                        const expiry = () => formatExpiry(conn()?.credentials?.tokenExpiresAt,);
                         return (
                             <div class={`connection-card ${conn() ? 'connection-card--connected' : ''}`}>
                                 <div class="connection-card__icon">{provider.icon}</div>
                                 <div class="connection-card__info">
-                                    <div class="connection-card__name">{provider.name}</div>
+                                    <div class="connection-card__name">
+                                        {provider.name}
+                                        <Show when={conn()?.displayName}>
+                                            <span class="connection-card__username">
+                                                @{conn()!.displayName}
+                                            </span>
+                                        </Show>
+                                    </div>
                                     <div class="connection-card__status">
                                         <Show
                                             when={conn()}
@@ -55,10 +80,22 @@ const AdminConnections: Component = () => {
                                         >
                                             <span class="badge badge--success">Connected</span>
                                             <Show when={conn()?.autoPublish}>
-                                                <span class="connection-card__auto-publish">
+                                                <span class="connection-card__meta">
                                                     Auto-publish: {conn()?.autoPublishCount ?
                                                         `last ${conn()?.autoPublishCount}` :
                                                         'all'}
+                                                </span>
+                                            </Show>
+                                            <Show when={expiry()}>
+                                                <span class={`connection-card__expiry ${
+                                                    expiry() === 'Expired' ? 'connection-card__expiry--warn' : ''
+                                                }`}>
+                                                    {expiry()}
+                                                </span>
+                                            </Show>
+                                            <Show when={conn()?.lastSyncedAt}>
+                                                <span class="connection-card__meta">
+                                                    Synced {new Date(conn()!.lastSyncedAt,).toLocaleDateString()}
                                                 </span>
                                             </Show>
                                         </Show>

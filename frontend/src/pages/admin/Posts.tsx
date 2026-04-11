@@ -2,13 +2,21 @@ import { Title, } from '@solidjs/meta';
 import { A, } from '@solidjs/router';
 import { Component, createEffect, For, Show, } from 'solid-js';
 import Pagination from '../../components/admin/Pagination';
+import SortTh from '../../components/admin/SortTh';
 import { useBulkActions, } from '../../hooks/useBulkActions';
 import { usePaginatedList, } from '../../hooks/usePaginatedList';
 import { useSearchFilter, } from '../../hooks/useSearchFilter';
 import { getStatusBadgeClass, } from '../../utils/badges';
 
+function formatDate(iso: string | null | undefined,): string {
+    if (!iso) return '—';
+    const d = new Date(iso,);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', },);
+}
+
 const AdminPosts: Component = () => {
     const { searchInput, handleSearchInput, searchParams, setSearchParams, } = useSearchFilter();
+    const currentSort = () => searchParams.sort || 'updated_desc';
 
     const list = usePaginatedList<any>({
         endpoint: '/posts',
@@ -16,11 +24,10 @@ const AdminPosts: Component = () => {
         params: () => ({
             status: searchParams.status,
             search: searchParams.search,
-            sort: searchParams.sort,
+            sort: currentSort(),
         }),
     },);
 
-    // Reset to page 1 when filters change
     createEffect(() => {
         searchParams.status;
         searchParams.search;
@@ -33,7 +40,9 @@ const AdminPosts: Component = () => {
         onComplete: () => list.refetch(),
     },);
 
-    const statusBadge = getStatusBadgeClass;
+    const handleSort = (sort: string,) => {
+        setSearchParams({ sort, },);
+    };
 
     return (
         <div>
@@ -62,44 +71,22 @@ const AdminPosts: Component = () => {
                     <option value="archived">Archived</option>
                     <option value="deleted">Deleted</option>
                 </select>
-                <select
-                    class="admin-filter-bar__select"
-                    value={searchParams.sort || 'date_desc'}
-                    onChange={(e,) => setSearchParams({ sort: e.currentTarget.value || undefined, },)}
-                >
-                    <option value="date_desc">Newest</option>
-                    <option value="date_asc">Oldest</option>
-                    <option value="title_asc">Name A-Z</option>
-                    <option value="title_desc">Name Z-A</option>
-                </select>
             </div>
             <Show when={bulk.selectedCount() > 0}>
                 <div class="admin-list-page__bulk-bar">
                     <span class="admin-list-page__bulk-count">
                         {bulk.selectedCount()} selected
                     </span>
-                    <button
-                        class="btn btn--small btn--secondary"
-                        onClick={() => bulk.applyStatus('published',)}
-                    >
+                    <button class="btn btn--small btn--secondary" onClick={() => bulk.applyStatus('published',)}>
                         Publish
                     </button>
-                    <button
-                        class="btn btn--small btn--secondary"
-                        onClick={() => bulk.applyStatus('draft',)}
-                    >
+                    <button class="btn btn--small btn--secondary" onClick={() => bulk.applyStatus('draft',)}>
                         Unpublish
                     </button>
-                    <button
-                        class="btn btn--small btn--danger"
-                        onClick={() => bulk.applyDelete()}
-                    >
+                    <button class="btn btn--small btn--danger" onClick={() => bulk.applyDelete()}>
                         Delete
                     </button>
-                    <button
-                        class="btn btn--small btn--ghost"
-                        onClick={() => bulk.clear()}
-                    >
+                    <button class="btn btn--small btn--ghost" onClick={() => bulk.clear()}>
                         Clear
                     </button>
                 </div>
@@ -123,10 +110,11 @@ const AdminPosts: Component = () => {
                                             onChange={() => bulk.toggleAll(list.items(),)}
                                         />
                                     </th>
-                                    <th>Title</th>
-                                    <th>Status</th>
+                                    <SortTh label="Title" field="title" current={currentSort()} onSort={handleSort} />
+                                    <SortTh label="Status" field="status" current={currentSort()} onSort={handleSort} />
                                     <th>Blocks</th>
-                                    <th>Date</th>
+                                    <SortTh label="Published" field="date" current={currentSort()} onSort={handleSort} />
+                                    <SortTh label="Modified" field="updated" current={currentSort()} onSort={handleSort} />
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -142,29 +130,20 @@ const AdminPosts: Component = () => {
                                                 />
                                             </td>
                                             <td>
-                                                <A
-                                                    href={`/admin/posts/${post.id}`}
-                                                    class="table-link"
-                                                >
+                                                <A href={`/admin/posts/${post.id}`} class="table-link">
                                                     {post.title}
                                                 </A>
                                             </td>
                                             <td>
-                                                <span class={`badge ${statusBadge(post.status,)}`}>
+                                                <span class={`badge ${getStatusBadgeClass(post.status,)}`}>
                                                     {post.status}
                                                 </span>
                                             </td>
                                             <td>{post.blockCount || 0}</td>
+                                            <td>{formatDate(post.publishedAt,)}</td>
+                                            <td>{formatDate(post.updatedAt,)}</td>
                                             <td>
-                                                {post.publishedAt ?
-                                                    new Date(post.publishedAt,).toLocaleDateString() :
-                                                    '—'}
-                                            </td>
-                                            <td>
-                                                <A
-                                                    href={`/admin/posts/${post.id}`}
-                                                    class="btn btn--small btn--secondary"
-                                                >
+                                                <A href={`/admin/posts/${post.id}`} class="btn btn--small btn--secondary">
                                                     Edit
                                                 </A>
                                                 <a

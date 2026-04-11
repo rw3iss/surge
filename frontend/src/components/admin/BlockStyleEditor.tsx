@@ -72,7 +72,10 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
     },);
 
     const update = (field: keyof BlockStyleData, value: string | undefined,) => {
-        props.onChange({ ...props.style, [field]: value || undefined, },);
+        // Use null (not undefined) for explicitly-cleared values so the key
+        // survives JSON serialization and the backend can write the clear.
+        // undefined would be stripped by JSON.stringify / object spread.
+        props.onChange({ ...props.style, [field]: value === '' ? null : value, },);
     };
 
     const handleSaveTemplate = async () => {
@@ -108,6 +111,8 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
             verticalAlign: undefined,
             width: undefined,
             margin: undefined,
+            overflowX: undefined,
+            overflowY: undefined,
         },);
         setCustomWidth(false,);
         setCustomPadding(false,);
@@ -139,8 +144,10 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                     <label class="block-style-editor__label">Background Color</label>
                     <div class="block-style-editor__color-row">
                         <ColorPicker
-                            value={props.style.backgroundColor || BLOCK_STYLE_DEFAULTS.backgroundColor}
+                            value={props.style.backgroundColor || ''}
                             onChange={(hex,) => update('backgroundColor', hex,)}
+                            clearable
+                            onClear={() => update('backgroundColor', '',)}
                         />
                     </div>
                 </div>
@@ -359,6 +366,36 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                         </div>
                         <span class="block-style-editor__help-text">Spacing between inner content items</span>
                     </div>
+                </div>
+
+                {/* Overflow X */}
+                <div class="block-style-editor__field">
+                    <label class="block-style-editor__label">Overflow X</label>
+                    <select
+                        class="block-style-editor__select"
+                        value={props.style.overflowX || ''}
+                        onChange={(e,) => update('overflowX', e.currentTarget.value || undefined,)}
+                    >
+                        <option value="">Default (wrap)</option>
+                        <option value="auto">Scroll if needed</option>
+                        <option value="scroll">Always scroll</option>
+                        <option value="hidden">Hidden (clip)</option>
+                    </select>
+                </div>
+
+                {/* Overflow Y */}
+                <div class="block-style-editor__field">
+                    <label class="block-style-editor__label">Overflow Y</label>
+                    <select
+                        class="block-style-editor__select"
+                        value={props.style.overflowY || ''}
+                        onChange={(e,) => update('overflowY', e.currentTarget.value || undefined,)}
+                    >
+                        <option value="">Default (grow)</option>
+                        <option value="auto">Scroll if needed</option>
+                        <option value="scroll">Always scroll</option>
+                        <option value="hidden">Hidden (clip)</option>
+                    </select>
                 </div>
             </div>
 

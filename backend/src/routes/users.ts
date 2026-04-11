@@ -65,10 +65,16 @@ const banUserSchema = z.object({
 
 router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
     try {
-        const { search, role, status, page = 1, limit = 50, } = req.query;
+        const { search, role, status, page = 1, limit = 50, sortBy, sortOrder, } = req.query;
         const pagination = { page: Number(page,), limit: Number(limit,), };
         const result = await usersRepo.findUsers(
-            { search: search as string, role: role as string, status: status as string, },
+            {
+                search: search as string,
+                role: role as string,
+                status: status as string,
+                sortBy: sortBy as string,
+                sortOrder: sortOrder as string,
+            },
             pagination,
         );
         sendPaginated(res, result.data, pagination.page, pagination.limit, result.total,);

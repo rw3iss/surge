@@ -5,12 +5,21 @@ import './ColorPicker.scss';
 interface ColorPickerProps {
     value: string;
     onChange: (hex: string,) => void;
+    /** Show a "no color" / transparent clear button. Default false. */
+    clearable?: boolean;
+    /** Called when the user clicks the clear button. */
+    onClear?: () => void;
     showHexInput?: boolean;
     defaultColor?: string;
 }
 
 function isValidHex(hex: string,): boolean {
     return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex,);
+}
+
+/** True when the value represents "no color" (empty, undefined-ish, or 'transparent'). */
+function isEmpty(val: string | undefined | null,): boolean {
+    return !val || val === '' || val === 'transparent' || val === 'none';
 }
 
 export default function ColorPicker(props: ColorPickerProps,) {
@@ -38,10 +47,10 @@ export default function ColorPicker(props: ColorPickerProps,) {
         }
     },);
 
-    const currentColor = () => isValidHex(props.value,) ? props.value : defaultColor;
+    const isCleared = () => isEmpty(props.value,);
+    const currentColor = () => isCleared() ? defaultColor : (isValidHex(props.value,) ? props.value : defaultColor);
 
     const handleHexChange = (val: string,) => {
-        // Auto-add # prefix
         if (val && !val.startsWith('#',)) val = '#' + val;
         setHexInput(val,);
         if (isValidHex(val,)) {
@@ -53,6 +62,16 @@ export default function ColorPicker(props: ColorPickerProps,) {
         setHexInput(color,);
         props.onChange(color,);
         setOpen(false,);
+    };
+
+    const handleClear = () => {
+        setHexInput('',);
+        setOpen(false,);
+        if (props.onClear) {
+            props.onClear();
+        } else {
+            props.onChange('',);
+        }
     };
 
     // Close on outside click
@@ -73,19 +92,19 @@ export default function ColorPicker(props: ColorPickerProps,) {
                 <input
                     type="text"
                     class={`color-picker__hex-input ${
-                        !isValidHex(hexInput(),) ? 'color-picker__hex-input--invalid' : ''
+                        !isCleared() && !isValidHex(hexInput(),) ? 'color-picker__hex-input--invalid' : ''
                     }`}
-                    value={hexInput()}
+                    value={isCleared() ? '' : hexInput()}
                     onInput={(e,) => handleHexChange(e.currentTarget.value,)}
-                    placeholder="#ffffff"
+                    placeholder={props.clearable ? 'None' : '#ffffff'}
                     maxLength={7}
                 />
             </Show>
             <button
                 ref={swatchRef}
                 type="button"
-                class="color-picker__swatch"
-                style={{ background: currentColor(), }}
+                class={`color-picker__swatch ${isCleared() ? 'color-picker__swatch--empty' : ''}`}
+                style={isCleared() ? {} : { background: currentColor(), }}
                 onClick={() => {
                     if (!open() && swatchRef) {
                         const rect = swatchRef.getBoundingClientRect();
@@ -93,7 +112,7 @@ export default function ColorPicker(props: ColorPickerProps,) {
                     }
                     setOpen(!open(),);
                 }}
-                title="Pick color"
+                title={isCleared() ? 'No color — click to pick' : 'Pick color'}
             />
             <Show when={open()}>
                 <div
@@ -105,12 +124,22 @@ export default function ColorPicker(props: ColorPickerProps,) {
                     }}
                 >
                     <div class="color-picker__presets">
+                        <Show when={props.clearable}>
+                            <button
+                                type="button"
+                                class={`color-picker__preset color-picker__preset--none ${
+                                    isCleared() ? 'color-picker__preset--active' : ''
+                                }`}
+                                onClick={handleClear}
+                                title="No background"
+                            />
+                        </Show>
                         <For each={presets()}>
                             {(color,) => (
                                 <button
                                     type="button"
                                     class={`color-picker__preset ${
-                                        color === currentColor() ? 'color-picker__preset--active' : ''
+                                        !isCleared() && color === currentColor() ? 'color-picker__preset--active' : ''
                                     }`}
                                     style={{ background: color, }}
                                     onClick={() => selectPreset(color,)}
@@ -123,7 +152,7 @@ export default function ColorPicker(props: ColorPickerProps,) {
                         <label>Custom:</label>
                         <input
                             type="text"
-                            value={hexInput()}
+                            value={isCleared() ? '' : hexInput()}
                             onInput={(e,) => handleHexChange(e.currentTarget.value,)}
                             placeholder="#000000"
                             maxLength={7}

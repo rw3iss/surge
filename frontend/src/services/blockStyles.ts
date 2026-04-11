@@ -13,6 +13,8 @@ export interface BlockStyleData {
     padding?: string;
     margin?: string;
     gap?: string;
+    overflowX?: string;
+    overflowY?: string;
 }
 
 /**
@@ -22,7 +24,7 @@ export interface BlockStyleData {
 export const BLOCK_STYLE_DEFAULTS: Required<
     Pick<
         BlockStyleData,
-        'backgroundColor' | 'textColor' | 'textAlign' | 'verticalAlign' | 'fontSize' | 'width' | 'padding' | 'margin' | 'gap'
+        'backgroundColor' | 'textColor' | 'textAlign' | 'verticalAlign' | 'fontSize' | 'width' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
     >
 > = {
     backgroundColor: '',
@@ -34,6 +36,8 @@ export const BLOCK_STYLE_DEFAULTS: Required<
     padding: '',
     margin: '',
     gap: '',
+    overflowX: '',
+    overflowY: '',
 };
 
 let cachedStyles: BlockStyleData[] | null = null;

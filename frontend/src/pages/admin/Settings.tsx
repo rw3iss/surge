@@ -691,7 +691,7 @@ function AppearancePanel() {
                         sublabel="Page background color"
                         tooltip="The base background color for all pages on the site. Applied to the body element and inherited everywhere."
                     >
-                        <ColorPicker value={backgroundColor()} onChange={(hex,) => { setBackgroundColor(hex,); markDirty(); }} />
+                        <ColorPicker value={backgroundColor()} onChange={(hex,) => { setBackgroundColor(hex,); markDirty(); }} clearable onClear={() => { setBackgroundColor('',); markDirty(); }} />
                     </ThemeField>
 
                     <ThemeField
@@ -699,7 +699,7 @@ function AppearancePanel() {
                         sublabel="Default text color"
                         tooltip="The default color for paragraph text and unstyled elements. Override individual blocks via their style settings."
                     >
-                        <ColorPicker value={textColor()} onChange={(hex,) => { setTextColor(hex,); markDirty(); }} />
+                        <ColorPicker value={textColor()} onChange={(hex,) => { setTextColor(hex,); markDirty(); }} clearable onClear={() => { setTextColor('',); markDirty(); }} />
                     </ThemeField>
 
                     <ThemeField
@@ -707,7 +707,7 @@ function AppearancePanel() {
                         sublabel="H1–H6 color"
                         tooltip="Color applied to all heading elements (H1 through H6) on the site. Defaults to the text color if not set."
                     >
-                        <ColorPicker value={headingColor()} onChange={(hex,) => { setHeadingColor(hex,); markDirty(); }} />
+                        <ColorPicker value={headingColor()} onChange={(hex,) => { setHeadingColor(hex,); markDirty(); }} clearable onClear={() => { setHeadingColor('',); markDirty(); }} />
                     </ThemeField>
 
                     <ThemeField
@@ -715,7 +715,7 @@ function AppearancePanel() {
                         sublabel="Brand accent color"
                         tooltip="The main brand/accent color used for primary buttons, focus rings, and progress indicators."
                     >
-                        <ColorPicker value={primaryColor()} onChange={(hex,) => { setPrimaryColor(hex,); markDirty(); }} />
+                        <ColorPicker value={primaryColor()} onChange={(hex,) => { setPrimaryColor(hex,); markDirty(); }} clearable onClear={() => { setPrimaryColor('',); markDirty(); }} />
                     </ThemeField>
 
                     <ThemeField
@@ -723,7 +723,7 @@ function AppearancePanel() {
                         sublabel="Hyperlink color"
                         tooltip="The color used for clickable text links on the public site. Defaults to the primary color if not set."
                     >
-                        <ColorPicker value={linkColor()} onChange={(hex,) => { setLinkColor(hex,); markDirty(); }} />
+                        <ColorPicker value={linkColor()} onChange={(hex,) => { setLinkColor(hex,); markDirty(); }} clearable onClear={() => { setLinkColor('',); markDirty(); }} />
                     </ThemeField>
 
                     <ThemeField
@@ -731,7 +731,7 @@ function AppearancePanel() {
                         sublabel="Cards, form fields, list items"
                         tooltip="Color applied to borders around card-style items throughout the site: blog post cards, form answer choices, textareas, and other bordered elements."
                     >
-                        <ColorPicker value={borderColor()} onChange={(hex,) => { setBorderColor(hex,); markDirty(); }} />
+                        <ColorPicker value={borderColor()} onChange={(hex,) => { setBorderColor(hex,); markDirty(); }} clearable onClear={() => { setBorderColor('',); markDirty(); }} />
                     </ThemeField>
                 </div>
             </div>

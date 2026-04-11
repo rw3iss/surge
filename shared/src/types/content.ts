@@ -25,15 +25,19 @@ export interface Page {
 
 export type BlockType =
     | 'rich_text'
+    | 'text'
     | 'post'
     | 'form'
     | 'image'
     | 'video'
     | 'gallery'
     | 'social_feed'
+    | 'social_media'
     | 'campaign'
     | 'hero'
-    | 'html';
+    | 'html'
+    | 'document'
+    | 'url_link';
 
 export interface Block {
     id: string;

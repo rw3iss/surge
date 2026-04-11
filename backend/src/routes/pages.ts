@@ -33,16 +33,9 @@ const pageSchema = z.object({
 
 const blockSchema = z.object({
     type: z.enum([
-        'rich_text',
-        'post',
-        'form',
-        'image',
-        'video',
-        'gallery',
-        'social_feed',
-        'campaign',
-        'hero',
-        'html',
+        'rich_text', 'text', 'post', 'form', 'image', 'video', 'gallery',
+        'social_feed', 'social_media', 'campaign', 'hero', 'html',
+        'document', 'url_link',
     ],),
     title: z.string().max(255,).optional(),
     content: z.string().optional(),

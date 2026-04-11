@@ -14,20 +14,24 @@ const router = Router();
 router.get('/posts', async (req, res,) => {
     try {
         const { platform, page = 1, limit = 20, } = req.query;
-        const offset = (Number(page,) - 1) * Number(limit,);
+        const pageNum = Number(page,);
+        const limitNum = Number(limit,);
+        const offset = (pageNum - 1) * limitNum;
 
-        const cacheKey = `social:posts:${platform || 'all'}:${page}:${limit}`;
+        const cacheKey = `social:posts:${platform || 'all'}:${pageNum}:${limitNum}`;
 
         const cached = await cache.get(cacheKey,);
-        if (cached) return sendSuccess(res, cached,);
+        if (cached) {
+            // Cached shape is { data, meta } — send directly
+            return res.json({ success: true, ...(cached as object), },);
+        }
 
         const posts = await getSocialPosts(
             platform as SocialPlatform | undefined,
-            Number(limit,),
+            limitNum,
             offset,
         );
 
-        // Get total count
         let whereClause = '';
         const params: unknown[] = [];
         if (platform) {
@@ -37,36 +41,30 @@ router.get('/posts', async (req, res,) => {
 
         const countResult = await query(`SELECT COUNT(*) FROM social_posts ${whereClause}`, params,);
         const total = parseInt(countResult.rows[0].count, 10,);
+        const meta = { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum,), };
 
-        const response = {
-            data: posts,
-            meta: {
-                page: Number(page,),
-                limit: Number(limit,),
-                total,
-                totalPages: Math.ceil(total / Number(limit,),),
-            },
-        };
-
-        await cache.set(cacheKey, response, 600,);
-
-        sendSuccess(res, posts, {
-            page: Number(page,),
-            limit: Number(limit,),
-            total,
-            totalPages: Math.ceil(total / Number(limit,),),
-        },);
+        await cache.set(cacheKey, { data: posts, meta, }, 600,);
+        sendSuccess(res, posts, meta,);
     } catch (error) {
         handleRouteError(res, error, 'fetch social posts',);
     }
 },);
 
 // Get specific platform posts (public)
+// Supports: ?page=1&limit=10&search=term&sort=date&sortDir=desc
 router.get('/posts/:platform', async (req, res,) => {
     try {
         const { platform, } = req.params;
-        const { page = 1, limit = 10, } = req.query;
-        const offset = (Number(page,) - 1) * Number(limit,);
+        const {
+            page = 1,
+            limit = 10,
+            search,
+            sort = 'date',
+            sortDir = 'desc',
+        } = req.query;
+        const pageNum = Number(page,);
+        const limitNum = Math.min(Number(limit,), 50,);
+        const offset = (pageNum - 1) * limitNum;
 
         const validPlatforms: SocialPlatform[] = ['patreon', 'youtube', 'instagram', 'facebook', 'twitter', 'tiktok',];
 
@@ -77,37 +75,63 @@ router.get('/posts/:platform', async (req, res,) => {
             },);
         }
 
-        const cacheKey = `social:${platform}:${page}:${limit}`;
+        // Build query with optional search
+        const conditions: string[] = ['platform = $1'];
+        const params: unknown[] = [platform,];
 
-        const cached = await cache.get(cacheKey,);
-        if (cached) return sendSuccess(res, cached,);
+        if (search && typeof search === 'string' && search.trim()) {
+            params.push(`%${search.trim()}%`,);
+            conditions.push(`(content ILIKE $${params.length} OR author_name ILIKE $${params.length})`,);
+        }
 
-        const posts = await getSocialPosts(platform as SocialPlatform, Number(limit,), offset,);
+        const where = `WHERE ${conditions.join(' AND ')}`;
 
-        const countResult = await query(
-            'SELECT COUNT(*) FROM social_posts WHERE platform = $1',
-            [platform,],
-        );
+        // Sort
+        const dir = String(sortDir,).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+        let orderBy: string;
+        switch (String(sort,)) {
+            case 'likes':
+                orderBy = `likes ${dir} NULLS LAST`;
+                break;
+            case 'comments':
+                orderBy = `comments ${dir} NULLS LAST`;
+                break;
+            case 'date':
+            default:
+                orderBy = `published_at ${dir} NULLS LAST`;
+                break;
+        }
+
+        // Skip Redis cache when search is active (results are user-specific)
+        const cacheKey = search ? null : `social:${platform}:${pageNum}:${limitNum}:${sort}:${sortDir}`;
+        if (cacheKey) {
+            const cached = await cache.get(cacheKey,);
+            if (cached) return res.json({ success: true, ...(cached as object), },);
+        }
+
+        const countResult = await query(`SELECT COUNT(*) FROM social_posts ${where}`, params,);
         const total = parseInt(countResult.rows[0].count, 10,);
 
-        const response = {
-            data: posts,
-            meta: {
-                page: Number(page,),
-                limit: Number(limit,),
-                total,
-                totalPages: Math.ceil(total / Number(limit,),),
-            },
+        params.push(limitNum, offset,);
+        const result = await query(
+            `SELECT * FROM social_posts ${where} ORDER BY ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`,
+            params,
+        );
+
+        const posts = mapRows(result.rows,);
+
+        const meta = {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            totalPages: Math.ceil(total / limitNum,),
         };
 
-        await cache.set(cacheKey, response, 600,);
+        if (cacheKey) {
+            await cache.set(cacheKey, { data: posts, meta, }, 600,);
+        }
 
-        sendSuccess(res, posts, {
-            page: Number(page,),
-            limit: Number(limit,),
-            total,
-            totalPages: Math.ceil(total / Number(limit,),),
-        },);
+        sendSuccess(res, posts, meta,);
     } catch (error) {
         handleRouteError(res, error, 'fetch platform posts',);
     }

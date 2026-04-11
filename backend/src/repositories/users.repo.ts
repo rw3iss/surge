@@ -9,7 +9,17 @@ export interface UserFilters {
     search?: string;
     role?: string;
     status?: string; // 'active' | 'banned' | 'inactive'
+    sortBy?: string;
+    sortOrder?: string;
 }
+
+const USER_SORT_COLUMNS: Record<string, string> = {
+    email: 'u.email',
+    display_name: 'u.display_name',
+    role: 'u.role',
+    created_at: 'u.created_at',
+    updated_at: 'u.updated_at',
+};
 
 export interface UserWithSubscription extends User {
     subscription?: {
@@ -56,7 +66,7 @@ export async function findUsers(
      LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status IN ('active', 'past_due')
      LEFT JOIN subscription_plans sp ON s.plan_id = sp.id
      ${whereClause}
-     ORDER BY u.created_at DESC
+     ORDER BY ${USER_SORT_COLUMNS[filters.sortBy || 'created_at'] || 'u.created_at'} ${filters.sortOrder === 'asc' ? 'ASC' : 'DESC'}
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
         params,
     );

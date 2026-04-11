@@ -35,7 +35,7 @@ const SocialEmbed: Component<SocialEmbedProps> = (props,) => {
             case 'youtube':
                 return `https://www.youtube.com/watch?v=${props.externalId}`;
             case 'instagram':
-                return `https://www.instagram.com/p/${props.externalId}/`;
+                return props.mediaUrl || `https://www.instagram.com/p/${props.externalId}/`;
             case 'twitter':
                 return `https://twitter.com/i/status/${props.externalId}`;
             case 'tiktok':
@@ -56,7 +56,8 @@ const SocialEmbed: Component<SocialEmbedProps> = (props,) => {
             </div>
 
             <div class="social-embed__content">
-                <Switch fallback={<FallbackCard {...props} url={platformUrl()} />}>
+                <Switch fallback={<PostCard {...props} url={platformUrl()} />}>
+                    {/* YouTube: iframe embed works well at 16:9 */}
                     <Match when={props.platform === 'youtube'}>
                         <div class="social-embed__iframe-wrapper social-embed__iframe-wrapper--16x9">
                             <iframe
@@ -72,58 +73,20 @@ const SocialEmbed: Component<SocialEmbedProps> = (props,) => {
                         </div>
                     </Match>
 
+                    {/* Everything else: compact card with thumbnail + caption.
+                        No iframes — renders cleanly at any size, loads instantly,
+                        and links to the original post. */}
                     <Match when={props.platform === 'instagram'}>
-                        <iframe
-                            src={`https://www.instagram.com/p/${props.externalId}/embed`}
-                            width="100%"
-                            height="480"
-                            frameborder="0"
-                            loading="lazy"
-                            title={props.content || 'Instagram post'}
-                            class="social-embed__iframe"
-                        />
+                        <PostCard {...props} url={platformUrl()} />
                     </Match>
-
-                    <Match when={props.platform === 'facebook' && props.mediaUrl}>
-                        <iframe
-                            src={`https://www.facebook.com/plugins/post.php?href=${
-                                encodeURIComponent(props.mediaUrl!,)
-                            }&width=500`}
-                            width="100%"
-                            height="400"
-                            frameborder="0"
-                            loading="lazy"
-                            title={props.content || 'Facebook post'}
-                            class="social-embed__iframe"
-                        />
+                    <Match when={props.platform === 'facebook'}>
+                        <PostCard {...props} url={platformUrl()} />
                     </Match>
-
                     <Match when={props.platform === 'twitter'}>
-                        <iframe
-                            src={`https://platform.twitter.com/embed/Tweet.html?id=${props.externalId}`}
-                            width="100%"
-                            height="400"
-                            frameborder="0"
-                            loading="lazy"
-                            title={props.content || 'Tweet'}
-                            class="social-embed__iframe"
-                        />
+                        <PostCard {...props} url={platformUrl()} />
                     </Match>
-
                     <Match when={props.platform === 'tiktok'}>
-                        <iframe
-                            src={`https://www.tiktok.com/embed/v2/${props.externalId}`}
-                            width="100%"
-                            height="740"
-                            frameborder="0"
-                            loading="lazy"
-                            title={props.content || 'TikTok video'}
-                            class="social-embed__iframe"
-                        />
-                    </Match>
-
-                    <Match when={props.platform === 'patreon'}>
-                        <FallbackCard {...props} url={platformUrl()} />
+                        <PostCard {...props} url={platformUrl()} />
                     </Match>
                 </Switch>
             </div>
@@ -131,33 +94,61 @@ const SocialEmbed: Component<SocialEmbedProps> = (props,) => {
     );
 };
 
-const FallbackCard: Component<SocialEmbedProps & { url: string; }> = (props,) => (
-    <a
-        href={props.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="social-embed__fallback"
-    >
-        <Show when={props.thumbnailUrl}>
-            <img
-                src={props.thumbnailUrl}
-                alt=""
-                class="social-embed__fallback-thumb"
-                loading="lazy"
-            />
-        </Show>
-        <div class="social-embed__fallback-body">
-            <Show when={props.authorName}>
-                <span class="social-embed__fallback-author">{props.authorName}</span>
+/**
+ * Compact social post card — thumbnail, caption, author, and link.
+ * Replaces iframes for a cleaner, faster, scroll-free embed.
+ *
+ * Instagram CDN thumbnail URLs contain time-limited tokens and expire
+ * after a few hours/days. When that happens the image 404s. We handle
+ * this by hiding the broken image and showing a placeholder gradient
+ * with the platform icon instead.
+ */
+const PostCard: Component<SocialEmbedProps & { url: string; }> = (props,) => {
+    const handleImageError = (e: Event,) => {
+        const img = e.target as HTMLImageElement;
+        // Replace with a styled placeholder
+        img.style.display = 'none';
+        const placeholder = img.parentElement?.querySelector('.social-embed__card-placeholder',);
+        if (placeholder) (placeholder as HTMLElement).style.display = 'flex';
+    };
+
+    return (
+        <a
+            href={props.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-embed__card"
+        >
+            <Show when={props.thumbnailUrl}>
+                <img
+                    src={props.thumbnailUrl}
+                    alt=""
+                    class="social-embed__card-image"
+                    loading="lazy"
+                    onError={handleImageError}
+                />
+                <div class="social-embed__card-placeholder" style={{ display: 'none', }}>
+                    <span>{PLATFORM_LABELS[props.platform]}</span>
+                </div>
             </Show>
-            <Show when={props.content}>
-                <p class="social-embed__fallback-text">{props.content}</p>
+            <Show when={!props.thumbnailUrl}>
+                <div class="social-embed__card-placeholder">
+                    <span>{PLATFORM_LABELS[props.platform]}</span>
+                </div>
             </Show>
-            <span class="social-embed__fallback-link">
-                View on {PLATFORM_LABELS[props.platform]} &rarr;
-            </span>
-        </div>
-    </a>
-);
+            <div class="social-embed__card-body">
+                <Show when={props.authorName}>
+                    <span class="social-embed__card-author">{props.authorName}</span>
+                </Show>
+                <Show when={props.content}>
+                    <p class="social-embed__card-text">{props.content}</p>
+                </Show>
+                <span class="social-embed__card-link">
+                    View on {PLATFORM_LABELS[props.platform]} &rarr;
+                </span>
+            </div>
+        </a>
+    );
+};
 
 export default SocialEmbed;

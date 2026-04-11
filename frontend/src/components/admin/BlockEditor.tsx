@@ -15,11 +15,23 @@ interface BlockEditorProps {
     title?: string;
 }
 
+/**
+ * Unified block types available in both Post and Page editors.
+ * Editors can pass a custom `blockTypes` prop to restrict this list,
+ * but the default includes everything.
+ */
 const DEFAULT_BLOCK_TYPES: BlockTypeOption[] = [
-    { type: 'text', label: 'Text', },
-    { type: 'social_media', label: 'Social Media', },
+    { type: 'rich_text', label: 'Rich Text', },
     { type: 'image', label: 'Image', },
     { type: 'video', label: 'Video', },
+    { type: 'hero', label: 'Hero Banner', },
+    { type: 'html', label: 'Custom HTML', },
+    { type: 'social_media', label: 'Social Media Post', },
+    { type: 'social_feed', label: 'Social Feed', },
+    { type: 'campaign', label: 'Campaign', },
+    { type: 'form', label: 'Form', },
+    { type: 'post', label: 'Post Embed', },
+    { type: 'gallery', label: 'Gallery', },
     { type: 'document', label: 'Document', },
     { type: 'url_link', label: 'URL Link', },
 ];
@@ -110,6 +122,14 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
             return next;
         },);
         setShowAddDropdown(false,);
+
+        // Scroll to the newly added block after the DOM updates
+        requestAnimationFrame(() => {
+            const el = document.getElementById(newBlock.id,);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center', },);
+            }
+        },);
     };
 
     const updateBlock = (id: string, data: Record<string, any>,) => {
