@@ -52,7 +52,7 @@
   }
 
   &__sidebar {
-    width: 250px;
+    width: 200px;
     background: $secondary-color;
     color: white;
     display: flex;
@@ -62,12 +62,15 @@
     left: 0;
     top: 0;
     z-index: 1000;
-    transition: transform 0.3s ease;
+    transition: width 0.2s ease;
+    overflow: hidden;
   }
 
   &__logo {
     padding: $spacing-lg;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    overflow: hidden;
 
     a {
       color: white;
@@ -81,10 +84,26 @@
     flex: 1;
     padding: $spacing-md 0;
     overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  &__nav-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: inherit;
+  }
+
+  &__nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__nav-link {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
     padding: $spacing-sm $spacing-lg;
     color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
@@ -101,37 +120,149 @@
     }
   }
 
+  &__sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
   &__user {
-    padding: $spacing-md $spacing-lg;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    overflow: hidden;
+  }
 
-    span {
-      font-size: $font-size-sm;
-      color: rgba(255, 255, 255, 0.7);
+  &__user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    flex-shrink: 0;
+    border: none;
+    cursor: default;
+    line-height: 1;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  &__user-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  // When collapsed the avatar becomes the logout button
+  button.admin-layout__user-avatar {
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.25);
     }
+  }
 
-    button {
-      background: none;
-      border: none;
-      color: $primary-color;
-      cursor: pointer;
-      font-size: $font-size-sm;
+  &__user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+    min-width: 0;
+  }
 
-      &:hover {
-        text-decoration: underline;
-      }
+  &__user-name {
+    font-size: $font-size-xs;
+    color: rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+
+  &__user-logout {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+    text-align: left;
+    line-height: 1.3;
+
+    &:hover { color: rgba(255, 255, 255, 0.7); }
+  }
+
+  &__collapse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 6px 0;
+    background: none;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.04);
     }
   }
 
   &__main {
     flex: 1;
-    margin-left: 250px;
+    margin-left: 200px;
     padding: $spacing-xl;
     background: $background-dark;
     min-height: 100vh;
+    // Use clip instead of hidden — hidden creates a new scroll container
+    // which breaks position:sticky on descendant elements (flyout panel).
+    overflow-x: clip;
+    min-width: 0;
+    transition: margin-left 0.2s ease;
+  }
+
+  // ─── Collapsed sidebar ───
+  $collapsed-width: 56px;
+
+  &--collapsed {
+    .admin-layout__sidebar {
+      width: $collapsed-width;
+    }
+
+    .admin-layout__logo {
+      padding: $spacing-sm;
+      text-align: center;
+
+      // Hide text, show only the logo icon
+      a { font-size: $font-size-sm; }
+    }
+
+    .admin-layout__nav-link {
+      justify-content: center;
+      padding: $spacing-sm;
+    }
+
+    .admin-layout__nav-label {
+      display: none;
+    }
+
+    .admin-layout__user {
+      justify-content: center;
+      padding: $spacing-xs;
+    }
+
+    .admin-layout__main {
+      margin-left: $collapsed-width;
+    }
   }
 }
 
@@ -155,9 +286,17 @@
     }
 
     &__main {
-      margin-left: 0;
+      margin-left: 0 !important;
       padding: $spacing-md;
       padding-top: calc(#{$spacing-md} + 58px);
+    }
+
+    &--collapsed .admin-layout__sidebar {
+      width: 200px;
+    }
+
+    .admin-layout__collapse-toggle {
+      display: none;
     }
   }
 
@@ -1053,12 +1192,391 @@
     }
 }
 
+// ─── Collapsible panel (properties sections) ───
+.collapsible-panel {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  background: $background;
+  margin-bottom: $spacing-sm;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: $font-size-sm;
+    color: $text-color;
+    transition: background 0.1s;
+
+    &:hover { background: $background-dark; }
+  }
+
+  &__icon {
+    font-size: 10px;
+    color: $text-light;
+    width: 14px;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-weight: 600;
+    font-size: $font-size-sm;
+  }
+
+  &__subtitle {
+    color: $text-light;
+    font-size: $font-size-xs;
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
+  &__body {
+    padding: $spacing-sm $spacing-md $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+}
+
+// ─── Two-column properties layout (main + sidebar) ───
+.editor-properties {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: $spacing-md;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    padding-top: 2px;
+  }
+
+  // Compact form-group styling inside properties panels
+  .form-group {
+    margin-bottom: 0;
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+      display: block;
+    }
+
+    input, select, textarea {
+      padding: 5px 8px;
+      font-size: $font-size-sm;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 50px;
+      resize: vertical;
+    }
+
+    .form-help, small {
+      font-size: 10px;
+      color: $text-light;
+      margin-top: 1px;
+      display: block;
+    }
+  }
+}
+
 // Content blocks
 .block-editor__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: $spacing-md;
+  margin-top: $spacing-xl;
+  margin-bottom: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.block-editor__preview-controls {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.block-editor__mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { color: $text-color; border-color: #bbb; }
+  &--active {
+    color: $primary-color;
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.06);
+  }
+}
+
+.block-editor__mobile-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-xs 0;
+  margin-bottom: $spacing-xs;
+  width: 100%;
+}
+
+.block-editor__device-select {
+  padding: 4px 8px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  background: $background;
+}
+
+.block-editor__height-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $font-size-xs;
+  color: $text-light;
+  cursor: pointer;
+  white-space: nowrap;
+
+  input { margin: 0; }
+}
+
+// ─── Content row: blocks column + optional inline flyout ───
+.block-editor__content-row {
+  display: flex;
+  gap: $spacing-md;
+  align-items: flex-start;
+
+  &--with-panel {
+    // When inline panel is visible, blocks column shrinks to fit
+  }
+}
+
+.block-editor__blocks-column {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.block-editor__preview-frame {
+  position: relative;
+  transition: max-width 0.2s ease;
+}
+
+.block-editor__fold-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 5;
+  border-top: 2px dashed rgba(255, 255, 255, 0.6);
+
+  &::before {
+    content: 'Below fold';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+}
+
+.site-preview-container--mobile {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+}
+
+.site-preview-container--full {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// ─── Block Edit Controller field system (inside flyout) ───
+
+// Standardized field row — label floats above, input full-width
+.bec-field {
   margin-bottom: $spacing-sm;
+
+  &__label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-light;
+    margin-bottom: 3px;
+    line-height: 1.2;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    background: $background;
+    color: $text-color;
+
+    &:focus {
+      border-color: $primary-color;
+      outline: none;
+    }
+  }
+
+  &__help {
+    display: block;
+    font-size: 11px;
+    color: $text-light;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+}
+
+// Small icon button for inline actions (trash, edit pencil)
+.bec-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  color: $text-light;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.1s;
+
+  &:hover {
+    color: $text-color;
+    border-color: #bbb;
+    background: $background-dark;
+  }
+
+  &--danger:hover {
+    color: $primary-color;
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.06);
+  }
+}
+
+.bec-divider {
+  height: 1px;
+  background: $border-color;
+  margin: $spacing-md 0;
+}
+
+// Override .form-group inside the flyout edit controller
+// to match the standardized column layout
+.block-edit-controller__form {
+  .form-group {
+    margin-bottom: $spacing-sm;
+
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $text-light;
+      margin-bottom: 3px;
+      line-height: 1.2;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-sm;
+      background: $background;
+      color: $text-color;
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: $primary-color;
+        outline: none;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-help, small {
+      display: block;
+      font-size: 11px;
+      color: $text-light;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: $spacing-sm;
+
+    .form-group {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: auto;
+    }
+  }
 }
 
 .block-editor__title {
@@ -1078,7 +1596,7 @@
 .content-blocks-list {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: 0;
   margin-bottom: $spacing-lg;
   position: relative;
 
@@ -1088,17 +1606,66 @@
   }
 }
 
-.content-block {
-  background: $background-dark;
-  border: 1px solid $border-color;
+// Site preview container — mirrors the public site's appearance settings
+// Applied via containerStyle prop with inline CSS custom properties
+.site-preview-container {
   border-radius: $border-radius-md;
+  min-height: 100px;
+  max-width: 100%;
+  overflow: hidden;
+  // Ensure the container doesn't inherit admin background
+  isolation: isolate;
+}
+
+.content-block {
+  position: relative;
   overflow: visible;
   transition: box-shadow $transition-fast, border-color $transition-fast;
 
-  &--editing {
-    border-color: $primary-color;
-    box-shadow: 0 0 0 1px $primary-color;
+  // ─── PREVIEW MODE (default) ───
+  &--preview {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+
+    // The floating hover bar is hidden by default, shown on hover
+    .content-block__hover-bar {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    &:hover .content-block__hover-bar {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  // ─── SELECTED (editing in flyout) ───
+  &--selected {
+    // Overlay border via a pseudo-element so it renders above all inner
+    // content (social feed cards, hero images, etc.) without shifting layout.
+    position: relative;
     z-index: 2;
+    cursor: default;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 3px solid $primary-color;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .content-block__hover-bar {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      background: rgba($primary-color, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
   }
 
   &--dragging {
@@ -1108,31 +1675,147 @@
     box-shadow: none;
     overflow: hidden;
 
+    .content-block__preview-body,
     .content-block__body {
       visibility: hidden;
     }
   }
 
+  // ─── Floating hover bar (preview mode) ───
+  &__hover-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 6px $spacing-sm;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    font-size: $font-size-xs;
+  }
+
+  &__hover-drag {
+    cursor: grab;
+    padding: 2px 4px;
+    color: #999;
+    font-size: 14px;
+
+    &:active { cursor: grabbing; }
+  }
+
+  &__hover-label {
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    font-size: 10px;
+    flex: 1;
+  }
+
+  &__hover-btn {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 2px 5px;
+    font-size: 10px;
+    line-height: 1;
+    border-radius: $border-radius-sm;
+    transition: all 0.1s;
+
+    &:hover:not(:disabled) { color: #333; background: rgba(0,0,0,0.06); }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    &--options {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 0 4px;
+    }
+  }
+
+  &__options-wrap {
+    position: relative;
+  }
+
+  &__options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    background: #fff;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    min-width: 140px;
+    padding: 4px 0;
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 6px 14px;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: $font-size-sm;
+      color: $text-color;
+      cursor: pointer;
+      white-space: nowrap;
+
+      &:hover {
+        background: $background-dark;
+      }
+    }
+  }
+
+  &__options-danger {
+    color: $primary-color !important;
+
+    &:hover {
+      background: rgba($primary-color, 0.08) !important;
+    }
+  }
+
+  // ─── Preview body (wraps BlockPreview) ───
+  &__preview-body {
+    min-height: 30px;
+  }
+
+  // ─── Edit mode body ───
   &__body {
     padding: $spacing-md;
     overflow: visible;
-    transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
-
-    &--collapsed {
-      max-height: 0;
-      padding-top: 0;
-      padding-bottom: 0;
-      opacity: 0;
-    }
-
-    &:has(.content-block__preview) {
-      padding: 0;
-    }
   }
+}
 
-  &__preview {
-    min-height: 40px;
-  }
+// Empty block placeholder (shown in preview when block has no content)
+.block-preview__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-xl;
+  color: #bbb;
+  font-size: $font-size-sm;
+  border: 2px dashed #e0e0e0;
+  border-radius: $border-radius-md;
+  margin: $spacing-sm;
+}
+
+.block-preview__empty-label {
+  text-transform: capitalize;
+  font-weight: 600;
+  color: #999;
+}
+
+.block-preview__empty-hint {
+  font-size: $font-size-xs;
 }
 
 .content-block-ghost {
@@ -1196,10 +1879,24 @@
     color: $text-light;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    min-width: 200px;
+    min-width: 120px;
     display: flex;
     align-items: center;
     gap: $spacing-xs;
+  }
+
+  &__type-select {
+    font-weight: 600;
+    font-size: $font-size-sm;
+    color: $text-light;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 3px 6px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $background;
+    cursor: pointer;
+    min-width: 140px;
   }
 
   &__collapse-icon {
@@ -1244,6 +1941,18 @@
 .add-block-dropdown {
   position: relative;
   display: inline-block;
+
+  // Top button: dropdown opens downward, with margin below before content
+  &--top {
+    margin-bottom: $spacing-md;
+  }
+
+  &--top &__menu {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: $spacing-xs;
+  }
 
   &__menu {
     position: absolute;
@@ -2490,18 +3199,15 @@
 
 .entity-search {
   &__dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: $z-index-dropdown;
+    // Position is set inline as fixed + calculated coords so it
+    // escapes overflow:auto containers (flyout panel, modals).
+    z-index: $z-index-modal;
     background: $background;
     border: 1px solid $border-color;
     border-radius: $border-radius-md;
     box-shadow: $shadow-lg;
     max-height: 240px;
     overflow-y: auto;
-    margin-top: 2px;
   }
 
   &__option {

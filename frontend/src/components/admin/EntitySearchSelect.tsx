@@ -1,4 +1,4 @@
-import { Component, createResource, createSignal, For, onCleanup, Show, } from 'solid-js';
+import { Component, createSignal, For, onCleanup, onMount, Show, } from 'solid-js';
 
 export interface EntitySearchItem {
     id: string;
@@ -28,12 +28,21 @@ export interface EntitySearchSelectProps {
 const EntitySearchSelect: Component<EntitySearchSelectProps> = (props,) => {
     const [search, setSearch,] = createSignal(props.selectedTitle || '',);
     const [showDropdown, setShowDropdown,] = createSignal(false,);
+    const [dropdownPos, setDropdownPos,] = createSignal({ top: 0, left: 0, width: 0, },);
     let containerRef: HTMLDivElement | undefined;
+    let inputRef: HTMLInputElement | undefined;
 
-    const [items,] = createResource(async () => props.fetchItems(),);
+    // Use onMount instead of createResource to avoid triggering Suspense
+    const [items, setItems,] = createSignal<EntitySearchItem[]>([],);
+    onMount(async () => {
+        try {
+            const result = await props.fetchItems();
+            setItems(result,);
+        } catch { /* ignore */ }
+    },);
 
     const filtered = () => {
-        const list = items() || [];
+        const list = items();
         const q = search().toLowerCase().trim();
         if (!q) return list;
         return list.filter(
@@ -60,24 +69,41 @@ const EntitySearchSelect: Component<EntitySearchSelectProps> = (props,) => {
         onCleanup(() => document.removeEventListener('mousedown', handleClickOutside,),);
     }
 
+    const updateDropdownPos = () => {
+        if (inputRef) {
+            const rect = inputRef.getBoundingClientRect();
+            setDropdownPos({ top: rect.bottom + 2, left: rect.left, width: rect.width, },);
+        }
+    };
+
     return (
         <div class="entity-search" ref={containerRef} style={{ position: 'relative', }}>
             <Show when={props.label}>
                 <label>{props.label}</label>
             </Show>
             <input
+                ref={inputRef}
                 type="text"
                 value={search()}
                 onInput={(e,) => {
                     setSearch(e.currentTarget.value,);
+                    updateDropdownPos();
                     setShowDropdown(true,);
                 }}
-                onFocus={() => setShowDropdown(true,)}
+                onFocus={() => { updateDropdownPos(); setShowDropdown(true,); }}
                 placeholder={props.placeholder || 'Search...'}
                 autocomplete="off"
             />
             <Show when={showDropdown()}>
-                <div class="entity-search__dropdown">
+                <div
+                    class="entity-search__dropdown"
+                    style={{
+                        position: 'fixed',
+                        top: `${dropdownPos().top}px`,
+                        left: `${dropdownPos().left}px`,
+                        width: `${dropdownPos().width}px`,
+                    }}
+                >
                     <Show when={filtered().length > 0}>
                         <For each={filtered()}>
                             {(item,) => (

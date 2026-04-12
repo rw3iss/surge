@@ -1,8 +1,9 @@
-import type { Block, Campaign, Form, Post, SocialPlatform, SocialPost, } from '@surge/shared';
+import type { Block, Campaign, Form, HeroCarouselOptions, HeroItem, Post, SocialPlatform, SocialPost, } from '@surge/shared';
 import { A, } from '@solidjs/router';
-import { Component, createResource, For, Match, Show, Switch, } from 'solid-js';
-import { api, fetchSocialPosts, } from '../../services/api';
+import { Component, createResource, createSignal, For, Match, onMount, Show, Switch, } from 'solid-js';
+import { api, fetchAppearance, fetchSocialPosts, } from '../../services/api';
 import FormRenderer from '../FormRenderer';
+import HeroCarousel from '../HeroCarousel';
 import SocialEmbed from '../SocialEmbed';
 import './BlockRenderer.scss';
 
@@ -30,7 +31,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     undefined,
                 'font-size': s().fontSize || undefined,
                 width: s().width || undefined,
-                padding: s().padding || props.block.settings.padding as string || 'var(--site-block-padding, 0)',
+                padding: s().padding || (props.block.settings.padding as string) || 'var(--site-block-padding, 0)',
                 margin: (() => {
                     const m = s().margin;
                     if (!m) return undefined;
@@ -42,7 +43,10 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
             }}
         >
             <div
-                class={`block__inner block__inner--${props.block.settings.layout || 'contained'}`}
+                class={`block__inner block__inner--${
+                    props.block.settings.layout ||
+                    (['carousel', 'hero',].includes(props.block.type,) ? 'full' : 'contained')
+                }`}
                 style={{
                     ...(s().gap ? { display: 'flex', 'flex-direction': 'column', gap: s().gap, } : {}),
                     ...(s().overflowX ? { 'overflow-x': s().overflowX, 'max-width': '100%', } : {}),
@@ -89,6 +93,16 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     <Match when={props.block.type === 'html'}>
                         <HTMLBlock block={props.block} />
                     </Match>
+                    <Match when={props.block.type === 'carousel'}>
+                        <CarouselBlockRenderer block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'spacer'}>
+                        <div
+                            style={{
+                                height: (props.block.settings?.height as string) || '60px',
+                            }}
+                        />
+                    </Match>
                 </Switch>
             </div>
         </div>
@@ -130,7 +144,7 @@ const HeroBlock: Component<{ block: Block; }> = (props,) => {
 
 const RichTextBlock: Component<{ block: Block; }> = (props,) => (
     <div class="rich-text-block">
-        <div class="rich-text" innerHTML={props.block.content || ''} />
+        <div class="rich-text" innerHTML={props.block.content || (props.block.settings?.content as string) || ''} />
     </div>
 );
 
@@ -364,6 +378,7 @@ const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
     const platform = () => props.block.settings.socialPlatform as SocialPlatform | undefined;
     const limit = () => (props.block.settings.limit as number) || 6;
     const layout = () => (props.block.settings.layout as string) || 'grid';
+    const blockStyle = () => (props.block as any).style as Record<string, any> | undefined;
 
     const [posts,] = createResource(
         () => `${platform()}:${limit()}`,
@@ -385,7 +400,10 @@ const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
                     </Show>
                 }
             >
-                <div class={FEED_LAYOUT_CLASS[layout()] || FEED_LAYOUT_CLASS.grid}>
+                <div
+                    class={FEED_LAYOUT_CLASS[layout()] || FEED_LAYOUT_CLASS.grid}
+                    style={layout() === 'row' && blockStyle()?.padding ? { padding: blockStyle()!.padding, 'padding-top': '0', } : undefined}
+                >
                     <For each={posts()}>
                         {(post,) => (
                             <SocialEmbed
@@ -412,7 +430,7 @@ const SocialMediaEmbed: Component<{ block: Block; }> = (props,) => {
                 platform={s().provider as SocialPlatform}
                 externalId={String(s().postId || '',)}
                 mediaUrl={s().postUrl as string}
-                content={s().content as string}
+                content={(s().content || props.block.content) as string}
                 thumbnailUrl={s().thumbnailUrl as string}
                 authorName={s().authorName as string}
             />
@@ -465,5 +483,37 @@ const UrlLinkCard: Component<{ block: Block; }> = (props,) => {
 };
 
 const HTMLBlock: Component<{ block: Block; }> = (props,) => (
-    <div class="html-block" innerHTML={props.block.content || ''} />
+    <div class="html-block" innerHTML={props.block.content || (props.block.settings?.content as string) || ''} />
 );
+
+const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
+    const s = () => props.block.settings || {};
+    const items = () => (s().items as HeroItem[]) || [];
+    const options = () => ({
+        autoScroll: false,
+        autoScrollInterval: 3000,
+        repeat: true,
+        customHeight: false,
+        height: '50vh',
+        ...(s().options as Partial<HeroCarouselOptions> || {}),
+    } as HeroCarouselOptions);
+
+    // Use onMount instead of createResource to avoid Suspense jumps
+    const [appearance, setAppearance,] = createSignal<any>(null,);
+    onMount(async () => {
+        try {
+            const res = await fetchAppearance();
+            if (res.success) setAppearance(res.data,);
+        } catch { /* ignore */ }
+    },);
+
+    return (
+        <Show when={items().length > 0} fallback={<div style={{ padding: '2rem', color: '#999', 'text-align': 'center', }}>No carousel items</div>}>
+            <HeroCarousel
+                items={items()}
+                options={options()}
+                gutterWidth={appearance()?.gutterWidth}
+            />
+        </Show>
+    );
+};

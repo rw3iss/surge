@@ -24,6 +24,7 @@ interface SiteHeaderItem {
     textColor?: string;
     width?: string;
     alignment?: string;
+    verticalAlignment?: string;
     margin?: string;
     padding?: string;
     order: number;
@@ -161,7 +162,14 @@ const SiteHeaderEditor: Component = () => {
     };
 
     const updateEditField = (field: keyof SiteHeaderItem, value: any,) => {
-        setEditItem(prev => prev ? { ...prev, [field]: value, } : null);
+        setEditItem(prev => {
+            if (!prev) return null;
+            const updated = { ...prev, [field]: value, };
+            // Auto-persist to items array so preview and save always reflect edits
+            setItems(list => list.map(i => i.id === updated.id ? { ...updated, } : i));
+            markDirty();
+            return updated;
+        });
     };
 
     const handleSaveItem = () => {
@@ -313,12 +321,35 @@ const SiteHeaderEditor: Component = () => {
     const renderItemPreview = (item: SiteHeaderItem,) => {
         switch (item.type) {
             case 'image':
-            case 'image_link':
                 return (
                     <Show when={item.imageUrl} fallback={<span class="site-header-preview__placeholder">IMG</span>}>
                         <img src={item.imageUrl} alt="" class="site-header-preview__img" />
                     </Show>
                 );
+            case 'image_link': {
+                const marginMap: Record<string, string> = {
+                    left: '0 auto 0 0',
+                    center: '0 auto',
+                    right: '0 0 0 auto',
+                };
+                const hAlign = item.alignment || 'center';
+                return (
+                    <Show when={item.imageUrl} fallback={<span class="site-header-preview__placeholder">IMG</span>}>
+                        <img
+                            src={item.imageUrl}
+                            alt=""
+                            class="site-header-preview__img"
+                            style={{
+                                display: 'block',
+                                width: '100%',
+                                height: 'auto',
+                                'min-width': item.width || undefined,
+                                margin: marginMap[hAlign] || '0 auto',
+                            }}
+                        />
+                    </Show>
+                );
+            }
             case 'text':
             case 'text_link':
             case 'menu':
@@ -405,14 +436,21 @@ const SiteHeaderEditor: Component = () => {
                                 if (item.type === 'gap' && item.width) {
                                     inlineStyle.width = item.width;
                                     inlineStyle['min-width'] = item.width;
-                                }
-                                if (item.type === 'flex_spacer' && item.width) {
+                                } else if (item.type === 'flex_spacer' && item.width) {
                                     inlineStyle['max-width'] = item.width;
+                                } else if (item.width) {
+                                    inlineStyle.width = item.width;
+                                }
+                                // For image types with width, use block so img fills; image_link
+                                // uses flex internally via its own rendered wrapper
+                                if (item.type === 'image' && item.width) {
+                                    inlineStyle.display = 'block';
                                 }
                                 if (item.fontSize) inlineStyle['font-size'] = item.fontSize;
                                 if (item.textColor) inlineStyle.color = item.textColor;
                                 if (item.padding) inlineStyle.padding = item.padding;
                                 if (item.margin) inlineStyle.margin = item.margin;
+                                if (item.alignment) inlineStyle['text-align'] = item.alignment;
 
                                 return (
                                     <div
@@ -737,7 +775,7 @@ const SiteHeaderEditor: Component = () => {
                                         <label class="site-header-edit-panel__label">Width</label>
                                         <input
                                             type="text"
-                                            class="site-header-edit-panel__input"
+                                            class="site-header-edit-panel__input site-header-edit-panel__input--short"
                                             value={item().width || '20px'}
                                             onInput={(e,) => updateEditField('width', e.currentTarget.value,)}
                                             placeholder="20px"
@@ -751,7 +789,7 @@ const SiteHeaderEditor: Component = () => {
                                         <label class="site-header-edit-panel__label">Max Width (optional)</label>
                                         <input
                                             type="text"
-                                            class="site-header-edit-panel__input"
+                                            class="site-header-edit-panel__input site-header-edit-panel__input--short"
                                             value={item().width || ''}
                                             onInput={(e,) => updateEditField('width', e.currentTarget.value,)}
                                             placeholder="e.g. 200px or leave empty"
@@ -784,9 +822,9 @@ const SiteHeaderEditor: Component = () => {
                                         />
                                     </div>
 
-                                    {/* Alignment */}
+                                    {/* Horizontal Alignment */}
                                     <div class="site-header-edit-panel__field">
-                                        <label class="site-header-edit-panel__label">Alignment</label>
+                                        <label class="site-header-edit-panel__label">Horizontal Alignment</label>
                                         <select
                                             class="site-header-edit-panel__select"
                                             value={item().alignment || 'center'}
@@ -795,6 +833,20 @@ const SiteHeaderEditor: Component = () => {
                                             <option value="left">Left</option>
                                             <option value="center">Center</option>
                                             <option value="right">Right</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Vertical Alignment */}
+                                    <div class="site-header-edit-panel__field">
+                                        <label class="site-header-edit-panel__label">Vertical Alignment</label>
+                                        <select
+                                            class="site-header-edit-panel__select"
+                                            value={item().verticalAlignment || 'center'}
+                                            onChange={(e,) => updateEditField('verticalAlignment', e.currentTarget.value,)}
+                                        >
+                                            <option value="top">Top</option>
+                                            <option value="center">Center</option>
+                                            <option value="bottom">Bottom</option>
                                         </select>
                                     </div>
                                 </Show>
@@ -810,7 +862,7 @@ const SiteHeaderEditor: Component = () => {
                                                     <div class="site-header-edit-panel__custom-input-row">
                                                         <input
                                                             type="text"
-                                                            class="site-header-edit-panel__input"
+                                                            class="site-header-edit-panel__input site-header-edit-panel__input--short"
                                                             value={item().width || ''}
                                                             onInput={(e,) =>
                                                                 updateEditField('width', e.currentTarget.value,)}
@@ -865,7 +917,7 @@ const SiteHeaderEditor: Component = () => {
                                                 <div class="site-header-edit-panel__custom-input-row">
                                                     <input
                                                         type="text"
-                                                        class="site-header-edit-panel__input"
+                                                        class="site-header-edit-panel__input site-header-edit-panel__input--short"
                                                         value={item().margin || ''}
                                                         onInput={(e,) =>
                                                             updateEditField('margin', e.currentTarget.value,)}
@@ -918,7 +970,7 @@ const SiteHeaderEditor: Component = () => {
                                                 <div class="site-header-edit-panel__custom-input-row">
                                                     <input
                                                         type="text"
-                                                        class="site-header-edit-panel__input"
+                                                        class="site-header-edit-panel__input site-header-edit-panel__input--short"
                                                         value={item().padding || ''}
                                                         onInput={(e,) =>
                                                             updateEditField('padding', e.currentTarget.value,)}

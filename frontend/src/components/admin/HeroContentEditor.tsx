@@ -71,7 +71,17 @@ function TextInput(props: { value: string; placeholder?: string; rows?: number; 
     );
 }
 
-const HeroContentEditor: Component = () => {
+export interface HeroContentEditorProps {
+    /** When provided, the editor operates in "block mode" — reads/writes
+     *  data via these callbacks instead of the settings API. */
+    initialData?: HeroCarouselSettings;
+    /** Called on every change in block mode so the parent can persist. */
+    onChange?: (data: HeroCarouselSettings,) => void;
+    /** If true, hide the standalone Save button (parent handles save). */
+    hideHeader?: boolean;
+}
+
+const HeroContentEditor: Component<HeroContentEditorProps> = (props,) => {
     const toast = useToast();
     const [items, setItems,] = createSignal<HeroItem[]>([],);
     const [options, setOptions,] = createSignal<HeroCarouselOptions>({ ...DEFAULT_OPTIONS, },);
@@ -107,6 +117,18 @@ const HeroContentEditor: Component = () => {
     >(null,);
 
     onMount(async () => {
+        // Block mode: use initialData prop instead of API
+        if (props.initialData) {
+            const data = props.initialData;
+            if (data.items?.length) {
+                setItems(data.items.sort((a, b,) => a.order - b.order),);
+            }
+            if (data.options) {
+                setOptions({ ...DEFAULT_OPTIONS, ...data.options, },);
+            }
+            setLoading(false,);
+            return;
+        }
         try {
             const res = await fetchHeroSettings();
             if (res.success && res.data) {
@@ -125,7 +147,13 @@ const HeroContentEditor: Component = () => {
         }
     },);
 
-    const markDirty = () => setIsDirty(true,);
+    const markDirty = () => {
+        setIsDirty(true,);
+        // In block mode, notify parent of every change
+        if (props.onChange) {
+            props.onChange({ items: items(), options: options(), },);
+        }
+    };
 
     // ─── Item CRUD ───
 
@@ -490,13 +518,15 @@ const HeroContentEditor: Component = () => {
                 <div class="hero-options">
                     <h3 class="hero-options__title">Carousel Options</h3>
                     <div class="hero-options__row">
-                        <button
-                            class="btn btn--primary btn--small"
-                            disabled={!isDirty() || saving()}
-                            onClick={handleSave}
-                        >
-                            {saving() ? 'Saving...' : 'Save Carousel'}
-                        </button>
+                        <Show when={!props.hideHeader}>
+                            <button
+                                class="btn btn--primary btn--small"
+                                disabled={!isDirty() || saving()}
+                                onClick={handleSave}
+                            >
+                                {saving() ? 'Saving...' : 'Save Carousel'}
+                            </button>
+                        </Show>
                         {/* Auto-scroll */}
                         <div class="hero-options__group">
                             <label class="toggle-switch">

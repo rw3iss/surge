@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import { createApp, } from './app';
 import { config, } from './config';
 import { closePool, pool, } from './db';
@@ -29,6 +31,11 @@ async function main() {
         if (!emailConfigured) {
             logger.warn('Email configuration not set or invalid - emails will not be sent',);
         }
+
+        // Ensure data directories exist
+        const avatarDir = path.resolve(config.dataDir, 'avatars',);
+        await fs.mkdir(avatarDir, { recursive: true, });
+        logger.info(`Data directory: ${path.resolve(config.dataDir,)}`,);
 
         // Create and start Express app
         const app = createApp();

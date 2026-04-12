@@ -38,6 +38,7 @@ const envSchema = z.object({
     SMTP_PASS: z.string().optional(),
     EMAIL_FROM: z.string().optional(),
 
+    DATA_DIR: z.string().default('./data',),
     UPLOAD_MAX_SIZE_MB: z.string().transform(Number,).default('500',),
     UPLOAD_DIR: z.string().default('./uploads',),
     STORAGE_PROVIDER: z.enum(['local', 's3',],).default('local',),
@@ -136,6 +137,8 @@ export const config = {
         pass: parsed.data.SMTP_PASS,
         from: parsed.data.EMAIL_FROM,
     },
+
+    dataDir: parsed.data.DATA_DIR,
 
     upload: {
         maxSizeMb: parsed.data.UPLOAD_MAX_SIZE_MB,

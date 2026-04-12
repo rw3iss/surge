@@ -1,0 +1,155 @@
+.flyout-panel {
+  position: fixed;
+  top: 0;
+  width: 380px;
+  max-width: 90vw;
+  max-height: 100vh;
+  z-index: $z-index-modal - 1;
+  display: flex;
+  flex-direction: column;
+  background: $background;
+  box-shadow: $shadow-xl;
+  border: 1px solid $border-color;
+  transition: width 0.2s ease;
+
+  &--right {
+    right: 0;
+    border-left: 1px solid $border-color;
+    border-right: none;
+  }
+
+  &--left {
+    left: 0;
+    border-right: 1px solid $border-color;
+    border-left: none;
+  }
+
+  // ─── Inline mode: relative, sticky, in-page column ───
+  &--inline {
+    position: sticky;
+    top: $spacing-md;
+    max-height: calc(100vh - #{$spacing-md} * 2);
+    width: 340px;
+    min-width: 300px;
+    flex-shrink: 0;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-md;
+    align-self: flex-start;
+
+    &.flyout-panel--left,
+    &.flyout-panel--right {
+      left: auto;
+      right: auto;
+    }
+  }
+
+  // ─── Collapsed: just a small floating tab ───
+  &--collapsed {
+    width: auto;
+    min-width: 0;
+    max-height: none;
+    bottom: auto;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-md;
+
+    .flyout-panel__header {
+      border-bottom: none;
+      padding: 4px $spacing-sm;
+      border-radius: $border-radius-md;
+    }
+
+    .flyout-panel__title {
+      font-size: $font-size-xs;
+    }
+  }
+
+  &--inline#{&}--collapsed {
+    position: relative;
+    top: auto;
+  }
+
+  &--dragging {
+    opacity: 0.85;
+    cursor: grabbing;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-sm $spacing-md;
+    background: color.adjust($background-dark, $lightness: -2%);
+    border-bottom: 1px solid $border-color;
+    cursor: grab;
+    user-select: none;
+    flex-shrink: 0;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-weight: 600;
+    font-size: $font-size-sm;
+    color: $text-color;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__collapse-icon {
+    font-size: 8px;
+    color: $text-light;
+    width: 12px;
+    flex-shrink: 0;
+  }
+
+  &__header-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  &__header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    border-radius: $border-radius-sm;
+    color: $text-light;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.1s;
+
+    &:hover {
+      color: $text-color;
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    &--close:hover {
+      color: $primary-color;
+    }
+
+    &--active {
+      color: $primary-color;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: $spacing-md;
+  }
+}

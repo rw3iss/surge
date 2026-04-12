@@ -24,6 +24,7 @@
       height: auto;
       max-width: none;
       padding: 0;
+      position: relative;
     }
   }
 
@@ -41,6 +42,17 @@
 
     @include md {
       display: flex;
+    }
+
+    // In custom header mode, pull the nav out of flow so it doesn't
+    // push the custom-items layout. It stays visible and inherits the
+    // container's padding via its absolute positioning context.
+    .header--custom & {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      padding-right: inherit;
     }
 
     &--open {
@@ -239,20 +251,16 @@
   }
 
   &__custom-img {
-    max-height: 48px;
     object-fit: contain;
     display: block;
   }
 
   &__custom-image-link {
-    display: flex;
-    align-items: center;
+    display: block;
     text-decoration: none;
 
     img {
-      max-height: 48px;
-      object-fit: contain;
-      display: block;
+      // Styles applied inline from component for width/height/margin/object-fit
     }
   }
 

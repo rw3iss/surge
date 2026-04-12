@@ -16,7 +16,7 @@ const contentBlockSchema = z.object({
     id: z.string().optional(),
     type: z.enum([
         'text', 'rich_text', 'social_media', 'social_feed', 'image', 'video',
-        'document', 'url_link', 'hero', 'html', 'campaign', 'form', 'post', 'gallery',
+        'document', 'url_link', 'hero', 'html', 'campaign', 'form', 'post', 'gallery', 'carousel', 'spacer',
     ],),
     sort_order: z.number().int().min(0,),
     data: z.record(z.unknown(),).default({},),

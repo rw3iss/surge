@@ -3,6 +3,7 @@ import { useNavigate, useParams, } from '@solidjs/router';
 import { Component, createEffect, createResource, createSignal, For, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/AutoSaveIndicator';
 import BlockEditor from '../../components/admin/BlockEditor';
+import CollapsiblePanel from '../../components/admin/CollapsiblePanel';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import { BlockData, } from '../../components/admin/ContentBlock';
 import EditorSaveBar from '../../components/admin/EditorSaveBar';
@@ -14,7 +15,8 @@ import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
-import { api, } from '../../services/api';
+import type { AppearanceSettings, } from '@surge/shared';
+import { api, fetchAppearance, } from '../../services/api';
 import { BlockStyleService, } from '../../services/blockStyles';
 
 let blockIdCounter = 0;
@@ -31,6 +33,32 @@ const AdminPostEditor: Component = () => {
         const response = await api.get(`/posts/${id}`,);
         return response.success ? (response as any).data : null;
     },);
+
+    // Load site appearance for the preview container
+    const [appearance,] = createResource(async () => {
+        const response = await fetchAppearance();
+        return response.success ? response.data as AppearanceSettings : null;
+    },);
+
+    const siteContainerStyle = () => {
+        const a = appearance();
+        const s: Record<string, string> = {};
+        if (a?.backgroundColor) { s['background-color'] = a.backgroundColor; s['--site-bg'] = a.backgroundColor; }
+        if (a?.textColor) { s['color'] = a.textColor; s['--site-text'] = a.textColor; }
+        if (a?.primaryColor) s['--site-primary'] = a.primaryColor;
+        if (a?.linkColor) s['--site-link'] = a.linkColor;
+        if (a?.headingColor) s['--site-heading'] = a.headingColor;
+        if (a?.borderColor) s['--site-border'] = a.borderColor;
+        if (a?.fontFamily) { s['font-family'] = a.fontFamily; s['--site-font'] = a.fontFamily; }
+        if (a?.headingFontFamily) s['--site-heading-font'] = a.headingFontFamily;
+        if (a?.headingWeight) s['--site-heading-weight'] = a.headingWeight;
+        if (a?.lineHeight) { s['line-height'] = a.lineHeight; s['--site-line-height'] = a.lineHeight; }
+        if (a?.gutterWidth) s['--site-gutter'] = a.gutterWidth;
+        if (a?.borderRadius) s['--site-radius'] = a.borderRadius;
+        if (a?.maxContentWidth) s['--site-max-width'] = a.maxContentWidth;
+        if (a?.blockPadding) s['--site-block-padding'] = a.blockPadding;
+        return s;
+    };
 
     const [title, setTitle,] = createSignal('',);
     const [slug, setSlug,] = createSignal('',);
@@ -165,9 +193,9 @@ const AdminPostEditor: Component = () => {
 
     return (
         <div>
-            <Title>{isNew() ? 'New Post' : 'Edit Post'} - Admin - Surge Media</Title>
+            <Title>{isNew() ? 'New Post' : `Edit Post: ${title() || 'Untitled'}`} - Admin - Surge Media</Title>
             <div class="admin-header">
-                <h1>{isNew() ? 'New Post' : 'Edit Post'}</h1>
+                <h1>{isNew() ? 'New Post' : `Edit Post: ${title() || 'Untitled'}`}</h1>
                 <div class="admin-header__actions">
                     <AutoSaveIndicator status={autoSave.status()} lastSavedAt={autoSave.lastSavedAt()} />
                     <Show when={!isNew() && post()}>
@@ -199,43 +227,59 @@ const AdminPostEditor: Component = () => {
             <Show when={error()}>
                 <div class="alert alert--error">{error()}</div>
             </Show>
-            <div class="admin-form">
-                <div class="form-section">
-                    <h2>Post Details</h2>
-                    <div class="form-group">
-                        <label>Title</label>
-                        <input
-                            type="text"
-                            value={title()}
-                            onInput={(e,) => {
-                                setTitle(e.currentTarget.value,);
-                                markDirty();
-                            }}
-                            placeholder="Post title"
-                        />
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group form-group--grow">
+
+            {/* ─── Properties (collapsed by default) ─── */}
+            <CollapsiblePanel
+                title="Post Properties"
+                subtitle={title() || 'Untitled'}
+            >
+                <div class="editor-properties">
+                    <div class="editor-properties__main">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input
+                                type="text"
+                                value={title()}
+                                onInput={(e,) => { setTitle(e.currentTarget.value,); markDirty(); }}
+                                placeholder="Post title"
+                            />
+                        </div>
+                        <div class="form-group">
                             <label>Slug</label>
                             <input
                                 type="text"
                                 value={slug()}
-                                onInput={(e,) => {
-                                    setSlug(e.currentTarget.value,);
-                                    markDirty();
-                                }}
+                                onInput={(e,) => { setSlug(e.currentTarget.value,); markDirty(); }}
                                 placeholder="post-slug"
                             />
-                            <span class="form-help">URL path: /posts/{slug() || 'post-slug'}</span>
+                            <small class="form-help">URL: /posts/{slug() || 'post-slug'}</small>
                         </div>
+                        <div class="form-group">
+                            <label>Excerpt</label>
+                            <textarea
+                                rows={3}
+                                value={excerpt()}
+                                onInput={(e,) => { setExcerpt(e.currentTarget.value,); markDirty(); }}
+                                placeholder="Brief summary of the post..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label>Tags</label>
+                            <input
+                                type="text"
+                                value={tags()}
+                                onInput={(e,) => { setTags(e.currentTarget.value,); markDirty(); }}
+                                placeholder="tag1, tag2, tag3"
+                            />
+                            <small class="form-help">Comma-separated</small>
+                        </div>
+                    </div>
+                    <div class="editor-properties__sidebar">
                         <div class="form-group">
                             <label>Status</label>
                             <select
                                 value={status()}
-                                onChange={(e,) => {
-                                    setStatus(e.currentTarget.value,);
-                                    markDirty();
-                                }}
+                                onChange={(e,) => { setStatus(e.currentTarget.value,); markDirty(); }}
                             >
                                 <option value="draft">Draft</option>
                                 <option value="scheduled">Scheduled</option>
@@ -243,75 +287,38 @@ const AdminPostEditor: Component = () => {
                                 <option value="archived">Archived</option>
                             </select>
                         </div>
+                        <Show when={status() === 'scheduled'}>
+                            <div class="form-group">
+                                <label>Publish At</label>
+                                <input
+                                    type="datetime-local"
+                                    value={publishAt()}
+                                    onInput={(e,) => { setPublishAt(e.currentTarget.value,); markDirty(); }}
+                                />
+                            </div>
+                        </Show>
                         <div class="form-group">
-                            <label>Access Level</label>
+                            <label>Access</label>
                             <select
                                 value={accessLevel()}
-                                onChange={(e,) => {
-                                    setAccessLevel(e.currentTarget.value,);
-                                    markDirty();
-                                }}
+                                onChange={(e,) => { setAccessLevel(e.currentTarget.value,); markDirty(); }}
                             >
                                 <option value="public">Public</option>
                                 <option value="member">Members Only</option>
                                 <option value="patron">Patrons Only</option>
                             </select>
-                            <span class="form-help">Who can view this post</span>
                         </div>
-                    </div>
-                    <Show when={status() === 'scheduled'}>
-                        <div class="form-group">
-                            <label>Publish At</label>
-                            <input
-                                type="datetime-local"
-                                value={publishAt()}
-                                onInput={(e,) => {
-                                    setPublishAt(e.currentTarget.value,);
-                                    markDirty();
-                                }}
-                            />
-                            <span class="form-help">
-                                Post will automatically publish at this time
-                            </span>
-                        </div>
-                    </Show>
-                    <div class="form-group">
-                        <label>Excerpt</label>
-                        <textarea
-                            rows={3}
-                            value={excerpt()}
-                            onInput={(e,) => {
-                                setExcerpt(e.currentTarget.value,);
-                                markDirty();
-                            }}
-                            placeholder="Brief summary of the post..."
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Tags</label>
-                        <input
-                            type="text"
-                            value={tags()}
-                            onInput={(e,) => {
-                                setTags(e.currentTarget.value,);
-                                markDirty();
-                            }}
-                            placeholder="tag1, tag2, tag3"
-                        />
-                        <span class="form-help">Comma-separated list of tags</span>
                     </div>
                 </div>
+            </CollapsiblePanel>
 
-                <div class="form-section">
-                    <BlockEditor
-                        title="Content Blocks"
-                        blocks={blocks()}
-                        onBlocksChange={(newBlocks,) => {
-                            setBlocks(newBlocks,);
-                            markDirty();
-                        }}
-                    />
-                </div>
+                <BlockEditor
+                    title="Content Blocks"
+                    blocks={blocks()}
+                    onBlocksChange={(newBlocks,) => { setBlocks(newBlocks,); markDirty(); }}
+                    containerStyle={siteContainerStyle()}
+                    containerClass="site-preview-container"
+                />
 
                 <EditorSaveBar
                     onSave={handleSave}
@@ -331,7 +338,7 @@ const AdminPostEditor: Component = () => {
                         onRestored={() => window.location.reload()}
                     />
                 </Show>
-            </div>
+
             <ConfirmModal
                 open={showDeleteConfirm()}
                 title="Delete Post"

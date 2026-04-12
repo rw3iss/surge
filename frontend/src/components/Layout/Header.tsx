@@ -22,6 +22,7 @@ interface SiteHeaderItem {
     textColor?: string;
     width?: string;
     alignment?: string;
+    verticalAlignment?: string;
     margin?: string;
     padding?: string;
     order: number;
@@ -62,28 +63,57 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
     const linkRel = () => item().openInNewTab ? 'noopener noreferrer' : undefined;
 
     switch (item().type) {
-        case 'image':
+        case 'image': {
+            const imgStyle = () => ({
+                ...baseStyle(),
+                'object-fit': 'contain' as const,
+            });
             return (
                 <img
                     src={item().imageUrl}
                     alt=""
                     class="header__custom-img"
-                    style={baseStyle()}
+                    style={imgStyle()}
                 />
             );
+        }
 
-        case 'image_link':
+        case 'image_link': {
+            const marginMap: Record<string, string> = {
+                left: '0 auto 0 0',
+                center: '0 auto',
+                right: '0 0 0 auto',
+            };
+            const linkStyle = () => {
+                const s: Record<string, string> = {};
+                if (item().width) s['width'] = item().width!;
+                if (item().margin) s['margin'] = item().margin!;
+                if (item().padding) s['padding'] = item().padding!;
+                return s;
+            };
+            const imgStyle = () => {
+                const s: Record<string, string> = {
+                    display: 'block',
+                    width: '100%',
+                    height: 'auto',
+                };
+                if (item().width) s['min-width'] = item().width!;
+                const hAlign = item().alignment || 'center';
+                if (marginMap[hAlign]) s['margin'] = marginMap[hAlign];
+                return s;
+            };
             return (
                 <a
                     href={item().url || '#'}
                     target={linkTarget()}
                     rel={linkRel()}
                     class="header__custom-image-link"
-                    style={baseStyle()}
+                    style={linkStyle()}
                 >
-                    <img src={item().imageUrl} alt="" />
+                    <img src={item().imageUrl} alt="" style={imgStyle()} />
                 </a>
             );
+        }
 
         case 'text':
             return (
@@ -216,9 +246,33 @@ export const Header: Component<HeaderProps> = (props,) => {
         const s: Record<string, string> = {};
         if (props.headerSettings?.backgroundColor) s['background'] = props.headerSettings.backgroundColor;
         if (props.headerSettings?.textColor) s['color'] = props.headerSettings.textColor;
-        if (props.headerSettings?.padding) s['padding'] = props.headerSettings.padding;
         if (props.headerSettings?.margin) s['margin'] = props.headerSettings.margin;
-        if (props.headerSettings?.applyGutter && props.gutterWidth) {
+        // Padding is applied to the container (not the header) so it
+        // actually affects the content inside, including auth buttons.
+        return s;
+    };
+
+    const containerStyle = () => {
+        if (!hasCustomHeader()) return {};
+        const s: Record<string, string> = {};
+        // Parse the padding shorthand into individual sides so nothing
+        // can partially override it. CSS specificity of longhands beats
+        // shorthands when both appear — using all four longhands avoids
+        // that trap entirely.
+        const pad = props.headerSettings?.padding;
+        if (pad) {
+            const parts = pad.trim().split(/\s+/,);
+            const top = parts[0] || '0';
+            const right = parts[1] || parts[0] || '0';
+            const bottom = parts[2] || parts[0] || '0';
+            const left = parts[3] || parts[1] || parts[0] || '0';
+            s['padding-top'] = top;
+            s['padding-right'] = right;
+            s['padding-bottom'] = bottom;
+            s['padding-left'] = left;
+        }
+        // Gutter override — takes precedence over padding-left/right
+        if (props.headerSettings?.applyGutter && props.gutterWidth && props.gutterWidth !== '0') {
             s['padding-left'] = props.gutterWidth;
             s['padding-right'] = props.gutterWidth;
         }
@@ -227,7 +281,7 @@ export const Header: Component<HeaderProps> = (props,) => {
 
     return (
         <header class={`header ${hasCustomHeader() ? 'header--custom' : ''}`} style={headerStyle()}>
-            <div class="header__container">
+            <div class="header__container" style={containerStyle()}>
                 <Show when={!hasCustomHeader()}>
                     <A href="/" class="header__logo" onClick={closeMobileMenu}>
                         <SiteLogo name={props.siteName} logoSrc={props.logo} />

@@ -6,16 +6,16 @@ import { nanoid, } from 'nanoid';
 import path from 'path';
 import sharp from 'sharp';
 import { z, } from 'zod';
+import { config, } from '../config';
 import { query, } from '../db';
 import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
 import * as usersRepo from '../repositories/users.repo';
 import { logAudit, } from '../services/audit';
 import { cache, } from '../services/cache';
-import { logger, } from '../utils/logger';
 import { handleRouteError, sendCreated, sendPaginated, sendSuccess, } from '../utils/response';
 
-// Avatar upload config
-const AVATAR_DIR = path.join(process.cwd(), 'cache/avatars',);
+// Avatar upload config — stored under DATA_DIR/avatars
+const AVATAR_DIR = path.resolve(config.dataDir, 'avatars',);
 const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const avatarStorage = multer.diskStorage({
@@ -170,7 +170,7 @@ router.post('/:id/avatar', authenticate(), requireAdmin, avatarUpload.single('av
         // Remove old avatar file if it was a local path
         const oldUser = await usersRepo.findUserById(req.params.id,);
         if (oldUser.avatarUrl?.startsWith('/avatars/',)) {
-            const oldPath = path.join(process.cwd(), 'cache/avatars', path.basename(oldUser.avatarUrl,),);
+            const oldPath = path.join(AVATAR_DIR, path.basename(oldUser.avatarUrl,),);
             await fs.unlink(oldPath,).catch(() => {},);
         }
 

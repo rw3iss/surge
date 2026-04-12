@@ -37,7 +37,9 @@ export type BlockType =
     | 'hero'
     | 'html'
     | 'document'
-    | 'url_link';
+    | 'url_link'
+    | 'carousel'
+    | 'spacer';
 
 export interface Block {
     id: string;

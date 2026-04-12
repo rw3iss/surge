@@ -28,18 +28,23 @@
     border-radius: $border-radius-lg;
     box-shadow: $shadow-md;
     border: 1px solid $border-color;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   &__form {
     display: flex;
     flex-direction: column;
     gap: $spacing-lg;
+    max-width: 100%;
   }
 
   &__row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: $spacing-md;
+    max-width: 100%;
 
     @include mobile-only {
       grid-template-columns: 1fr;
@@ -66,6 +71,9 @@
     font-size: $font-size-base;
     font-family: $font-family;
     transition: border-color $transition-fast, box-shadow $transition-fast;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
 
     &:focus {
       outline: none;

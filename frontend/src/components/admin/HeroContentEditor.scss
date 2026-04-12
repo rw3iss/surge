@@ -56,6 +56,18 @@
     cursor: grabbing;
     user-select: none;
   }
+
+  // Inside the flyout panel, stack items vertically
+  .flyout-panel &,
+  .block-edit-controller & {
+    flex-direction: column;
+    overflow-x: visible;
+
+    .hero-item-card {
+      width: 100%;
+      min-width: 0;
+    }
+  }
 }
 
 // ─── Hero item card ───

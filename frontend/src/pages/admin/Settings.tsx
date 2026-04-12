@@ -9,7 +9,7 @@ import Tooltip from '../../components/admin/Tooltip';
 import { api, fetchAppearance, fetchSiteBranding, saveAppearance, saveSiteBranding, } from '../../services/api';
 import { getSiteColors, saveSiteColors, } from '../../services/siteColors';
 
-const HeroContentEditor = lazy(() => import('../../components/admin/HeroContentEditor'));
+// HeroContentEditor is now used via the 'carousel' block type, not in Settings.
 const SiteHeaderEditor = lazy(() => import('../../components/admin/SiteHeaderEditor'));
 
 // ─── Tabs ───
@@ -18,7 +18,6 @@ const TABS = [
     { id: 'general', label: 'General', },
     { id: 'appearance', label: 'Appearance', },
     { id: 'site-header', label: 'Site Header', },
-    { id: 'homepage', label: 'Home Page', },
     { id: 'connections', label: 'Connections', },
 ] as const;
 
@@ -1174,11 +1173,6 @@ const AdminSettings: Component = () => {
                         Customize the site header with images, links, buttons, and spacers.
                     </p>
                     <SiteHeaderEditor />
-                </Show>
-
-                {/* ─── Home Page Tab ─── */}
-                <Show when={activeTab() === 'homepage'}>
-                    <HeroContentEditor />
                 </Show>
 
                 {/* ─── Connections Tab ─── */}

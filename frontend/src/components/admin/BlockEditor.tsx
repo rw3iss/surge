@@ -1,5 +1,8 @@
-import { Component, createSignal, For, Index, Show, } from 'solid-js';
+import { Component, createMemo, createSignal, For, Show, } from 'solid-js';
+import { DEFAULT_MOBILE_DEVICE, MOBILE_DEVICES, } from '../../config/mobileDevices';
+import BlockEditController from './BlockEditController';
 import ContentBlock, { BlockData, BlockType, } from './ContentBlock';
+import FlyoutPanel, { type FlyoutMode, } from './FlyoutPanel';
 
 export type { BlockData, BlockType, } from './ContentBlock';
 
@@ -13,6 +16,10 @@ interface BlockEditorProps {
     onBlocksChange: (blocks: BlockData[],) => void;
     blockTypes?: BlockTypeOption[];
     title?: string;
+    /** Inline styles applied to the blocks container (for site appearance preview) */
+    containerStyle?: Record<string, string>;
+    /** Extra CSS class on the blocks container */
+    containerClass?: string;
 }
 
 /**
@@ -34,96 +41,101 @@ const DEFAULT_BLOCK_TYPES: BlockTypeOption[] = [
     { type: 'gallery', label: 'Gallery', },
     { type: 'document', label: 'Document', },
     { type: 'url_link', label: 'URL Link', },
+    { type: 'carousel', label: 'Carousel', },
+    { type: 'spacer', label: 'Empty Space', },
 ];
 
 let blockIdCounter = 0;
 const generateBlockId = () => `block-${Date.now()}-${++blockIdCounter}`;
 
 const BlockEditor: Component<BlockEditorProps> = (props,) => {
-    const [editingBlocks, setEditingBlocks,] = createSignal<Set<string>>(new Set(),);
-    const [originalBlockData, setOriginalBlockData,] = createSignal<Map<string, Record<string, any>>>(new Map(),);
-    const [collapsedBlocks, setCollapsedBlocks,] = createSignal<Set<string>>(new Set(),);
+    const [selectedBlockId, setSelectedBlockId,] = createSignal<string | null>(null,);
+    const [flyoutSide, setFlyoutSide,] = createSignal<'left' | 'right'>('right',);
+    const [flyoutMode, setFlyoutMode,] = createSignal<FlyoutMode>('inline',);
     const [showAddDropdown, setShowAddDropdown,] = createSignal(false,);
 
-    const expandAll = () => setCollapsedBlocks(new Set(),);
-    const collapseAll = () => setCollapsedBlocks(new Set(props.blocks.map(b => b.id),),);
-    const toggleCollapse = (id: string,) => {
-        setCollapsedBlocks(prev => {
-            const next = new Set(prev,);
-            if (next.has(id,)) next.delete(id,);
-            else next.add(id,);
-            return next;
-        },);
+    const selectedBlock = () => {
+        const id = selectedBlockId();
+        if (!id) return null;
+        return props.blocks.find(b => b.id === id,) || null;
     };
+
+    const selectBlock = (id: string,) => {
+        setSelectedBlockId(prev => prev === id ? null : id,);
+    };
+
+    const deselectBlock = () => {
+        setSelectedBlockId(null,);
+    };
+
+    // ─── Preview mode controls ───
+    const [isMobile, setIsMobile,] = createSignal(false,);
+    const [isFullWidth, setIsFullWidth,] = createSignal(false,);
+    const [isLandscape, setIsLandscape,] = createSignal(false,);
+    const [selectedDevice, setSelectedDevice,] = createSignal(DEFAULT_MOBILE_DEVICE,);
+    const [showDeviceHeight, setShowDeviceHeight,] = createSignal(false,);
+
+    const deviceWidth = () => isLandscape() ? selectedDevice().height : selectedDevice().width;
+    const deviceHeight = () => isLandscape() ? selectedDevice().width : selectedDevice().height;
+
+    const previewContainerStyle = createMemo(() => {
+        const base = { ...(props.containerStyle || {}), };
+        if (isMobile() && !isFullWidth()) {
+            base['max-width'] = `${deviceWidth()}px`;
+            base['margin-left'] = 'auto';
+            base['margin-right'] = 'auto';
+        }
+        if (isFullWidth()) {
+            delete base['padding-left'];
+            delete base['padding-right'];
+        }
+        return base;
+    },);
+
+    const previewContainerClass = createMemo(() => {
+        const classes = [props.containerClass || '',];
+        if (isMobile()) classes.push('site-preview-container--mobile',);
+        if (isFullWidth()) classes.push('site-preview-container--full',);
+        return classes.join(' ',).trim();
+    },);
+
     const [draggingId, setDraggingId,] = createSignal<string | null>(null,);
     const [ghostStyle, setGhostStyle,] = createSignal<{ top: number; left: number; width: number; } | null>(null,);
     const [ghostContent, setGhostContent,] = createSignal<string>('',);
 
     const blockTypes = () => props.blockTypes || DEFAULT_BLOCK_TYPES;
 
-    const toggleEditBlock = (id: string,) => {
-        const isCurrentlyEditing = editingBlocks().has(id,);
-        if (!isCurrentlyEditing) {
-            const block = props.blocks.find(b => b.id === id);
-            if (block) {
-                setOriginalBlockData(prev => {
-                    const next = new Map(prev,);
-                    next.set(id, { ...block.data, },);
-                    return next;
-                },);
-            }
-        } else {
-            setOriginalBlockData(prev => {
-                const next = new Map(prev,);
-                next.delete(id,);
-                return next;
-            },);
-        }
-        setEditingBlocks(prev => {
-            const next = new Set(prev,);
-            if (next.has(id,)) {
-                next.delete(id,);
-            } else {
-                next.add(id,);
-            }
-            return next;
-        },);
+    const changeBlockType = (id: string, newType: BlockType,) => {
+        props.onBlocksChange(props.blocks.map(b => {
+            if (b.id !== id) return b;
+            // Try to carry over compatible data
+            const oldData = b.data || {};
+            const newData: Record<string, any> = {};
+            // Copy content if both types support it
+            if (oldData.content) newData.content = oldData.content;
+            return { ...b, type: newType, data: newData, };
+        },),);
     };
 
-    const cancelEditBlock = (id: string,) => {
-        const original = originalBlockData().get(id,);
-        if (original) {
-            props.onBlocksChange(props.blocks.map(b => b.id === id ? { ...b, data: original, } : b),);
-        }
-        setOriginalBlockData(prev => {
-            const next = new Map(prev,);
-            next.delete(id,);
-            return next;
-        },);
-        setEditingBlocks(prev => {
-            const next = new Set(prev,);
-            next.delete(id,);
-            return next;
-        },);
-    };
+    const [showAddTopDropdown, setShowAddTopDropdown,] = createSignal(false,);
 
-    const addBlock = (type: BlockType,) => {
+    const addBlock = (type: BlockType, position: 'top' | 'bottom' = 'bottom',) => {
         const currentBlocks = props.blocks;
         const newBlock: BlockData = {
             id: generateBlockId(),
             type,
-            sort_order: currentBlocks.length,
+            sort_order: 0,
             data: {},
         };
-        props.onBlocksChange([...currentBlocks, newBlock,],);
-        setEditingBlocks(prev => {
-            const next = new Set(prev,);
-            next.add(newBlock.id,);
-            return next;
-        },);
+        const updated = position === 'top' ?
+            [newBlock, ...currentBlocks,] :
+            [...currentBlocks, newBlock,];
+        props.onBlocksChange(updated.map((b, i,) => ({ ...b, sort_order: i, })),);
+        // Auto-select the new block to open it in the flyout
+        setSelectedBlockId(newBlock.id,);
         setShowAddDropdown(false,);
+        setShowAddTopDropdown(false,);
 
-        // Scroll to the newly added block after the DOM updates
         requestAnimationFrame(() => {
             const el = document.getElementById(newBlock.id,);
             if (el) {
@@ -137,6 +149,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
     };
 
     const removeBlock = (id: string,) => {
+        if (selectedBlockId() === id) setSelectedBlockId(null,);
         props.onBlocksChange(props.blocks.filter(b => b.id !== id).map((b, i,) => ({ ...b, sort_order: i, })),);
     };
 
@@ -154,6 +167,22 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         const arr = [...props.blocks,];
         [arr[idx], arr[idx + 1],] = [arr[idx + 1], arr[idx],];
         props.onBlocksChange(arr.map((b, i,) => ({ ...b, sort_order: i, })),);
+    };
+
+    const moveBlockToTop = (id: string,) => {
+        const idx = props.blocks.findIndex(b => b.id === id);
+        if (idx <= 0) return;
+        const block = props.blocks[idx];
+        const rest = props.blocks.filter(b => b.id !== id);
+        props.onBlocksChange([block, ...rest,].map((b, i,) => ({ ...b, sort_order: i, })),);
+    };
+
+    const moveBlockToBottom = (id: string,) => {
+        const idx = props.blocks.findIndex(b => b.id === id);
+        if (idx < 0 || idx >= props.blocks.length - 1) return;
+        const block = props.blocks[idx];
+        const rest = props.blocks.filter(b => b.id !== id);
+        props.onBlocksChange([...rest, block,].map((b, i,) => ({ ...b, sort_order: i, })),);
     };
 
     const handleDragStart = (e: PointerEvent, id: string,) => {
@@ -228,78 +257,251 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
 
     return (
         <div class="block-editor">
+            {/* Header sits OUTSIDE the styled container */}
             <Show when={props.title || props.blocks.length > 0}>
                 <div class="block-editor__header">
                     <Show when={props.title}>
                         <h2 class="block-editor__title">{props.title}</h2>
                     </Show>
-                    <Show when={props.blocks.length > 0}>
-                        <div class="block-editor__toolbar">
-                            <button class="btn btn--xs btn--link" onClick={expandAll}>Expand All</button>
-                            <button class="btn btn--xs btn--link" onClick={collapseAll}>Collapse All</button>
+                    <div class="block-editor__preview-controls">
+                        {/* Mobile toggle */}
+                        <button
+                            class={`block-editor__mode-btn ${isMobile() ? 'block-editor__mode-btn--active' : ''}`}
+                            onClick={() => setIsMobile(!isMobile(),)}
+                            title={isMobile() ? 'Switch to desktop' : 'Mobile preview'}
+                        >
+                            <svg viewBox="0 0 16 16" width="16" height="16">
+                                <rect x="4" y="1" width="8" height="14" rx="1.5" stroke="currentColor" fill="none" stroke-width="1.2" />
+                                <line x1="6.5" y1="12" x2="9.5" y2="12" stroke="currentColor" stroke-width="1.2" />
+                            </svg>
+                        </button>
+                        {/* Full-width toggle */}
+                        <button
+                            class={`block-editor__mode-btn ${isFullWidth() ? 'block-editor__mode-btn--active' : ''}`}
+                            onClick={() => setIsFullWidth(!isFullWidth(),)}
+                            title={isFullWidth() ? 'Apply padding' : 'Full width (no padding)'}
+                        >
+                            <svg viewBox="0 0 16 16" width="16" height="16">
+                                <rect x="1" y="3" width="14" height="10" rx="1" stroke="currentColor" fill="none" stroke-width="1.2" />
+                                <path d="M4 6l-2 2 2 2M12 6l2 2-2 2" stroke="currentColor" fill="none" stroke-width="1.2" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {/* Mobile device picker — shown when mobile mode is on */}
+                <Show when={isMobile()}>
+                    <div class="block-editor__mobile-bar">
+                        <select
+                            class="block-editor__device-select"
+                            value={selectedDevice().name}
+                            onChange={(e,) => {
+                                const dev = MOBILE_DEVICES.find(d => d.name === e.currentTarget.value,);
+                                if (dev) setSelectedDevice(dev,);
+                            }}
+                        >
+                            <For each={MOBILE_DEVICES}>
+                                {(d,) => <option value={d.name}>{d.name} ({d.width}×{d.height})</option>}
+                            </For>
+                        </select>
+                        <button
+                            class={`block-editor__mode-btn ${isLandscape() ? 'block-editor__mode-btn--active' : ''}`}
+                            onClick={() => setIsLandscape(!isLandscape(),)}
+                            title={isLandscape() ? 'Portrait' : 'Landscape'}
+                            style={{ width: '28px', height: '28px', }}
+                        >
+                            <svg viewBox="0 0 16 16" width="14" height="14">
+                                <Show when={!isLandscape()}>
+                                    <rect x="4" y="1" width="8" height="14" rx="1.5" stroke="currentColor" fill="none" stroke-width="1.2" />
+                                </Show>
+                                <Show when={isLandscape()}>
+                                    <rect x="1" y="4" width="14" height="8" rx="1.5" stroke="currentColor" fill="none" stroke-width="1.2" />
+                                </Show>
+                            </svg>
+                        </button>
+                        <label class="block-editor__height-toggle">
+                            <input
+                                type="checkbox"
+                                checked={showDeviceHeight()}
+                                onChange={(e,) => setShowDeviceHeight(e.currentTarget.checked,)}
+                            />
+                            <span>Show fold</span>
+                        </label>
+                    </div>
+                </Show>
+            </Show>
+            {/* Add Block (top) — only shown when there's at least one block */}
+            <Show when={props.blocks.length > 0}>
+                <div class="add-block-dropdown add-block-dropdown--top">
+                    <button class="btn btn--secondary btn--small" onClick={() => setShowAddTopDropdown(!showAddTopDropdown(),)}>
+                        + Add Block
+                    </button>
+                    <Show when={showAddTopDropdown()}>
+                        <div class="add-block-dropdown__menu">
+                            <For each={blockTypes()}>
+                                {(bt,) => (
+                                    <button class="add-block-dropdown__item" onClick={() => addBlock(bt.type, 'top',)}>
+                                        {bt.label}
+                                    </button>
+                                )}
+                            </For>
                         </div>
                     </Show>
                 </div>
             </Show>
-            <div class={`content-blocks-list ${draggingId() ? 'content-blocks-list--dragging' : ''}`}>
-                <Index
-                    each={props.blocks}
-                    fallback={<div class="empty-state">No content blocks yet. Add one below.</div>}
-                >
-                    {(block, index,) => (
-                        <ContentBlock
-                            block={block()}
-                            index={index}
-                            total={props.blocks.length}
-                            isEditing={editingBlocks().has(block().id,)}
-                            isDragging={draggingId() === block().id}
-                            collapsed={collapsedBlocks().has(block().id,)}
-                            onToggleEdit={toggleEditBlock}
-                            onCancel={cancelEditBlock}
-                            onUpdate={updateBlock}
-                            onRemove={removeBlock}
-                            onMoveUp={moveBlockUp}
-                            onMoveDown={moveBlockDown}
-                            onDragStart={handleDragStart}
-                            onToggleCollapse={toggleCollapse}
-                        />
+            {/* ─── Content area: blocks + optional inline flyout ─── */}
+            <div class={`block-editor__content-row ${
+                selectedBlock() && flyoutMode() === 'inline' ?
+                    `block-editor__content-row--with-panel block-editor__content-row--panel-${flyoutSide()}` :
+                    ''
+            }`}>
+                {/* Inline flyout on the LEFT — keyed by block ID to force re-mount on switch */}
+                <Show when={selectedBlock() && flyoutMode() === 'inline' && flyoutSide() === 'left' ? selectedBlockId() : null} keyed>
+                    {(_blockId,) => (
+                        <FlyoutPanel
+                            title={`Edit: ${(selectedBlock()!.type || '').replace(/_/g, ' ',).replace(/\b\w/g, c => c.toUpperCase(),)}`}
+                            open={true}
+                            onClose={deselectBlock}
+                            side={flyoutSide()}
+                            onSideChange={setFlyoutSide}
+                            mode={flyoutMode()}
+                            onModeChange={setFlyoutMode}
+                        >
+                            <BlockEditController
+                                block={selectedBlock()!}
+                                blockTypes={blockTypes()}
+                                onUpdate={updateBlock}
+                                onChangeType={changeBlockType}
+                                onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
+                                onClose={deselectBlock}
+                            />
+                        </FlyoutPanel>
                     )}
-                </Index>
-            </div>
-            <Show when={ghostStyle()}>
-                {(style,) => (
-                    <div
-                        class="content-block-ghost"
-                        style={{
-                            position: 'fixed',
-                            top: `${style().top}px`,
-                            left: `${style().left}px`,
-                            width: `${style().width}px`,
-                        }}
-                    >
-                        <div class="content-block-ghost__inner">
-                            <span class="content-block-ghost__icon">&#9776;</span>
-                            <span class="content-block-ghost__label">{ghostContent()}</span>
+                </Show>
+
+                {/* Blocks column */}
+                <div class="block-editor__blocks-column">
+                    <div class="block-editor__preview-frame" style={{
+                        'max-width': isMobile() && !isFullWidth() ? `${deviceWidth()}px` : undefined,
+                        'margin': isMobile() && !isFullWidth() ? '0 auto' : undefined,
+                        'position': 'relative',
+                    }}>
+                        <div
+                            class={`content-blocks-list ${draggingId() ? 'content-blocks-list--dragging' : ''} ${previewContainerClass()}`}
+                            style={previewContainerStyle()}
+                        >
+                            <For
+                                each={props.blocks}
+                                fallback={<div class="empty-state">No content blocks yet. Add one below.</div>}
+                            >
+                                {(block, index,) => (
+                                    <ContentBlock
+                                        block={block}
+                                        index={index()}
+                                        total={props.blocks.length}
+                                        isSelected={selectedBlockId() === block.id}
+                                        isEditing={false}
+                                        isDragging={draggingId() === block.id}
+                                        collapsed={false}
+                                        onToggleEdit={() => selectBlock(block.id,)}
+                                        onCancel={deselectBlock}
+                                        onUpdate={updateBlock}
+                                        onRemove={removeBlock}
+                                        onMoveUp={moveBlockUp}
+                                        onMoveDown={moveBlockDown}
+                                        onMoveToTop={moveBlockToTop}
+                                        onMoveToBottom={moveBlockToBottom}
+                                        onDragStart={handleDragStart}
+                                        blockTypes={blockTypes()}
+                                        onChangeType={changeBlockType}
+                                    />
+                                )}
+                            </For>
                         </div>
+                        <Show when={isMobile() && showDeviceHeight() && !isFullWidth()}>
+                            <div class="block-editor__fold-mask" style={{ top: `${deviceHeight()}px`, }} />
+                        </Show>
                     </div>
-                )}
-            </Show>
-            <div class="add-block-dropdown">
-                <button class="btn btn--secondary" onClick={() => setShowAddDropdown(!showAddDropdown(),)}>
-                    + Add Block
-                </button>
-                <Show when={showAddDropdown()}>
-                    <div class="add-block-dropdown__menu">
-                        <For each={blockTypes()}>
-                            {(bt,) => (
-                                <button class="add-block-dropdown__item" onClick={() => addBlock(bt.type,)}>
-                                    {bt.label}
-                                </button>
-                            )}
-                        </For>
+                    <Show when={ghostStyle()}>
+                        {(style,) => (
+                            <div class="content-block-ghost" style={{
+                                position: 'fixed',
+                                top: `${style().top}px`,
+                                left: `${style().left}px`,
+                                width: `${style().width}px`,
+                            }}>
+                                <div class="content-block-ghost__inner">
+                                    <span class="content-block-ghost__icon">&#9776;</span>
+                                    <span class="content-block-ghost__label">{ghostContent()}</span>
+                                </div>
+                            </div>
+                        )}
+                    </Show>
+                    <div class="add-block-dropdown">
+                        <button class="btn btn--secondary" onClick={() => setShowAddDropdown(!showAddDropdown(),)}>
+                            + Add Block
+                        </button>
+                        <Show when={showAddDropdown()}>
+                            <div class="add-block-dropdown__menu">
+                                <For each={blockTypes()}>
+                                    {(bt,) => (
+                                        <button class="add-block-dropdown__item" onClick={() => addBlock(bt.type,)}>
+                                            {bt.label}
+                                        </button>
+                                    )}
+                                </For>
+                            </div>
+                        </Show>
                     </div>
+                </div>
+
+                {/* Inline flyout on the RIGHT — keyed by block ID */}
+                <Show when={selectedBlock() && flyoutMode() === 'inline' && flyoutSide() === 'right' ? selectedBlockId() : null} keyed>
+                    {(_blockId,) => (
+                        <FlyoutPanel
+                            title={`Edit: ${(selectedBlock()!.type || '').replace(/_/g, ' ',).replace(/\b\w/g, c => c.toUpperCase(),)}`}
+                            open={true}
+                            onClose={deselectBlock}
+                            side={flyoutSide()}
+                            onSideChange={setFlyoutSide}
+                            mode={flyoutMode()}
+                            onModeChange={setFlyoutMode}
+                        >
+                            <BlockEditController
+                                block={selectedBlock()!}
+                                blockTypes={blockTypes()}
+                                onUpdate={updateBlock}
+                                onChangeType={changeBlockType}
+                                onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
+                                onClose={deselectBlock}
+                            />
+                        </FlyoutPanel>
+                    )}
                 </Show>
             </div>
+
+            {/* ─── Floating flyout (only when in float mode) — keyed by block ID ─── */}
+            <Show when={selectedBlock() && flyoutMode() === 'float' ? selectedBlockId() : null} keyed>
+                {(_blockId,) => (
+                    <FlyoutPanel
+                        title={`Edit: ${(selectedBlock()!.type || '').replace(/_/g, ' ',).replace(/\b\w/g, c => c.toUpperCase(),)}`}
+                        open={true}
+                        onClose={deselectBlock}
+                        side={flyoutSide()}
+                        onSideChange={setFlyoutSide}
+                        mode={flyoutMode()}
+                        onModeChange={setFlyoutMode}
+                    >
+                        <BlockEditController
+                            block={selectedBlock()!}
+                            blockTypes={blockTypes()}
+                            onUpdate={updateBlock}
+                            onChangeType={changeBlockType}
+                            onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
+                            onClose={deselectBlock}
+                        />
+                    </FlyoutPanel>
+                )}
+            </Show>
         </div>
     );
 };

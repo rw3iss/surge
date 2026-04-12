@@ -1,0 +1,348 @@
+import { Component, createEffect, createSignal, For, Match, Show, Switch, } from 'solid-js';
+import { BlockStyleData, BlockStyleService, } from '../../services/blockStyles';
+import type { BlockData, BlockType, } from './ContentBlock';
+import BlockStyleEditor from './BlockStyleEditor';
+import CampaignBlock from './blocks/CampaignBlock';
+import CarouselBlock from './blocks/CarouselBlock';
+import DocumentBlock from './blocks/DocumentBlock';
+import FormBlock from './blocks/FormBlock';
+import ImageBlock from './blocks/ImageBlock';
+import SocialFeedBlock from './blocks/SocialFeedBlock';
+import SocialMediaBlock from './blocks/SocialMediaBlock';
+import TextBlock from './blocks/TextBlock';
+import UrlLinkBlock from './blocks/UrlLinkBlock';
+import VideoBlock from './blocks/VideoBlock';
+import ConfirmModal from './ConfirmModal';
+
+// Inline simple block editors for types that don't have separate files
+const HeroBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record<string, any>,) => void; }> = (props,) => {
+    return (
+        <>
+            <div class="form-group">
+                <label>Hero Title</label>
+                <input type="text" value={props.data.title || ''} onInput={(e,) => props.onUpdate({ ...props.data, title: e.currentTarget.value, },)} placeholder="Hero title..." />
+            </div>
+            <div class="form-group">
+                <label>Subtitle</label>
+                <input type="text" value={props.data.subtitle || ''} onInput={(e,) => props.onUpdate({ ...props.data, subtitle: e.currentTarget.value, },)} placeholder="Subtitle..." />
+            </div>
+            <div class="form-group">
+                <label>Content</label>
+                <textarea rows={4} value={props.data.content || ''} onInput={(e,) => props.onUpdate({ ...props.data, content: e.currentTarget.value, },)} placeholder="Hero content (HTML)..." />
+            </div>
+            <div class="form-group">
+                <label>Background Image URL</label>
+                <input type="text" value={props.data.backgroundImage || ''} onInput={(e,) => props.onUpdate({ ...props.data, backgroundImage: e.currentTarget.value, },)} placeholder="https://..." />
+            </div>
+            <div class="form-group">
+                <label>Min Height</label>
+                <input type="text" value={props.data.minHeight || ''} onInput={(e,) => props.onUpdate({ ...props.data, minHeight: e.currentTarget.value, },)} placeholder="e.g. 300px, 50vh" />
+            </div>
+        </>
+    );
+};
+
+const HtmlBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record<string, any>,) => void; }> = (props,) => (
+    <div class="form-group">
+        <label>Custom HTML</label>
+        <textarea rows={10} value={props.data.content || ''} onInput={(e,) => props.onUpdate({ ...props.data, content: e.currentTarget.value, },)} placeholder="Enter raw HTML..." style={{ 'font-family': 'monospace', 'font-size': '0.9em', }} />
+    </div>
+);
+
+const ReferenceBlockEdit: Component<{
+    data: Record<string, any>; onUpdate: (d: Record<string, any>,) => void;
+    label: string; idField: string;
+}> = (props,) => (
+    <div class="form-group">
+        <label>{props.label} ID or Slug</label>
+        <input type="text" value={props.data[props.idField] || ''} onInput={(e,) => props.onUpdate({ ...props.data, [props.idField]: e.currentTarget.value, },)} placeholder={`Enter ${props.label.toLowerCase()} ID...`} />
+    </div>
+);
+
+const SpacerBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record<string, any>,) => void; }> = (props,) => (
+    <div class="form-group">
+        <label>Height</label>
+        <input
+            type="text"
+            value={props.data.height || '60px'}
+            onInput={(e,) => props.onUpdate({ ...props.data, height: e.currentTarget.value, },)}
+            placeholder="e.g. 60px, 2rem, 10vh"
+        />
+        <small class="form-help">Any valid CSS height: px, rem, em, vh, vw, %</small>
+    </div>
+);
+
+// ─── Main controller ───
+
+export interface BlockEditControllerProps {
+    block: BlockData;
+    blockTypes?: Array<{ type: BlockType; label: string; }>;
+    onUpdate: (id: string, data: Record<string, any>,) => void;
+    onChangeType?: (id: string, newType: BlockType,) => void;
+    onRemove: (id: string,) => void;
+    onClose: () => void;
+}
+
+// Block type labels used for reference — kept for future use
+const _BLOCK_TYPE_LABELS: Record<string, string> = {
+    text: 'Text', rich_text: 'Rich Text', image: 'Image', video: 'Video',
+    document: 'Document', url_link: 'URL Link', hero: 'Hero Banner',
+    html: 'Custom HTML', campaign: 'Campaign', form: 'Form', post: 'Post Embed',
+    social_feed: 'Social Feed', social_media: 'Social Media', gallery: 'Gallery',
+    carousel: 'Carousel', spacer: 'Empty Space',
+};
+
+const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
+    const [editingStyle, setEditingStyle,] = createSignal(false,);
+    const [blockStyles, setBlockStyles,] = createSignal<BlockStyleData[]>([],);
+    const [currentStyle, setCurrentStyle,] = createSignal<BlockStyleData>(BlockStyleService.getDefault(),);
+    const [selectedStyleId, setSelectedStyleId,] = createSignal<string>('none',);
+    const [showRemoveConfirm, setShowRemoveConfirm,] = createSignal(false,);
+
+    // Load styles
+    createEffect(async () => {
+        const styles = await BlockStyleService.getAll();
+        setBlockStyles(styles,);
+        resolveInitialStyle();
+    },);
+
+    const resolveInitialStyle = () => {
+        const ref = props.block.data?.__styleRef || props.block.styleRef;
+        if (ref?.templateId) {
+            const tmpl = blockStyles().find(s => s.id === ref.templateId);
+            if (tmpl) {
+                setCurrentStyle(BlockStyleService.withDefaults(tmpl,),);
+                setSelectedStyleId(tmpl.id!,);
+                return;
+            }
+        }
+        if (ref?.custom) {
+            setCurrentStyle(BlockStyleService.withDefaults(ref.custom as BlockStyleData,),);
+            setSelectedStyleId('custom',);
+            return;
+        }
+        setSelectedStyleId('none',);
+        setCurrentStyle(BlockStyleService.getDefault(),);
+    };
+
+    const handleUpdate = (data: Record<string, any>,) => {
+        props.onUpdate(props.block.id, data,);
+    };
+
+    const handleStyleChange = (styleId: string,) => {
+        setSelectedStyleId(styleId,);
+        if (styleId === 'none') {
+            setCurrentStyle(BlockStyleService.getDefault(),);
+            props.onUpdate(props.block.id, { ...props.block.data, __styleRef: null, },);
+        } else if (styleId === 'custom') {
+            setCurrentStyle(BlockStyleService.getDefault(),);
+            setEditingStyle(true,);
+        } else {
+            const tmpl = blockStyles().find(s => s.id === styleId);
+            if (tmpl) {
+                setCurrentStyle(BlockStyleService.withDefaults(tmpl,),);
+                props.onUpdate(props.block.id, { ...props.block.data, __styleRef: { templateId: tmpl.id, }, },);
+            }
+        }
+    };
+
+    const handleSaveStyle = () => {
+        const style = currentStyle();
+        if (style.id) {
+            props.onUpdate(props.block.id, { ...props.block.data, __styleRef: { templateId: style.id, }, },);
+        } else {
+            const { id: _id, name: _name, isDefault: _d, createdAt: _ca, updatedAt: _ua, ...customProps } = style;
+            props.onUpdate(props.block.id, { ...props.block.data, __styleRef: { custom: customProps, }, },);
+        }
+        setEditingStyle(false,);
+    };
+
+    const handleSaveTemplate = async (style: BlockStyleData,) => {
+        let saved: BlockStyleData | null = null;
+        if (style.id) {
+            saved = await BlockStyleService.update(style.id, style,);
+        } else {
+            saved = await BlockStyleService.create(style,);
+        }
+        if (saved) {
+            setCurrentStyle(saved,);
+            setSelectedStyleId(saved.id || 'custom',);
+            props.onUpdate(props.block.id, { ...props.block.data, __styleRef: { templateId: saved.id, }, },);
+            BlockStyleService.invalidateCache();
+            setBlockStyles(await BlockStyleService.getAll(),);
+        }
+    };
+
+    return (
+        <div class="block-edit-controller">
+            {/* ─── Block type ─── */}
+            <div class="bec-field">
+                <Show when={props.blockTypes && props.onChangeType}>
+                    <label class="bec-field__label">Type</label>
+                    <div class="bec-field__row">
+                        <select
+                            class="bec-field__input"
+                            value={props.block.type}
+                            onChange={(e,) => {
+                                const newType = e.currentTarget.value as BlockType;
+                                if (newType !== props.block.type) {
+                                    props.onChangeType!(props.block.id, newType,);
+                                }
+                            }}
+                        >
+                            <For each={props.blockTypes!}>
+                                {(bt,) => <option value={bt.type}>{bt.label}</option>}
+                            </For>
+                        </select>
+                        <button
+                            class="bec-icon-btn bec-icon-btn--danger"
+                            onClick={() => setShowRemoveConfirm(true,)}
+                            title="Delete block"
+                        >
+                            <svg viewBox="0 0 16 16" width="16" height="16">
+                                <path d="M5 2V1h6v1h3v2H2V2h3zm1 2h4v9H6V4zm-2 0h1v9H4V4zm7 0h1v9h-1V4z" fill="currentColor" />
+                            </svg>
+                        </button>
+                    </div>
+                </Show>
+            </div>
+
+            {/* ─── Style selector ─── */}
+            <div class="bec-field">
+                <label class="bec-field__label">Style</label>
+                <div class="bec-field__row">
+                    <select
+                        class="bec-field__input"
+                        value={selectedStyleId()}
+                        onChange={(e,) => handleStyleChange(e.currentTarget.value,)}
+                    >
+                        <option value="none">None (inherit global)</option>
+                        <option value="custom">Custom...</option>
+                        <For each={blockStyles().sort((a, b,) => (a.name || '').localeCompare(b.name || '',))}>
+                            {(s,) => (
+                                <option value={s.id}>
+                                    {s.name || 'Unnamed'}{s.isDefault ? ' (default)' : ''}
+                                </option>
+                            )}
+                        </For>
+                    </select>
+                    <Show when={!editingStyle()}>
+                        <button
+                            class="bec-icon-btn"
+                            onClick={() => setEditingStyle(true,)}
+                            title="Edit style"
+                        >
+                            <svg viewBox="0 0 16 16" width="16" height="16">
+                                <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" stroke="currentColor" fill="none" stroke-width="1.2" />
+                            </svg>
+                        </button>
+                    </Show>
+                    <Show when={editingStyle()}>
+                        <button class="btn btn--xs btn--primary" onClick={handleSaveStyle}>Save</button>
+                        <button class="btn btn--xs btn--ghost" onClick={() => setEditingStyle(false,)}>Cancel</button>
+                    </Show>
+                </div>
+            </div>
+
+            <div class="bec-divider" />
+
+            {/* ─── Style editor or block form ─── */}
+            <Show
+                when={!editingStyle()}
+                fallback={
+                    <BlockStyleEditor
+                        style={currentStyle()}
+                        onChange={setCurrentStyle}
+                        allowSaveTemplate={true}
+                        onSaveTemplate={handleSaveTemplate}
+                        onCopyTemplate={currentStyle().id ? (() => {
+                            setCurrentStyle({ ...currentStyle(), id: undefined, name: '', },);
+                        }) : undefined}
+                        onSetDefault={async (templateId,) => {
+                            await BlockStyleService.update(templateId, { isDefault: true, },);
+                            setBlockStyles(await BlockStyleService.getAll(),);
+                            const updated = blockStyles().find(s => s.id === templateId);
+                            if (updated) setCurrentStyle(BlockStyleService.withDefaults(updated,),);
+                        }}
+                    />
+                }
+            >
+                <div class="block-edit-controller__form">
+                    <BlockContentForm
+                        block={props.block}
+                        onUpdate={handleUpdate}
+                    />
+                </div>
+            </Show>
+
+            <ConfirmModal
+                open={showRemoveConfirm()}
+                title="Delete Block"
+                message="Are you sure you want to delete this content block?"
+                confirmLabel="Delete"
+                onConfirm={() => {
+                    setShowRemoveConfirm(false,);
+                    props.onRemove(props.block.id,);
+                }}
+                onCancel={() => setShowRemoveConfirm(false,)}
+                danger={true}
+            />
+        </div>
+    );
+};
+
+/** Routes to the correct edit form based on block type */
+const BlockContentForm: Component<{
+    block: BlockData;
+    onUpdate: (data: Record<string, any>,) => void;
+}> = (props,) => (
+    <Switch>
+        <Match when={props.block.type === 'text' || props.block.type === 'rich_text'}>
+            <TextBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'social_media'}>
+            <SocialMediaBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'image'}>
+            <ImageBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'video'}>
+            <VideoBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'document'}>
+            <DocumentBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'url_link'}>
+            <UrlLinkBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'hero'}>
+            <HeroBlockEdit data={props.block.data} onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'html'}>
+            <HtmlBlockEdit data={props.block.data} onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'campaign'}>
+            <CampaignBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'form'}>
+            <FormBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'social_feed'}>
+            <SocialFeedBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'carousel'}>
+            <CarouselBlock data={props.block.data} mode="edit" onUpdate={props.onUpdate} />
+        </Match>
+        <Match when={props.block.type === 'post'}>
+            <ReferenceBlockEdit data={props.block.data} onUpdate={props.onUpdate} label="Post" idField="postId" />
+        </Match>
+        <Match when={props.block.type === 'gallery'}>
+            <ReferenceBlockEdit data={props.block.data} onUpdate={props.onUpdate} label="Gallery" idField="galleryId" />
+        </Match>
+        <Match when={props.block.type === 'spacer'}>
+            <SpacerBlockEdit data={props.block.data} onUpdate={props.onUpdate} />
+        </Match>
+    </Switch>
+);
+
+export default BlockEditController;

@@ -1,4 +1,4 @@
-import { Component, createResource, For, Show, } from 'solid-js';
+import { Component, createSignal, For, onMount, Show, } from 'solid-js';
 import { api, } from '../../../services/api';
 
 interface SocialFeedBlockProps {
@@ -25,17 +25,22 @@ const LAYOUT_OPTIONS = [
  * entire feed / provider to display.
  */
 const SocialFeedBlock: Component<SocialFeedBlockProps> = (props,) => {
-    // Fetch connected providers so we can show which ones are available
-    const [connections,] = createResource(async () => {
-        const response = await api.get('/connections',);
-        return response.success ?
-            ((response as any).data as any[]).filter((c: any,) => c.isConnected) :
-            [];
+    // Fetch connected providers without createResource to avoid
+    // triggering the app-level Suspense boundary (which causes a
+    // scroll-to-top jump when the flyout panel loads this component).
+    const [connections, setConnections,] = createSignal<any[]>([],);
+    onMount(async () => {
+        try {
+            const response = await api.get('/connections',);
+            if (response.success) {
+                setConnections(((response as any).data as any[]).filter((c: any,) => c.isConnected),);
+            }
+        } catch { /* ignore */ }
     },);
 
     const connectedProviders = () => {
         const connected = new Set(
-            (connections() || []).map((c: any,) => c.provider as string),
+            connections().map((c: any,) => c.provider as string),
         );
         return PROVIDERS.map(p => ({
             id: p,

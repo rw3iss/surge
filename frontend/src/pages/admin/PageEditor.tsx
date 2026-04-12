@@ -3,6 +3,7 @@ import { A, useNavigate, useParams, } from '@solidjs/router';
 import { Component, createEffect, createResource, createSignal, For, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/AutoSaveIndicator';
 import BlockEditor, { BlockData, } from '../../components/admin/BlockEditor';
+import CollapsiblePanel from '../../components/admin/CollapsiblePanel';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import EditorSaveBar from '../../components/admin/EditorSaveBar';
 import PreviewOverlay from '../../components/admin/PreviewOverlay';
@@ -13,7 +14,8 @@ import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
-import { api, } from '../../services/api';
+import type { AppearanceSettings, } from '@surge/shared';
+import { api, fetchAppearance, } from '../../services/api';
 import { BlockStyleService, } from '../../services/blockStyles';
 
 // Uses DEFAULT_BLOCK_TYPES from BlockEditor (unified list for all editors).
@@ -85,6 +87,45 @@ const AdminPageEditor: Component = () => {
         const response = await api.get(`/pages/${id}`,);
         return response.success ? (response as any).data : null;
     },);
+
+    // Load site appearance settings for the preview container
+    const [appearance,] = createResource(async () => {
+        const response = await fetchAppearance();
+        return response.success ? response.data as AppearanceSettings : null;
+    },);
+
+    /** Build inline styles that mirror what Layout.tsx applies to the public site */
+    const siteContainerStyle = () => {
+        const a = appearance();
+        const s: Record<string, string> = {};
+        if (a?.backgroundColor) {
+            s['background-color'] = a.backgroundColor;
+            s['--site-bg'] = a.backgroundColor;
+        }
+        if (a?.textColor) {
+            s['color'] = a.textColor;
+            s['--site-text'] = a.textColor;
+        }
+        if (a?.primaryColor) s['--site-primary'] = a.primaryColor;
+        if (a?.linkColor) s['--site-link'] = a.linkColor;
+        if (a?.headingColor) s['--site-heading'] = a.headingColor;
+        if (a?.borderColor) s['--site-border'] = a.borderColor;
+        if (a?.fontFamily) {
+            s['font-family'] = a.fontFamily;
+            s['--site-font'] = a.fontFamily;
+        }
+        if (a?.headingFontFamily) s['--site-heading-font'] = a.headingFontFamily;
+        if (a?.headingWeight) s['--site-heading-weight'] = a.headingWeight;
+        if (a?.lineHeight) {
+            s['line-height'] = a.lineHeight;
+            s['--site-line-height'] = a.lineHeight;
+        }
+        if (a?.gutterWidth) s['--site-gutter'] = a.gutterWidth;
+        if (a?.borderRadius) s['--site-radius'] = a.borderRadius;
+        if (a?.maxContentWidth) s['--site-max-width'] = a.maxContentWidth;
+        if (a?.blockPadding) s['--site-block-padding'] = a.blockPadding;
+        return s;
+    };
 
     const [title, setTitle,] = createSignal('',);
     const [titleAlignment, setTitleAlignment,] = createSignal('left',);
@@ -205,12 +246,10 @@ const AdminPageEditor: Component = () => {
 
     return (
         <div class="page-editor">
-            <Title>{isNew() ? 'New Page' : 'Edit Page'} - Admin - Surge Media</Title>
-
-            <A href="/admin/pages" class="page-editor__back">&larr; All Pages</A>
+            <Title>{isNew() ? 'New Page' : `Edit Page: ${title() || 'Untitled'}`} - Admin - Surge Media</Title>
 
             <div class="admin-header">
-                <h1>{isNew() ? 'New Page' : 'Edit Page'}</h1>
+                <h1>{isNew() ? 'New Page' : `Edit Page: ${title() || 'Untitled'}`}</h1>
                 <div class="admin-header__actions">
                     <AutoSaveIndicator status={autoSave.status()} lastSavedAt={autoSave.lastSavedAt()} />
                     <Show when={!isNew() && page()}>
@@ -244,25 +283,23 @@ const AdminPageEditor: Component = () => {
                 <div class="alert alert--error">{error()}</div>
             </Show>
 
-            {/* ─── Top panels: Properties + Status ─── */}
-            <div class="page-editor__panels">
-                <div class="page-editor__panel page-editor__panel--main">
-                    <h2 class="page-editor__panel-title">Page Properties</h2>
-
-                    <div class="settings-fields">
-                        <div class="settings-field">
-                            <label class="settings-field__label">Title</label>
-                            <input
-                                class="settings-field__input"
-                                style={{ width: '280px', }}
-                                type="text"
-                                value={title()}
-                                onInput={(e,) => { setTitle(e.currentTarget.value,); markDirty(); }}
-                                placeholder="Page title"
-                            />
-
-                            <div class="page-editor__align-group">
-                                <span class="page-editor__align-label">Align</span>
+            {/* ─── Properties (collapsed by default) ─── */}
+            <CollapsiblePanel
+                title="Page Properties"
+                subtitle={title() || 'Untitled'}
+            >
+                <div class="editor-properties">
+                    <div class="editor-properties__main">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', }}>
+                                <input
+                                    type="text"
+                                    value={title()}
+                                    onInput={(e,) => { setTitle(e.currentTarget.value,); markDirty(); }}
+                                    placeholder="Page title"
+                                    style={{ flex: '1', }}
+                                />
                                 <div class="page-editor__align-buttons">
                                     <For each={ALIGNMENTS}>
                                         {(a,) => (
@@ -294,31 +331,21 @@ const AdminPageEditor: Component = () => {
                                 </div>
                             </div>
                         </div>
-
-                        <div class="settings-field">
-                            <label class="settings-field__label">Slug</label>
+                        <div class="form-group">
+                            <label>Slug</label>
                             <input
-                                class="settings-field__input"
-                                style={{ width: '280px', }}
                                 type="text"
                                 value={slug()}
                                 onInput={(e,) => { setSlug(e.currentTarget.value,); markDirty(); }}
                                 placeholder="page-slug"
                             />
-                            <span class="settings-field__help">URL: /{slug()}</span>
+                            <small class="form-help">URL: /{slug()}</small>
                         </div>
                     </div>
-                </div>
-
-                <div class="page-editor__panel page-editor__panel--sidebar">
-                    <h2 class="page-editor__panel-title">Status & Access</h2>
-
-                    <div class="settings-fields">
-                        <div class="settings-field">
-                            <label class="settings-field__label" style={{ 'min-width': '70px', }}>Status</label>
+                    <div class="editor-properties__sidebar">
+                        <div class="form-group">
+                            <label>Status</label>
                             <select
-                                class="settings-field__input"
-                                style={{ width: '130px', }}
                                 value={status()}
                                 onChange={(e,) => { setStatus(e.currentTarget.value,); markDirty(); }}
                             >
@@ -327,12 +354,9 @@ const AdminPageEditor: Component = () => {
                                 <option value="archived">Archived</option>
                             </select>
                         </div>
-
-                        <div class="settings-field">
-                            <label class="settings-field__label" style={{ 'min-width': '70px', }}>Access</label>
+                        <div class="form-group">
+                            <label>Access</label>
                             <select
-                                class="settings-field__input"
-                                style={{ width: '130px', }}
                                 value={accessLevel()}
                                 onChange={(e,) => { setAccessLevel(e.currentTarget.value,); markDirty(); }}
                             >
@@ -341,32 +365,18 @@ const AdminPageEditor: Component = () => {
                                 <option value="patron">Patrons Only</option>
                             </select>
                         </div>
-
-                        <Show when={!isNew() && !isDeleted()}>
-                            <div class="settings-field" style={{ 'margin-top': '0.5rem', }}>
-                                <label class="settings-field__label" style={{ 'min-width': '70px', }} />
-                                <button
-                                    class="btn btn--ghost btn--xs"
-                                    style={{ color: '#dc3545', }}
-                                    onClick={() => setShowDeleteConfirm(true,)}
-                                    disabled={deleting()}
-                                >
-                                    Delete Page
-                                </button>
-                            </div>
-                        </Show>
                     </div>
                 </div>
-            </div>
+            </CollapsiblePanel>
 
             {/* ─── Block Editor ─── */}
-            <div class="page-editor__panel" style={{ 'margin-top': '1rem', }}>
-                <BlockEditor
-                    title="Page Content"
-                    blocks={blocks()}
-                    onBlocksChange={(newBlocks,) => { setBlocks(newBlocks,); markDirty(); }}
-                />
-            </div>
+            <BlockEditor
+                title="Page Content"
+                blocks={blocks()}
+                onBlocksChange={(newBlocks,) => { setBlocks(newBlocks,); markDirty(); }}
+                containerStyle={siteContainerStyle()}
+                containerClass="site-preview-container"
+            />
 
             {/* ─── Bottom save bar ─── */}
             <EditorSaveBar
