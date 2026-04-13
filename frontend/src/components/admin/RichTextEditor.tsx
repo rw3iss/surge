@@ -107,26 +107,32 @@ export default function RichTextEditor(props: RichTextEditorProps,) {
                 </div>
                 <div class="rte-toolbar__group">
                     <button type="button" onClick={() => execCommand('insertUnorderedList',)} title="Bullet List">
-                        &#8226; List
+                        <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="3" cy="4" r="1.5" fill="currentColor"/><circle cx="3" cy="8" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><path d="M6 3.5h8M6 7.5h8M6 11.5h8" stroke="currentColor" stroke-width="1.2"/></svg>
                     </button>
                     <button type="button" onClick={() => execCommand('insertOrderedList',)} title="Numbered List">
-                        1. List
+                        <svg viewBox="0 0 16 16" width="14" height="14"><text x="1" y="5.5" font-size="5" fill="currentColor" font-weight="700">1</text><text x="1" y="9.5" font-size="5" fill="currentColor" font-weight="700">2</text><text x="1" y="13.5" font-size="5" fill="currentColor" font-weight="700">3</text><path d="M6 3.5h8M6 7.5h8M6 11.5h8" stroke="currentColor" stroke-width="1.2"/></svg>
                     </button>
                 </div>
                 <div class="rte-toolbar__group">
                     <button type="button" onClick={() => setShowLinkDialog(!showLinkDialog(),)} title="Insert Link">
-                        Link
+                        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 9.5l3-3M7 11l-1.5 1.5a2.12 2.12 0 01-3-3L4 8m5-3l1.5-1.5a2.12 2.12 0 013 3L12 8" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
                     </button>
                     <Show when={props.onImageUpload}>
-                        <button type="button" onClick={insertImage} title="Insert Image">Image</button>
+                        <button type="button" onClick={insertImage} title="Insert Image">
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="5" cy="6" r="1.2" fill="currentColor"/><path d="M1.5 11l3.5-3 2.5 2 3-4 4 5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
+                        </button>
                     </Show>
                 </div>
                 <div class="rte-toolbar__group">
                     <button type="button" onClick={() => execCommand('removeFormat',)} title="Clear Formatting">
-                        Clear
+                        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 3l10 10M8 3h4.5M6 3l-2 10" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" onClick={() => execCommand('undo',)} title="Undo">Undo</button>
-                    <button type="button" onClick={() => execCommand('redo',)} title="Redo">Redo</button>
+                    <button type="button" onClick={() => execCommand('undo',)} title="Undo">
+                        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 7l-3-3 3-3" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 4h9a4 4 0 010 8H6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" onClick={() => execCommand('redo',)} title="Redo">
+                        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M12 7l3-3-3-3" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4H6a4 4 0 000 8h4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    </button>
                 </div>
             </div>
 

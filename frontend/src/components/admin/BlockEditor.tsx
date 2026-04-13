@@ -393,7 +393,11 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                         >
                             <For
                                 each={props.blocks}
-                                fallback={<div class="empty-state">No content blocks yet. Add one below.</div>}
+                                fallback={
+                                    <div class="block-editor__empty">
+                                        Click <strong>+ Add Block</strong> below to add content blocks.
+                                    </div>
+                                }
                             >
                                 {(block, index,) => (
                                     <ContentBlock

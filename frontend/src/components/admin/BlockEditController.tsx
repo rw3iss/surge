@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal, For, Match, Show, Switch, } from 'solid-js';
+import { batch, Component, createSignal, For, Match, onMount, Show, Switch, } from 'solid-js';
 import { BlockStyleData, BlockStyleService, } from '../../services/blockStyles';
 import type { BlockData, BlockType, } from './ContentBlock';
 import BlockStyleEditor from './BlockStyleEditor';
@@ -99,17 +99,15 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
     const [selectedStyleId, setSelectedStyleId,] = createSignal<string>('none',);
     const [showRemoveConfirm, setShowRemoveConfirm,] = createSignal(false,);
 
-    // Load styles
-    createEffect(async () => {
+    // Load styles once on mount — NOT reactive on props.block changes,
+    // so style changes don't re-resolve and cause scroll jumps or resets.
+    onMount(async () => {
         const styles = await BlockStyleService.getAll();
         setBlockStyles(styles,);
-        resolveInitialStyle();
-    },);
 
-    const resolveInitialStyle = () => {
         const ref = props.block.data?.__styleRef || props.block.styleRef;
         if (ref?.templateId) {
-            const tmpl = blockStyles().find(s => s.id === ref.templateId);
+            const tmpl = styles.find(s => s.id === ref.templateId);
             if (tmpl) {
                 setCurrentStyle(BlockStyleService.withDefaults(tmpl,),);
                 setSelectedStyleId(tmpl.id!,);
@@ -123,7 +121,7 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
         }
         setSelectedStyleId('none',);
         setCurrentStyle(BlockStyleService.getDefault(),);
-    };
+    },);
 
     const handleUpdate = (data: Record<string, any>,) => {
         props.onUpdate(props.block.id, data,);
@@ -165,11 +163,25 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
             saved = await BlockStyleService.create(style,);
         }
         if (saved) {
-            setCurrentStyle(saved,);
-            setSelectedStyleId(saved.id || 'custom',);
-            props.onUpdate(props.block.id, { ...props.block.data, __styleRef: { templateId: saved.id, }, },);
+            // Refresh the styles list so the new/updated template
+            // is available in the dropdown before we select it.
             BlockStyleService.invalidateCache();
-            setBlockStyles(await BlockStyleService.getAll(),);
+            const updatedStyles = await BlockStyleService.getAll();
+            const savedId = saved.id!;
+            // Snapshot block data before reactive updates
+            const blockData = { ...props.block.data, };
+
+            // Force selectedStyleId to change so SolidJS re-applies it
+            // after <For> rebuilds <option> elements (same value = no-op).
+            setSelectedStyleId('',);
+            batch(() => {
+                setBlockStyles(updatedStyles,);
+                setCurrentStyle(BlockStyleService.withDefaults(saved!,),);
+                setSelectedStyleId(savedId,);
+            },);
+
+            // Point the block to this template
+            props.onUpdate(props.block.id, { ...blockData, __styleRef: { templateId: savedId, }, },);
         }
     };
 

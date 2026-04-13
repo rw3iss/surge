@@ -206,6 +206,33 @@
           flex-basis: 320px;
         }
       }
+
+      // When snap is disabled, remove snap behavior and start from beginning
+      &.social-feed-block__grid--no-snap {
+        scroll-snap-type: none;
+
+        > * {
+          scroll-snap-align: none;
+        }
+      }
+
+      // When a height is set via inline style, items conform to it
+      &[style*="height"] {
+        > * {
+          height: 100%;
+
+          .social-embed {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .social-embed__card-image {
+            flex: 1;
+            min-height: 0;
+          }
+        }
+      }
     }
   }
 

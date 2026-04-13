@@ -10,6 +10,7 @@ export interface BlockStyleData {
     verticalAlign?: string;
     fontSize?: string;
     width?: string;
+    height?: string;
     padding?: string;
     margin?: string;
     gap?: string;
@@ -24,7 +25,7 @@ export interface BlockStyleData {
 export const BLOCK_STYLE_DEFAULTS: Required<
     Pick<
         BlockStyleData,
-        'backgroundColor' | 'textColor' | 'textAlign' | 'verticalAlign' | 'fontSize' | 'width' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
+        'backgroundColor' | 'textColor' | 'textAlign' | 'verticalAlign' | 'fontSize' | 'width' | 'height' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
     >
 > = {
     backgroundColor: '',
@@ -33,6 +34,7 @@ export const BLOCK_STYLE_DEFAULTS: Required<
     verticalAlign: 'top',
     fontSize: '',
     width: '100%',
+    height: '',
     padding: '',
     margin: '',
     gap: '',
@@ -106,9 +108,12 @@ export const BlockStyleService = {
             verticalAlign: style.verticalAlign || BLOCK_STYLE_DEFAULTS.verticalAlign,
             fontSize: style.fontSize || BLOCK_STYLE_DEFAULTS.fontSize,
             width: style.width || BLOCK_STYLE_DEFAULTS.width,
+            height: style.height || BLOCK_STYLE_DEFAULTS.height,
             padding: style.padding || BLOCK_STYLE_DEFAULTS.padding,
             margin: style.margin || BLOCK_STYLE_DEFAULTS.margin,
             gap: style.gap || BLOCK_STYLE_DEFAULTS.gap,
+            overflowX: style.overflowX || BLOCK_STYLE_DEFAULTS.overflowX,
+            overflowY: style.overflowY || BLOCK_STYLE_DEFAULTS.overflowY,
         };
     },
 };

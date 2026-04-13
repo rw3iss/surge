@@ -157,7 +157,7 @@ const CampaignBlock: Component<CampaignBlockProps> = (props,) => {
 
                 {/* Sort options — only shown for "All Campaigns" */}
                 <Show when={isAllSelected()}>
-                    <div class="form-group" style={{ 'margin-top': '0.75rem', }}>
+                    <div class="form-group">
                         <label>Sort By</label>
                         <select
                             value={props.data.sortBy || 'created_at'}
@@ -168,7 +168,7 @@ const CampaignBlock: Component<CampaignBlockProps> = (props,) => {
                             </For>
                         </select>
                     </div>
-                    <div class="form-group" style={{ 'margin-top': '0.5rem', }}>
+                    <div class="form-group">
                         <label>Sort Direction</label>
                         <select
                             value={props.data.sortOrder || 'desc'}
@@ -178,7 +178,7 @@ const CampaignBlock: Component<CampaignBlockProps> = (props,) => {
                             <option value="asc">Ascending (oldest/lowest first)</option>
                         </select>
                     </div>
-                    <div class="form-group" style={{ 'margin-top': '0.5rem', }}>
+                    <div class="form-group">
                         <label>Layout Direction</label>
                         <select
                             value={props.data.direction || 'vertical'}

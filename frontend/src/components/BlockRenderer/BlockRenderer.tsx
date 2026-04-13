@@ -31,6 +31,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     undefined,
                 'font-size': s().fontSize || undefined,
                 width: s().width || undefined,
+                height: s().height || undefined,
                 padding: s().padding || (props.block.settings.padding as string) ||
                     (props.block.settings.useDefaultPadding === false ? undefined : 'var(--site-block-padding, 0)'),
                 margin: (() => {
@@ -379,6 +380,8 @@ const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
     const platform = () => props.block.settings.socialPlatform as SocialPlatform | undefined;
     const limit = () => (props.block.settings.limit as number) || 6;
     const layout = () => (props.block.settings.layout as string) || 'grid';
+    const snapScroll = () => props.block.settings.snapScroll as boolean ?? false;
+    const rowHeight = () => (props.block.settings.rowHeight as string) || undefined;
     const blockStyle = () => (props.block as any).style as Record<string, any> | undefined;
 
     const [posts,] = createResource(
@@ -402,8 +405,14 @@ const SocialFeedBlock: Component<{ block: Block; }> = (props,) => {
                 }
             >
                 <div
-                    class={FEED_LAYOUT_CLASS[layout()] || FEED_LAYOUT_CLASS.grid}
-                    style={layout() === 'row' && blockStyle()?.padding ? { padding: blockStyle()!.padding, } : undefined}
+                    class={`${FEED_LAYOUT_CLASS[layout()] || FEED_LAYOUT_CLASS.grid}${
+                        !snapScroll() ? ' social-feed-block__grid--no-snap' : ''
+                    }`}
+                    style={{
+                        ...(blockStyle()?.padding ? { padding: blockStyle()!.padding, } : {}),
+                        ...(blockStyle()?.gap ? { gap: blockStyle()!.gap, } : {}),
+                        ...(layout() === 'row' && rowHeight() ? { height: rowHeight(), } : {}),
+                    }}
                 >
                     <For each={posts()}>
                         {(post,) => (

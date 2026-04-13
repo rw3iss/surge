@@ -253,6 +253,22 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                     </div>
                 </div>
 
+                {/* Height */}
+                <div class="block-style-editor__field">
+                    <label class="block-style-editor__label">Height</label>
+                    <div class="block-style-editor__field-right">
+                        <div class="block-style-editor__custom-input-row">
+                            <input
+                                type="text"
+                                class="block-style-editor__custom-input"
+                                value={props.style.height || ''}
+                                onInput={(e,) => update('height', e.currentTarget.value,)}
+                                placeholder="e.g. 300px, 50vh"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Padding */}
                 <div class="block-style-editor__field">
                     <label class="block-style-editor__label">Padding</label>
@@ -408,7 +424,7 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                             class="block-style-editor__template-name"
                             value={templateName()}
                             onInput={(e,) => setTemplateName(e.currentTarget.value,)}
-                            placeholder="Save as a template..."
+                            placeholder="Template name..."
                         />
                         <button
                             class="btn btn--small btn--primary"
@@ -417,6 +433,8 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                         >
                             {saving() ? 'Saving...' : 'Save Template'}
                         </button>
+                    </div>
+                    <div class="block-style-editor__template-row block-style-editor__template-row--secondary">
                         <Show when={props.onCopyTemplate}>
                             <button class="btn btn--small btn--secondary" onClick={() => props.onCopyTemplate?.()}>
                                 Copy to New

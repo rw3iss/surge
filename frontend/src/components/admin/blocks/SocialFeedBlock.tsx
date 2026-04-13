@@ -99,9 +99,8 @@ const SocialFeedBlock: Component<SocialFeedBlockProps> = (props,) => {
                     </select>
                 </div>
 
-                <div class="form-row" style={{ display: 'flex', gap: '1rem', }}>
-                    <div class="form-group" style={{ flex: 1, }}>
-                        <label>Layout</label>
+                <div class="form-group">
+                    <label>Layout</label>
                         <select
                             value={props.data.layout || 'grid'}
                             onChange={(e,) => {
@@ -115,22 +114,42 @@ const SocialFeedBlock: Component<SocialFeedBlockProps> = (props,) => {
                                 {(o,) => <option value={o.value}>{o.label}</option>}
                             </For>
                         </select>
-                    </div>
-                    <div class="form-group" style={{ width: '120px', }}>
-                        <label>Posts</label>
+                </div>
+                <div class="form-group">
+                    <label>Posts</label>
+                    <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={props.data.limit || 6}
+                        onInput={(e,) => {
+                            props.onUpdate({
+                                ...props.data,
+                                limit: Math.max(1, Math.min(50, Number(e.currentTarget.value,) || 6,),),
+                            },);
+                        }}
+                    />
+                </div>
+                <Show when={(props.data.layout || 'grid') === 'row'}>
+                    <div class="form-group">
+                        <label>Row Height</label>
                         <input
-                            type="number"
-                            min="1"
-                            max="50"
-                            value={props.data.limit || 6}
-                            onInput={(e,) => {
-                                props.onUpdate({
-                                    ...props.data,
-                                    limit: Math.max(1, Math.min(50, Number(e.currentTarget.value,) || 6,),),
-                                },);
-                            }}
+                            type="text"
+                            value={props.data.rowHeight || ''}
+                            onInput={(e,) => props.onUpdate({ ...props.data, rowHeight: e.currentTarget.value, },)}
+                            placeholder="e.g. 300px, 40vh (blank for auto)"
                         />
                     </div>
+                </Show>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input
+                            type="checkbox"
+                            checked={props.data.snapScroll ?? false}
+                            onChange={(e,) => props.onUpdate({ ...props.data, snapScroll: e.currentTarget.checked, },)}
+                        />
+                        <span>Snap scrolling</span>
+                    </label>
                 </div>
             </Show>
         </div>

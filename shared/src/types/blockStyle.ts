@@ -8,6 +8,7 @@ export interface BlockStyle {
     verticalAlign?: string; // 'top' | 'center' | 'bottom'
     fontSize?: string; // e.g. '16px'
     width?: string; // CSS width value
+    height?: string; // CSS height value
     padding?: string; // CSS padding value
     margin?: string; // CSS margin value
     gap?: string; // CSS gap value
