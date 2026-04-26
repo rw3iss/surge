@@ -100,9 +100,14 @@ export const BLOCK_TYPES: BlockTypeConfig[] = [
         label: 'Post List',
         icon: '☰',
         category: 'reference',
-        // Sensible defaults: 5 posts, brief mode, all meta fields shown,
-        // no date filters. Anything else is opt-in by the operator.
+        // Sensible defaults: query enabled with 5 posts, brief mode,
+        // all meta fields shown, no specific posts, empty-message
+        // placeholder on. Specific posts and the query render
+        // independently — see PostListRenderer.
         defaultData: () => ({
+            pinnedPostIds: [] as string[],
+            queryEnabled: true,
+            showEmptyMessage: true,
             count: 5,
             brevity: 'brief',
             shortMaxHeight: '400px',
@@ -112,7 +117,6 @@ export const BLOCK_TYPES: BlockTypeConfig[] = [
             showDateUpdated: false,
             showTags: true,
             query: '',
-            pinnedPostIds: [] as string[],
         }),
     },
     { type: 'gallery', label: 'Gallery', icon: '⊟', category: 'reference', },

@@ -39,6 +39,14 @@ export interface PostFilters {
      *  loaded with a single query to avoid an N+1 storm. Used by the
      *  post-list block in 'short' / 'full' brevity modes. */
     withContentBlocks?: boolean;
+    /** When true AND `ids` is set, the published / not-private gate is
+     *  dropped *only for the ID branch* so explicitly-pinned drafts
+     *  surface in admin previews. Date / search branches are
+     *  unaffected — they still respect the public gate even for admin
+     *  requests, so admin's feed previews still match what visitors
+     *  see for non-pinned content. The route sets this flag based on
+     *  the authenticated user's role. */
+    includeNonPublishedForIds?: boolean;
 }
 
 // ─── Content Blocks ───
@@ -133,7 +141,13 @@ export async function findPublicPosts(
     filters: PostFilters,
     pagination: PaginationOptions,
 ): Promise<PaginatedResult<Post>> {
-    let whereClause = `WHERE p.status = 'published' AND p.is_private = false`;
+    // For ID-restricted admin queries we drop the publish/privacy gate
+    // entirely so pinned drafts render in admin previews. Anything
+    // else still gets the standard public gate.
+    const adminBypass = filters.includeNonPublishedForIds && filters.ids && filters.ids.length > 0;
+    let whereClause = adminBypass
+        ? `WHERE p.status != 'deleted'`
+        : `WHERE p.status = 'published' AND p.is_private = false`;
     const params: unknown[] = [];
 
     if (filters.tag) {

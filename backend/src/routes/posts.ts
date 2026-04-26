@@ -57,6 +57,13 @@ router.get('/public', authenticate(false,), async (req: AuthenticatedRequest, re
             : undefined;
 
         const wantBlocks = withBlocks === '1' || withBlocks === 'true';
+        // Admins requesting an ID-restricted feed (e.g. the post-list
+        // block in admin preview) get to see drafts they've pinned —
+        // the picker happily lets them pin drafts, so the preview must
+        // surface them or the operator has no way to verify their
+        // selections. Non-admins never see drafts; date/search
+        // branches still honor the public gate even for admins.
+        const isAdmin = req.user?.role === 'admin' || req.user?.role === 'sysadmin';
 
         const cacheKey = `posts:public:${page}:${limit}:${tag || ''}:${category || ''}:${search || ''}:${
             before || ''}:${after || ''}:${idList ? idList.join('|',) : ''}:${wantBlocks ? 'b' : ''}`;
@@ -75,6 +82,7 @@ router.get('/public', authenticate(false,), async (req: AuthenticatedRequest, re
                 publishedAfter: after as string,
                 ids: idList,
                 withContentBlocks: wantBlocks,
+                includeNonPublishedForIds: isAdmin,
             },
             pagination,
         );

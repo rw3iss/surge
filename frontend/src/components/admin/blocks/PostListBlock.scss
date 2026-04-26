@@ -21,6 +21,21 @@
     }
   }
 
+  // ─── Query panel (visible when "Enable posts query" is on) ─────
+  // Subtle inset so the operator sees that everything inside it is
+  // gated by the toggle above. Border + reduced background contrast
+  // — not a hard panel, just a grouping cue.
+  &__query-panel {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    margin-top: $spacing-sm;
+    padding: $spacing-md;
+    background: $background-dark;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+  }
+
   // Brevity radio buttons. Sit inside FormSection's inline-items grid.
   &__radio {
     display: inline-flex;

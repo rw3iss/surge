@@ -214,137 +214,17 @@ const PostListBlock: Component<PostListBlockProps> = (props,) => {
         patch({ pinnedPostIds: ids, },);
     };
 
+    /** Whether the dynamic-query section is enabled. Default true so
+     *  blocks created before this toggle existed keep the same
+     *  behavior; new blocks get the toggle's stored value. */
+    const queryEnabled = () => get('queryEnabled', true,) !== false;
+
     return (
         <div class="post-list-block-edit">
-            {/* ─── Number of posts (inline) ─── */}
-            <FormField label="Number of posts" inline>
-                <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={get('count', 5,)}
-                    onInput={(e,) => patch({ count: Number(e.currentTarget.value,) || undefined, },)}
-                />
-            </FormField>
-
-            {/* ─── Date-window filters (two-up) ─── */}
-            <div class="post-list-block-edit__row-pair">
-                <FormField
-                    label="Posts after (days ago)"
-                    tooltip="Show posts older than this many days. Leave blank for no lower bound. Useful for archive feeds."
-                >
-                    <input
-                        type="number"
-                        min="0"
-                        value={get('afterDaysAgo', '',)}
-                        placeholder="leave blank for no limit"
-                        onInput={(e,) => {
-                            const v = e.currentTarget.value;
-                            patch({ afterDaysAgo: v === '' ? undefined : Number(v,), },);
-                        }}
-                    />
-                </FormField>
-                <FormField
-                    label="Posts before (days ago)"
-                    tooltip="Show posts newer than this many days ago. Leave blank for no upper bound. Useful for recent-posts feeds."
-                >
-                    <input
-                        type="number"
-                        min="0"
-                        value={get('beforeDaysAgo', '',)}
-                        placeholder="leave blank for no limit"
-                        onInput={(e,) => {
-                            const v = e.currentTarget.value;
-                            patch({ beforeDaysAgo: v === '' ? undefined : Number(v,), },);
-                        }}
-                    />
-                </FormField>
-            </div>
-
-            {/* ─── Brevity ─── */}
-            <FormSection title="Post brevity" tooltip={BREVITY_HELP} inlineItems tight>
-                <For each={(['brief', 'short', 'full',] as Brevity[])}>
-                    {(b,) => (
-                        <label class="post-list-block-edit__radio">
-                            <input
-                                type="radio"
-                                name="brevity"
-                                checked={get('brevity', 'brief',) === b}
-                                onChange={() => patch({ brevity: b, },)}
-                            />
-                            <span>{b.charAt(0,).toUpperCase() + b.slice(1,)}</span>
-                        </label>
-                    )}
-                </For>
-            </FormSection>
-
-            {/* ─── Short-mode subsettings ─── */}
-            <Show when={get('brevity', 'brief',) === 'short'}>
-                <FormField
-                    label="Short max height"
-                    inline
-                    tooltip="When brevity = Short, each post's content is clipped to this height. Use any valid CSS height (e.g. '400px', '50vh', '30rem'). Default: 400px."
-                >
-                    <input
-                        type="text"
-                        value={get('shortMaxHeight', '400px',)}
-                        placeholder="400px"
-                        onInput={(e,) => patch({ shortMaxHeight: e.currentTarget.value || undefined, },)}
-                    />
-                </FormField>
-                <FormCheck
-                    label="Allow expansion to full height"
-                    checked={get('allowExpand', true,) === true}
-                    onChange={(next,) => patch({ allowExpand: next, },)}
-                    tooltip="Adds a 'See all' bar to clipped posts in the public output. Clicking it expands that post inline to its full height; a 'Hide all' bar appears at the top and bottom while expanded."
-                />
-            </Show>
-
-            {/* ─── Field visibility ─── */}
-            <FormSection title="Show fields" tight padded inlineItems>
-                <FormCheck
-                    label="Description / Excerpt"
-                    plain
-                    checked={get('showExcerpt', true,) === true}
-                    onChange={(next,) => patch({ showExcerpt: next, },)}
-                />
-                <FormCheck
-                    label="Date created"
-                    plain
-                    checked={get('showDateCreated', true,) === true}
-                    onChange={(next,) => patch({ showDateCreated: next, },)}
-                />
-                <FormCheck
-                    label="Date updated"
-                    plain
-                    checked={get('showDateUpdated', false,) === true}
-                    onChange={(next,) => patch({ showDateUpdated: next, },)}
-                />
-                <FormCheck
-                    label="Tags"
-                    plain
-                    checked={get('showTags', true,) === true}
-                    onChange={(next,) => patch({ showTags: next, },)}
-                />
-            </FormSection>
-
-            {/* ─── Free-text query ─── */}
-            <FormField
-                label="Search filter"
-                tooltip="Free-text query — the backend full-text searches post titles + bodies for matching posts. Combined with the date / tag / pinned filters above."
-            >
-                <input
-                    type="text"
-                    value={get('query', '',)}
-                    placeholder="e.g. interview, election, …"
-                    onInput={(e,) => patch({ query: e.currentTarget.value || undefined, },)}
-                />
-            </FormField>
-
-            {/* ─── Pinned posts ─── */}
+            {/* ─── Specific posts (always at the top) ─── */}
             <FormSection
                 title="Specific posts"
-                tooltip="Hand-pick posts that override the filter above. When set, only these posts appear, in the order shown. Drag to reorder, click × to remove."
+                tooltip="Hand-pick posts to render in the output. They appear at the top of the list, in the order shown. Drag to reorder, click × to remove. Specific posts render independently of the query below."
             >
                 <div class="post-list-block-edit__pinned">
                     <Show when={pinnedIds().length === 0}>
@@ -388,6 +268,145 @@ const PostListBlock: Component<PostListBlockProps> = (props,) => {
                     </button>
                 </div>
             </FormSection>
+
+            {/* ─── Render options (apply to both pinned + query results) ─── */}
+            <FormSection title="Post brevity" tooltip={BREVITY_HELP} inlineItems tight>
+                <For each={(['brief', 'short', 'full',] as Brevity[])}>
+                    {(b,) => (
+                        <label class="post-list-block-edit__radio">
+                            <input
+                                type="radio"
+                                name="brevity"
+                                checked={get('brevity', 'brief',) === b}
+                                onChange={() => patch({ brevity: b, },)}
+                            />
+                            <span>{b.charAt(0,).toUpperCase() + b.slice(1,)}</span>
+                        </label>
+                    )}
+                </For>
+            </FormSection>
+
+            <Show when={get('brevity', 'brief',) === 'short'}>
+                <FormField
+                    label="Short max height"
+                    inline
+                    tooltip="When brevity = Short, each post's content is clipped to this height. Use any valid CSS height (e.g. '400px', '50vh', '30rem'). Default: 400px."
+                >
+                    <input
+                        type="text"
+                        value={get('shortMaxHeight', '400px',)}
+                        placeholder="400px"
+                        onInput={(e,) => patch({ shortMaxHeight: e.currentTarget.value || undefined, },)}
+                    />
+                </FormField>
+                <FormCheck
+                    label="Allow expansion to full height"
+                    checked={get('allowExpand', true,) === true}
+                    onChange={(next,) => patch({ allowExpand: next, },)}
+                    tooltip="Adds a 'See all' bar to clipped posts in the public output. Clicking it expands that post inline to its full height; a 'Hide all' bar appears at the top and bottom while expanded."
+                />
+            </Show>
+
+            <FormSection title="Show fields" tight padded inlineItems>
+                <FormCheck
+                    label="Description / Excerpt"
+                    plain
+                    checked={get('showExcerpt', true,) === true}
+                    onChange={(next,) => patch({ showExcerpt: next, },)}
+                />
+                <FormCheck
+                    label="Date created"
+                    plain
+                    checked={get('showDateCreated', true,) === true}
+                    onChange={(next,) => patch({ showDateCreated: next, },)}
+                />
+                <FormCheck
+                    label="Date updated"
+                    plain
+                    checked={get('showDateUpdated', false,) === true}
+                    onChange={(next,) => patch({ showDateUpdated: next, },)}
+                />
+                <FormCheck
+                    label="Tags"
+                    plain
+                    checked={get('showTags', true,) === true}
+                    onChange={(next,) => patch({ showTags: next, },)}
+                />
+            </FormSection>
+
+            {/* ─── Posts query (toggled) ─── */}
+            <FormCheck
+                label="Enable posts query"
+                checked={queryEnabled()}
+                onChange={(next,) => patch({ queryEnabled: next, },)}
+                tooltip="When on, runs a dynamic query against your posts (count, date filters, full-text search) and renders the results below any specific posts above. Turn off to render only the specific posts you've pinned."
+            />
+
+            <Show when={queryEnabled()}>
+                <div class="post-list-block-edit__query-panel">
+                    <FormField label="Number of posts" inline>
+                        <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={get('count', 5,)}
+                            onInput={(e,) => patch({ count: Number(e.currentTarget.value,) || undefined, },)}
+                        />
+                    </FormField>
+
+                    <div class="post-list-block-edit__row-pair">
+                        <FormField
+                            label="Posts after (days ago)"
+                            tooltip="Show posts older than this many days. Leave blank for no lower bound. Useful for archive feeds."
+                        >
+                            <input
+                                type="number"
+                                min="0"
+                                value={get('afterDaysAgo', '',)}
+                                placeholder="leave blank for no limit"
+                                onInput={(e,) => {
+                                    const v = e.currentTarget.value;
+                                    patch({ afterDaysAgo: v === '' ? undefined : Number(v,), },);
+                                }}
+                            />
+                        </FormField>
+                        <FormField
+                            label="Posts before (days ago)"
+                            tooltip="Show posts newer than this many days ago. Leave blank for no upper bound. Useful for recent-posts feeds."
+                        >
+                            <input
+                                type="number"
+                                min="0"
+                                value={get('beforeDaysAgo', '',)}
+                                placeholder="leave blank for no limit"
+                                onInput={(e,) => {
+                                    const v = e.currentTarget.value;
+                                    patch({ beforeDaysAgo: v === '' ? undefined : Number(v,), },);
+                                }}
+                            />
+                        </FormField>
+                    </div>
+
+                    <FormField
+                        label="Search filter"
+                        tooltip="Free-text query — the backend full-text searches post titles + bodies for matching posts. Combined with the date / tag filters above."
+                    >
+                        <input
+                            type="text"
+                            value={get('query', '',)}
+                            placeholder="e.g. interview, election, …"
+                            onInput={(e,) => patch({ query: e.currentTarget.value || undefined, },)}
+                        />
+                    </FormField>
+
+                    <FormCheck
+                        label="Show message when there are no posts"
+                        checked={get('showEmptyMessage', true,) === true}
+                        onChange={(next,) => patch({ showEmptyMessage: next, },)}
+                        tooltip="When on (default), the public output shows 'No posts match the current filters.' if the query returns zero results. Turn off to render nothing in that case — useful when the post-list block is supplementary and an empty placeholder would feel out of place."
+                    />
+                </div>
+            </Show>
 
             {/* ─── Picker modal ─── */}
             <Show when={pickerOpen()}>

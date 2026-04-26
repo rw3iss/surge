@@ -5,7 +5,21 @@
  * BlockRenderer and the admin BlockPreview so the editor's preview is
  * faithful to the live site.
  *
- * Brevity modes:
+ * Two independent post sources are supported:
+ *
+ *   1. Specific posts (pinnedPostIds) — always rendered first when set.
+ *      No filter / count limit applies; the operator chose them
+ *      explicitly. Order matches the array.
+ *
+ *   2. Query results — rendered after, only when `queryEnabled` is on.
+ *      Honours count / date filters / search. When the query returns
+ *      zero rows AND `showEmptyMessage` is on, a "No posts match"
+ *      placeholder renders; otherwise nothing.
+ *
+ * The two lists are deduped against each other so a query hit that's
+ * also pinned never renders twice.
+ *
+ * Brevity modes (apply uniformly to both sources):
  *
  *   brief — title + excerpt + meta (date/tags), nothing more.
  *   short — like brief, plus an abbreviated content section clipped to
@@ -14,12 +28,9 @@
  *           the post inline; while expanded, "Hide All" bars float at
  *           the top and bottom (visible on hover).
  *   full  — render every content block, no clipping or expansion UI.
- *
- * Settings shape mirrors `PostListSettings` in PostListBlock.tsx so the
- * settings save/load round-trip stays simple.
  */
 import type { Block, } from '@rw/shared';
-import { Component, createMemo, createResource, createSignal, For, Match, Show, Switch, } from 'solid-js';
+import { Component, createMemo, createResource, createSignal, For, Show, } from 'solid-js';
 import { fetchPostList, type PostWithBlocks, } from '../services/postsService';
 import { BlockRenderer, } from './BlockRenderer/BlockRenderer';
 import './PostListRenderer.scss';
@@ -27,9 +38,25 @@ import './PostListRenderer.scss';
 export type PostBrevity = 'brief' | 'short' | 'full';
 
 export interface PostListSettings {
+    /** Posts hand-picked via the picker. Always rendered first if set. */
+    pinnedPostIds?: string[];
+    /** Whether the dynamic query section is active. Defaults to true so
+     *  blocks saved before this option existed keep showing query
+     *  results. New blocks created via the editor explicitly set this. */
+    queryEnabled?: boolean;
+    /** When true, the renderer shows "No posts match…" when the query
+     *  returns zero rows. When false (the user explicitly silenced it),
+     *  the empty query simply renders nothing. Only applies to the
+     *  query branch — pinned-only blocks never show this message. */
+    showEmptyMessage?: boolean;
+
+    // ─── Query criteria (only used when queryEnabled) ───
     count?: number;
     afterDaysAgo?: number;
     beforeDaysAgo?: number;
+    query?: string;
+
+    // ─── Render options (apply to both pinned + query results) ───
     brevity?: PostBrevity;
     shortMaxHeight?: string;
     allowExpand?: boolean;
@@ -37,24 +64,41 @@ export interface PostListSettings {
     showDateCreated?: boolean;
     showDateUpdated?: boolean;
     showTags?: boolean;
-    query?: string;
-    pinnedPostIds?: string[];
 }
 
 interface PostListRendererProps {
     settings: PostListSettings;
 }
 
-/** Read settings keys with sensible defaults applied per the spec. */
-function withDefaults(s: PostListSettings,): Required<Omit<PostListSettings, 'afterDaysAgo' | 'beforeDaysAgo' | 'query'>> & {
+interface ResolvedSettings {
+    pinnedPostIds: string[];
+    queryEnabled: boolean;
+    showEmptyMessage: boolean;
+    count: number;
     afterDaysAgo?: number;
     beforeDaysAgo?: number;
     query?: string;
-} {
+    brevity: PostBrevity;
+    shortMaxHeight: string;
+    allowExpand: boolean;
+    showExcerpt: boolean;
+    showDateCreated: boolean;
+    showDateUpdated: boolean;
+    showTags: boolean;
+}
+
+function withDefaults(s: PostListSettings,): ResolvedSettings {
     return {
+        pinnedPostIds: s.pinnedPostIds ?? [],
+        // Default true preserves prior behavior for blocks saved before
+        // this toggle existed — they always ran the query implicitly.
+        queryEnabled: s.queryEnabled !== false,
+        // Default true matches the previous always-on placeholder.
+        showEmptyMessage: s.showEmptyMessage !== false,
         count: s.count ?? 5,
         afterDaysAgo: s.afterDaysAgo,
         beforeDaysAgo: s.beforeDaysAgo,
+        query: s.query,
         brevity: s.brevity ?? 'brief',
         shortMaxHeight: s.shortMaxHeight ?? '400px',
         allowExpand: s.allowExpand ?? true,
@@ -62,8 +106,6 @@ function withDefaults(s: PostListSettings,): Required<Omit<PostListSettings, 'af
         showDateCreated: s.showDateCreated ?? true,
         showDateUpdated: s.showDateUpdated ?? false,
         showTags: s.showTags ?? true,
-        query: s.query,
-        pinnedPostIds: s.pinnedPostIds ?? [],
     };
 }
 
@@ -75,37 +117,106 @@ function formatDate(d: Date | string | undefined,): string {
 }
 
 const PostListRenderer: Component<PostListRendererProps> = (props,) => {
-    // Re-fetch whenever the resolved settings change. Solid's resource
-    // tracks the source signal; we feed it the JSON of the normalized
-    // filter so equivalent settings (e.g. unset vs explicit defaults)
-    // share a single fetch.
-    const filterSignal = createMemo(() => {
-        const s = withDefaults(props.settings,);
-        const needBlocks = s.brevity !== 'brief';
+    const resolved = createMemo(() => withDefaults(props.settings,),);
+
+    // ─── Pinned posts: independent fetch keyed by ids only ─────
+    // No date / search filters apply — the operator chose these
+    // explicitly. Limit equals the pinned count so all of them come
+    // back. We pass `withBlocks` so short/full brevity modes get the
+    // hydrated content.
+    const pinnedFilter = createMemo(() => {
+        const s = resolved();
+        if (s.pinnedPostIds.length === 0) return null;
+        return {
+            count: s.pinnedPostIds.length,
+            ids: s.pinnedPostIds,
+            withBlocks: s.brevity !== 'brief',
+        };
+    },);
+
+    const [pinnedData,] = createResource(pinnedFilter, async (f,) => {
+        if (!f) return { posts: [] as PostWithBlocks[], total: 0, };
+        return fetchPostList(f,);
+    },);
+
+    // ─── Query results: independent fetch with all filter criteria ───
+    // Skipped entirely when queryEnabled is off — `null` source means
+    // the resource never fires.
+    const queryFilter = createMemo(() => {
+        const s = resolved();
+        if (!s.queryEnabled) return null;
         return {
             count: s.count,
             afterDaysAgo: s.afterDaysAgo,
             beforeDaysAgo: s.beforeDaysAgo,
             search: s.query,
-            ids: s.pinnedPostIds.length > 0 ? s.pinnedPostIds : undefined,
-            withBlocks: needBlocks,
+            withBlocks: s.brevity !== 'brief',
         };
     },);
 
-    const [data,] = createResource(filterSignal, (f,) => fetchPostList(f,),);
+    const [queryData,] = createResource(queryFilter, async (f,) => {
+        if (!f) return { posts: [] as PostWithBlocks[], total: 0, };
+        return fetchPostList(f,);
+    },);
+
+    // ─── Combined render list ─────────────────────────────────
+    // Pinned posts first (in their saved order), then any query
+    // results not already pinned. Dedup by id so a query hit that's
+    // also pinned doesn't render twice.
+    const combined = createMemo(() => {
+        const s = resolved();
+        const pinned = pinnedData()?.posts ?? [];
+        const queryRows = s.queryEnabled ? (queryData()?.posts ?? []) : [];
+        const seen = new Set(pinned.map(p => (p as any).id as string),);
+        const queryUnique = queryRows.filter(p => !seen.has((p as any).id as string,),);
+        return { pinned, queryUnique, };
+    },);
+
+    const isLoading = () => pinnedData.loading || queryData.loading;
+
+    /** True when the query branch is active AND returned no rows. The
+     *  empty message only fires for this case — a pinned-only block or
+     *  a query-disabled block with no pins simply renders nothing. */
+    const queryReturnedEmpty = () => {
+        const s = resolved();
+        if (!s.queryEnabled) return false;
+        if (queryData.loading) return false;
+        return (queryData()?.posts?.length ?? 0) === 0;
+    };
+
+    const totalToRender = () => combined().pinned.length + combined().queryUnique.length;
 
     return (
         <div class="post-list">
-            <Show when={data.loading}>
+            <Show when={isLoading() && totalToRender() === 0}>
                 <div class="post-list__loading">Loading posts…</div>
             </Show>
-            <Show when={!data.loading && (data()?.posts?.length ?? 0) === 0}>
+
+            {/* Pinned section first */}
+            <For each={combined().pinned}>
+                {(post,) => <PostListItem post={post} settings={resolved()} />}
+            </For>
+
+            {/* Query results next, deduped against pinned */}
+            <For each={combined().queryUnique}>
+                {(post,) => <PostListItem post={post} settings={resolved()} />}
+            </For>
+
+            {/* Empty-state placeholder — only when the QUERY branch
+                returned nothing AND the operator opted in via
+                `showEmptyMessage`. Pinned-only blocks (no query)
+                never see this. If pinned posts exist but the query
+                came back empty, we still hide the message because the
+                output isn't actually "empty" — pinned posts rendered. */}
+            <Show
+                when={
+                    !isLoading()
+                    && resolved().showEmptyMessage
+                    && queryReturnedEmpty()
+                    && combined().pinned.length === 0
+                }
+            >
                 <div class="post-list__empty">No posts match the current filters.</div>
-            </Show>
-            <Show when={!data.loading && (data()?.posts?.length ?? 0) > 0}>
-                <For each={data()!.posts}>
-                    {(post,) => <PostListItem post={post} settings={withDefaults(props.settings,)} />}
-                </For>
             </Show>
         </div>
     );
