@@ -1,4 +1,4 @@
--- Surge Media Database Schema
+-- RW Database Schema
 -- PostgreSQL 14+
 
 -- Enable UUID extension
@@ -113,7 +113,7 @@ CREATE INDEX idx_pages_nav ON pages(show_in_nav, nav_order);
 -- =====================================================
 
 CREATE TYPE block_type AS ENUM (
-    'rich_text', 'post', 'form', 'image', 'video',
+    'rich_text', 'post', 'post_list', 'form', 'image', 'video',
     'gallery', 'social_feed', 'campaign', 'hero', 'html'
 );
 
@@ -169,7 +169,9 @@ CREATE INDEX idx_posts_author_id ON posts(author_id);
 -- =====================================================
 
 CREATE TYPE content_block_type AS ENUM (
-    'text', 'social_media', 'image', 'video', 'document', 'url_link'
+    'text', 'social_media', 'image', 'video', 'document', 'url_link',
+    'rich_text', 'hero', 'html', 'campaign', 'form', 'post', 'post_list',
+    'social_feed', 'gallery', 'carousel', 'spacer'
 );
 
 CREATE TABLE post_content_blocks (

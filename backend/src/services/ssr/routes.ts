@@ -17,7 +17,7 @@ import {
     truncateText,
 } from './schema';
 
-const FALLBACK_SITE_NAME = 'Surge Media';
+const FALLBACK_SITE_NAME = 'RW';
 const FALLBACK_SITE_DESCRIPTION = 'Independent journalism for the people';
 
 interface SiteMeta {

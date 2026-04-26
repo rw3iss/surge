@@ -16,7 +16,8 @@ const contentBlockSchema = z.object({
     id: z.string().optional(),
     type: z.enum([
         'text', 'rich_text', 'social_media', 'social_feed', 'image', 'video',
-        'document', 'url_link', 'hero', 'html', 'campaign', 'form', 'post', 'gallery', 'carousel', 'spacer',
+        'document', 'url_link', 'hero', 'html', 'campaign', 'form', 'post', 'post_list',
+        'gallery', 'carousel', 'spacer',
     ],),
     sort_order: z.number().int().min(0,),
     data: z.record(z.unknown(),).default({},),
@@ -44,9 +45,21 @@ const postSchema = z.object({
 
 router.get('/public', authenticate(false,), async (req: AuthenticatedRequest, res,) => {
     try {
-        const { page = 1, limit = 10, tag, category, search, } = req.query;
+        const { page = 1, limit = 10, tag, category, search, before, after, ids, withBlocks, } = req.query;
         const pagination = { page: Number(page,), limit: Number(limit,), };
-        const cacheKey = `posts:public:${page}:${limit}:${tag || ''}:${category || ''}:${search || ''}`;
+
+        // `ids` arrives as a comma-separated string from the client.
+        // Empty / whitespace-only entries are dropped; we don't attempt
+        // UUID validation here — Postgres rejects bad casts, which the
+        // route's error handler turns into a 400.
+        const idList = typeof ids === 'string' && ids.trim()
+            ? ids.split(',',).map(s => s.trim(),).filter(Boolean,)
+            : undefined;
+
+        const wantBlocks = withBlocks === '1' || withBlocks === 'true';
+
+        const cacheKey = `posts:public:${page}:${limit}:${tag || ''}:${category || ''}:${search || ''}:${
+            before || ''}:${after || ''}:${idList ? idList.join('|',) : ''}:${wantBlocks ? 'b' : ''}`;
 
         if (!req.user) {
             const cached = await cache.get(cacheKey,);
@@ -54,7 +67,15 @@ router.get('/public', authenticate(false,), async (req: AuthenticatedRequest, re
         }
 
         const result = await postsRepo.findPublicPosts(
-            { tag: tag as string, category: category as string, search: search as string, },
+            {
+                tag: tag as string,
+                category: category as string,
+                search: search as string,
+                publishedBefore: before as string,
+                publishedAfter: after as string,
+                ids: idList,
+                withContentBlocks: wantBlocks,
+            },
             pagination,
         );
 

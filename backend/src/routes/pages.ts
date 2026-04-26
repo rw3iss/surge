@@ -1,4 +1,4 @@
-import type { Page, } from '@surge/shared';
+import type { Page, } from '@rw/shared';
 import { Router, } from 'express';
 import { z, } from 'zod';
 import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
@@ -33,7 +33,7 @@ const pageSchema = z.object({
 
 const blockSchema = z.object({
     type: z.enum([
-        'rich_text', 'text', 'post', 'form', 'image', 'video', 'gallery',
+        'rich_text', 'text', 'post', 'post_list', 'form', 'image', 'video', 'gallery',
         'social_feed', 'social_media', 'campaign', 'hero', 'html',
         'document', 'url_link', 'carousel', 'spacer',
     ],),
@@ -58,6 +58,32 @@ router.get('/navigation', async (_req, res,) => {
         sendSuccess(res, navigation,);
     } catch (error) {
         handleRouteError(res, error, 'fetch navigation',);
+    }
+},);
+
+/**
+ * The page currently flagged as homepage. Returns 404 when no page is
+ * marked. The frontend Home component uses this to drive `/` —
+ * separately from any specific slug.
+ */
+router.get('/homepage', async (_req, res,) => {
+    try {
+        const cacheKey = 'page:homepage';
+        const cached = await cache.get<Page>(cacheKey,);
+        if (cached) return sendSuccess(res, cached,);
+
+        const page = await pagesRepo.findHomepage();
+        if (!page) {
+            return res.status(404,).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'No homepage configured', },
+            },);
+        }
+        page.blocks = await pagesRepo.findBlocksByPageIdWithStyles(page.id, true,);
+        await cache.set(cacheKey, page, 300,);
+        sendSuccess(res, page,);
+    } catch (error) {
+        handleRouteError(res, error, 'fetch homepage',);
     }
 },);
 

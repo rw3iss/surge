@@ -1,5 +1,6 @@
 import { Component, createSignal, For, onMount, Show, } from 'solid-js';
 import { fetchSiteHeader, saveSiteHeader, } from '../../services/api';
+import { colorCssValue, } from '../../services/colorResolver';
 import { useToast, } from '../Toast';
 import ColorPicker from './ColorPicker';
 import MediaSelectModal from './MediaSelectModal';
@@ -21,6 +22,8 @@ interface SiteHeaderItem {
     openInNewTab?: boolean;
     buttonColor?: string;
     fontSize?: string;
+    /** CSS font-weight ('100'..'900' or keyword). Empty/undefined → inherit. */
+    fontWeight?: string;
     textColor?: string;
     width?: string;
     alignment?: string;
@@ -60,6 +63,23 @@ const FONT_SIZE_OPTIONS = [
 const WIDTH_OPTIONS = ['auto', '100%', '50%', '33.333%', '25%', '20%',];
 const PADDING_OPTIONS = ['0px', '5px', '10px', '15px', '20px', '30px',];
 const MARGIN_OPTIONS = ['0px', '5px', '10px', '15px', '20px', '30px',];
+
+// Font weight options. Empty value = "default" (inherit). Numeric
+// weights map 1:1 to the CSS font-weight values most variable + system
+// fonts support; the keyword aliases (Light, Regular, Bold, etc.) help
+// non-CSS-savvy users pick the right one.
+const FONT_WEIGHT_OPTIONS: { value: string; label: string; }[] = [
+    { value: '', label: 'Default', },
+    { value: '100', label: '100 — Thin', },
+    { value: '200', label: '200 — Extra Light', },
+    { value: '300', label: '300 — Light', },
+    { value: '400', label: '400 — Regular', },
+    { value: '500', label: '500 — Medium', },
+    { value: '600', label: '600 — Semibold', },
+    { value: '700', label: '700 — Bold', },
+    { value: '800', label: '800 — Extrabold', },
+    { value: '900', label: '900 — Black', },
+];
 
 const HEADER_ITEM_TYPES: { value: HeaderItemType; label: string; }[] = [
     { value: 'image', label: 'Image', },
@@ -358,7 +378,7 @@ const SiteHeaderEditor: Component = () => {
                 return (
                     <span
                         class="site-header-preview__button"
-                        style={{ background: item.buttonColor || '#333', }}
+                        style={{ background: colorCssValue(item.buttonColor, '#333',), }}
                     >
                         {item.text || 'Button'}
                     </span>
@@ -410,8 +430,8 @@ const SiteHeaderEditor: Component = () => {
                 <div
                     class={`site-header-preview ${draggingId() ? 'site-header-preview--dragging' : ''}`}
                     style={{
-                        background: bgColor(),
-                        color: textColor(),
+                        background: colorCssValue(bgColor(), '',) || undefined,
+                        color: colorCssValue(textColor(), '',) || undefined,
                         gap: itemSpacing() || undefined,
                         padding: headerPadding() || undefined,
                         margin: headerMargin() || undefined,
@@ -447,7 +467,11 @@ const SiteHeaderEditor: Component = () => {
                                     inlineStyle.display = 'block';
                                 }
                                 if (item.fontSize) inlineStyle['font-size'] = item.fontSize;
-                                if (item.textColor) inlineStyle.color = item.textColor;
+                                if (item.fontWeight) inlineStyle['font-weight'] = item.fontWeight;
+                                {
+                                    const tc = colorCssValue(item.textColor, '',);
+                                    if (tc) inlineStyle.color = tc;
+                                }
                                 if (item.padding) inlineStyle.padding = item.padding;
                                 if (item.margin) inlineStyle.margin = item.margin;
                                 if (item.alignment) inlineStyle['text-align'] = item.alignment;
@@ -809,6 +833,20 @@ const SiteHeaderEditor: Component = () => {
                                         >
                                             <For each={FONT_SIZE_OPTIONS}>
                                                 {(size,) => <option value={size}>{size}</option>}
+                                            </For>
+                                        </select>
+                                    </div>
+
+                                    {/* Font Weight */}
+                                    <div class="site-header-edit-panel__field">
+                                        <label class="site-header-edit-panel__label">Font Weight</label>
+                                        <select
+                                            class="site-header-edit-panel__select"
+                                            value={item().fontWeight || ''}
+                                            onChange={(e,) => updateEditField('fontWeight', e.currentTarget.value,)}
+                                        >
+                                            <For each={FONT_WEIGHT_OPTIONS}>
+                                                {(opt,) => <option value={opt.value}>{opt.label}</option>}
                                             </For>
                                         </select>
                                     </div>

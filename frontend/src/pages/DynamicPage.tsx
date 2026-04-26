@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams, } from '@solidjs/router';
-import type { ContentAccessLevel, Page, } from '@surge/shared';
+import type { ContentAccessLevel, Page, } from '@rw/shared';
 import { Component, createResource, createSignal, For, lazy, Show, } from 'solid-js';
 import { BlockRenderer, } from '../components/BlockRenderer';
 import ContentGate from '../components/ContentGate';

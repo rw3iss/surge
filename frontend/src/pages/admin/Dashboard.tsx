@@ -2,6 +2,18 @@ import { Title, } from '@solidjs/meta';
 import { A, } from '@solidjs/router';
 import { Component, createResource, For, Show, } from 'solid-js';
 import { api, } from '../../services/api';
+import { isFeatureEnabled, loadSiteSettings, siteSettings, } from '../../stores/siteSettings';
+
+/**
+ * Site features rendered in the dashboard panel. Order matches the
+ * Settings → Features section so the experience reads consistently.
+ */
+const DASHBOARD_FEATURES: Array<{ key: 'posts' | 'campaigns' | 'forms' | 'messages'; label: string; }> = [
+    { key: 'posts', label: 'Posts', },
+    { key: 'campaigns', label: 'Campaigns', },
+    { key: 'forms', label: 'Forms', },
+    { key: 'messages', label: 'Messages', },
+];
 
 const AdminDashboard: Component = () => {
     const [stats,] = createResource(async () => {
@@ -9,12 +21,20 @@ const AdminDashboard: Component = () => {
         return response.success ? (response as any).data : null;
     },);
 
+    // Make the feature flags reactive on the dashboard the same way
+    // they are in the sidebar — load once, then read through
+    // `isFeatureEnabled` (which itself tracks `siteSettings()`).
+    void loadSiteSettings();
+    // Touch the signal so the dashboard re-renders when settings load
+    // and when the admin saves changes via Settings → Features.
+    const _ = () => siteSettings();
+
     const formatCurrency = (cents: number,) =>
         `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, },)}`;
 
     return (
         <div class="admin-dashboard">
-            <Title>Dashboard - Admin - Surge Media</Title>
+            <Title>Dashboard - Admin - RW</Title>
 
             <div class="admin-header">
                 <h1>Dashboard</h1>
@@ -216,6 +236,40 @@ const AdminDashboard: Component = () => {
                                     New Form
                                 </A>
                             </div>
+                        </div>
+
+                        {/* Site Features overview — at-a-glance status of
+                            each module, with a deep link into the Features
+                            section of Settings → General. Compact vertical
+                            list: label left, status pill right. Container
+                            is width-constrained so the section doesn't
+                            sprawl on wide displays. */}
+                        <div class="dashboard-features">
+                            <div class="dashboard-features__header">
+                                <h2>Site Features</h2>
+                                <A
+                                    href="/admin/settings?tab=general#features"
+                                    class="dashboard-features__manage"
+                                >
+                                    Manage Features &rarr;
+                                </A>
+                            </div>
+                            <ul class="dashboard-features__list">
+                                <For each={DASHBOARD_FEATURES}>
+                                    {(f,) => (
+                                        <li class="dashboard-feature-row">
+                                            <span class="dashboard-feature-row__name">{f.label}</span>
+                                            <span
+                                                class={`dashboard-feature-row__badge dashboard-feature-row__badge--${
+                                                    isFeatureEnabled(f.key,) ? 'enabled' : 'disabled'
+                                                }`}
+                                            >
+                                                {isFeatureEnabled(f.key,) ? 'Enabled' : 'Disabled'}
+                                            </span>
+                                        </li>
+                                    )}
+                                </For>
+                            </ul>
                         </div>
                     </>
                 )}

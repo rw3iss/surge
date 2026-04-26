@@ -55,7 +55,7 @@ function buildRobots(meta: MetaTags,): string {
 
 /** Build the full <head> fragment to inject into the HTML template. */
 export function buildMetaHtml(meta: MetaTags,): string {
-    const siteName = meta.siteName || 'Surge Media';
+    const siteName = meta.siteName || 'RW';
     const locale = meta.locale || 'en_US';
     // Title format: "{Site Name} - {Page Title}"
     const pageTitle = (meta.title || '').trim();

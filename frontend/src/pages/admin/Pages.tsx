@@ -40,7 +40,7 @@ const AdminPages: Component = () => {
 
     return (
         <div>
-            <Title>Pages - Admin - Surge Media</Title>
+            <Title>Pages - Admin - RW</Title>
             <div class="admin-header">
                 <h1>Pages</h1>
                 <A href="/admin/pages/new" class="btn btn--primary">New Page</A>

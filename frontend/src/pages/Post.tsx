@@ -1,5 +1,5 @@
 import { useParams, } from '@solidjs/router';
-import type { ContentAccessLevel, Post, } from '@surge/shared';
+import type { ContentAccessLevel, Post, } from '@rw/shared';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
 import ContentGate from '../components/ContentGate';
 import PostContentBlock from '../components/PostContentBlock';

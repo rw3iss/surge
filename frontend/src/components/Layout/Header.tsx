@@ -1,6 +1,7 @@
 import { A, useLocation, } from '@solidjs/router';
-import type { NavigationItem, } from '@surge/shared';
+import type { NavigationItem, } from '@rw/shared';
 import { Component, createSignal, For, Show, } from 'solid-js';
+import { colorCssValue, } from '../../services/colorResolver';
 import { useAuth, } from '../../stores/auth';
 import SiteLogo from '../SiteLogo';
 import './Header.scss';
@@ -19,6 +20,8 @@ interface SiteHeaderItem {
     openInNewTab?: boolean;
     buttonColor?: string;
     fontSize?: string;
+    /** CSS font-weight ('100'..'900' or keyword). Empty/undefined → inherit. */
+    fontWeight?: string;
     textColor?: string;
     width?: string;
     alignment?: string;
@@ -51,7 +54,9 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
     const baseStyle = () => {
         const s: Record<string, string> = {};
         if (item().fontSize) s['font-size'] = item().fontSize!;
-        if (item().textColor) s['color'] = item().textColor!;
+        if (item().fontWeight) s['font-weight'] = item().fontWeight!;
+        const tc = colorCssValue(item().textColor, '',);
+        if (tc) s['color'] = tc;
         if (item().width) s['width'] = item().width!;
         if (item().margin) s['margin'] = item().margin!;
         if (item().padding) s['padding'] = item().padding!;
@@ -157,7 +162,7 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
                     class="header__custom-btn"
                     style={{
                         ...baseStyle(),
-                        background: item().buttonColor || '#333',
+                        background: colorCssValue(item().buttonColor, '#333',),
                         color: '#fff',
                     }}
                 >
@@ -244,8 +249,10 @@ export const Header: Component<HeaderProps> = (props,) => {
     const headerStyle = () => {
         if (!hasCustomHeader()) return {};
         const s: Record<string, string> = {};
-        if (props.headerSettings?.backgroundColor) s['background'] = props.headerSettings.backgroundColor;
-        if (props.headerSettings?.textColor) s['color'] = props.headerSettings.textColor;
+        const bg = colorCssValue(props.headerSettings?.backgroundColor, '',);
+        if (bg) s['background'] = bg;
+        const tc = colorCssValue(props.headerSettings?.textColor, '',);
+        if (tc) s['color'] = tc;
         if (props.headerSettings?.margin) s['margin'] = props.headerSettings.margin;
         // Padding is applied to the container (not the header) so it
         // actually affects the content inside, including auth buttons.

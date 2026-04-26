@@ -1,11 +1,20 @@
-import type { Block, Campaign, Form, HeroCarouselOptions, HeroItem, Post, SocialPlatform, SocialPost, } from '@surge/shared';
+import type { Block, Campaign, Form, HeroCarouselOptions, HeroItem, Post, SocialPlatform, SocialPost, } from '@rw/shared';
 import { A, } from '@solidjs/router';
 import { Component, createResource, createSignal, For, Match, onMount, Show, Switch, } from 'solid-js';
 import { api, fetchAppearance, fetchSocialPosts, } from '../../services/api';
+import { colorCssValue, } from '../../services/colorResolver';
 import FormRenderer from '../FormRenderer';
 import HeroCarousel from '../HeroCarousel';
+import PostListRenderer, { type PostListSettings, } from '../PostListRenderer';
 import SocialEmbed from '../SocialEmbed';
 import './BlockRenderer.scss';
+
+/** Render a stored color value through the swatch resolver. Returns
+ *  `undefined` when nothing should be emitted so the consumer can drop
+ *  the property entirely (matches the prior `value || undefined` shape). */
+function color(value: string | undefined,): string | undefined {
+    return colorCssValue(value, '',) || undefined;
+}
 
 interface BlockRendererProps {
     block: Block;
@@ -19,8 +28,8 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
         <div
             class={`block block--${props.block.type}`}
             style={{
-                'background-color': (s().backgroundColor || props.block.settings.backgroundColor as string) || undefined,
-                color: s().textColor || props.block.settings.textColor as string || undefined,
+                'background-color': color(s().backgroundColor || (props.block.settings.backgroundColor as string),),
+                color: color(s().textColor || (props.block.settings.textColor as string),),
                 'text-align': s().textAlign || undefined,
                 display: s().verticalAlign && s().verticalAlign !== 'top' ? 'flex' : undefined,
                 'flex-direction': s().verticalAlign && s().verticalAlign !== 'top' ? 'column' : undefined,
@@ -70,6 +79,9 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     </Match>
                     <Match when={props.block.type === 'post'}>
                         <PostBlock block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'post_list'}>
+                        <PostListRenderer settings={(props.block.settings || {}) as PostListSettings} />
                     </Match>
                     <Match when={props.block.type === 'form'}>
                         <FormBlock block={props.block} />
