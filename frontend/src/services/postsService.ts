@@ -59,13 +59,17 @@ const DEFAULT_TTL_MS = 30_000; // 30s — short enough that admin edits surface 
 
 /**
  * Translate a "days ago" number into a backend-friendly ISO timestamp.
- * `0` is treated as "today" (i.e. now). Negative or NaN returns
- * undefined so the filter is simply omitted.
+ *
+ * Returns `undefined` (i.e. "no filter") for any non-positive input —
+ * including `0`, NaN, negative values, and stale empty-string values
+ * that were coerced to a number. The previous behaviour treated `0`
+ * as "now", which silently filtered out every post on the site if a
+ * 0 ever leaked into the saved settings.
  */
 function daysAgoToIso(days: number | undefined,): string | undefined {
     if (days === undefined || days === null) return undefined;
     const n = Number(days,);
-    if (!Number.isFinite(n,) || n < 0) return undefined;
+    if (!Number.isFinite(n,) || n <= 0) return undefined;
     const t = Date.now() - n * 86400 * 1000;
     return new Date(t,).toISOString();
 }

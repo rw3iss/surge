@@ -18,6 +18,12 @@ export interface Page {
     isPrivate: boolean;
     accessLevel?: ContentAccessLevel;
     blocks: Block[];
+    /** When true (default), the public renderer prints the page title
+     *  as an `<h1>` above the content blocks. When false, the title
+     *  is suppressed and only the blocks render — useful when an
+     *  operator wants their first content block (e.g. a hero) to be
+     *  the visual headline instead. */
+    showTitle: boolean;
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;

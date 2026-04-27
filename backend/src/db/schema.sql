@@ -95,6 +95,7 @@ CREATE TABLE pages (
     og_image TEXT,
     status page_status NOT NULL DEFAULT 'draft',
     is_homepage BOOLEAN NOT NULL DEFAULT false,
+    show_title BOOLEAN NOT NULL DEFAULT true,
     show_in_nav BOOLEAN NOT NULL DEFAULT false,
     nav_order INTEGER NOT NULL DEFAULT 0,
     is_private BOOLEAN NOT NULL DEFAULT false,

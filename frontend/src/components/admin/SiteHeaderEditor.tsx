@@ -116,6 +116,10 @@ const SiteHeaderEditor: Component = () => {
     const [headerMargin, setHeaderMargin,] = createSignal('0px',);
     const [itemSpacing, setItemSpacing,] = createSignal('',);
     const [applyGutter, setApplyGutter,] = createSignal(false,);
+    /** Sticky default = true preserves the historic behavior for
+     *  existing sites; new toggles save the explicit value. */
+    const [sticky, setSticky,] = createSignal(true,);
+    const [autoHide, setAutoHide,] = createSignal(false,);
     const [selectedItemId, setSelectedItemId,] = createSignal<string | null>(null,);
     const [isDirty, setIsDirty,] = createSignal(false,);
     const [saving, setSaving,] = createSignal(false,);
@@ -156,6 +160,10 @@ const SiteHeaderEditor: Component = () => {
                 if (data.margin) setHeaderMargin(data.margin,);
                 if (data.itemSpacing) setItemSpacing(data.itemSpacing,);
                 if (data.applyGutter) setApplyGutter(data.applyGutter,);
+                // Coerce explicitly: default to true (preserve historic
+                // behavior) when the field is missing on legacy rows.
+                setSticky(data.sticky !== false,);
+                setAutoHide(data.autoHide === true,);
             }
         } catch (e) {
             console.error('Failed to load site header settings:', e,);
@@ -249,6 +257,8 @@ const SiteHeaderEditor: Component = () => {
                 margin: headerMargin(),
                 itemSpacing: itemSpacing() || undefined,
                 applyGutter: applyGutter(),
+                sticky: sticky(),
+                autoHide: autoHide(),
             };
             const res = await saveSiteHeader(payload,);
             if (res.success) {
@@ -347,26 +357,38 @@ const SiteHeaderEditor: Component = () => {
                     </Show>
                 );
             case 'image_link': {
-                const marginMap: Record<string, string> = {
-                    left: '0 auto 0 0',
-                    center: '0 auto',
-                    right: '0 0 0 auto',
+                // Mirror the public Header's alignment logic: a column-
+                // flex wrapper aligns the image horizontally via
+                // align-items. The previous margin-auto approach had
+                // no effect because the image was forced to width:
+                // 100% of the wrapper — there was no free space.
+                const alignMap: Record<string, string> = {
+                    left: 'flex-start',
+                    center: 'center',
+                    right: 'flex-end',
                 };
                 const hAlign = item.alignment || 'center';
                 return (
                     <Show when={item.imageUrl} fallback={<span class="site-header-preview__placeholder">IMG</span>}>
-                        <img
-                            src={item.imageUrl}
-                            alt=""
-                            class="site-header-preview__img"
+                        <div
                             style={{
-                                display: 'block',
+                                display: 'flex',
+                                'flex-direction': 'column',
+                                'align-items': alignMap[hAlign] || 'center',
                                 width: '100%',
-                                height: 'auto',
-                                'min-width': item.width || undefined,
-                                margin: marginMap[hAlign] || '0 auto',
                             }}
-                        />
+                        >
+                            <img
+                                src={item.imageUrl}
+                                alt=""
+                                class="site-header-preview__img"
+                                style={{
+                                    display: 'block',
+                                    'max-width': '100%',
+                                    height: 'auto',
+                                }}
+                            />
+                        </div>
                     </Show>
                 );
             }
@@ -651,6 +673,40 @@ const SiteHeaderEditor: Component = () => {
                                 />
                                 <span>Apply Site Gutter</span>
                             </label>
+                        </div>
+                        <div class="site-header-editor__field">
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={sticky()}
+                                    onChange={(e,) => {
+                                        setSticky(e.currentTarget.checked,);
+                                        markDirty();
+                                    }}
+                                />
+                                <span>Make header sticky</span>
+                            </label>
+                            <Tooltip
+                                header="Sticky header"
+                                content="Pins the site header to the top of the viewport so it stays visible as visitors scroll. Turn off to let the header scroll away with the page like any other section."
+                            />
+                        </div>
+                        <div class="site-header-editor__field">
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={autoHide()}
+                                    onChange={(e,) => {
+                                        setAutoHide(e.currentTarget.checked,);
+                                        markDirty();
+                                    }}
+                                />
+                                <span>Auto-hide on scroll</span>
+                            </label>
+                            <Tooltip
+                                header="Auto-hide"
+                                content="Slides the header up out of view when the visitor scrolls down, and slides it back into place when they scroll up. Combine with 'Make header sticky' for the typical content-priority pattern; without sticky the header is already in flow so this is a no-op."
+                            />
                         </div>
                         <div class="site-header-editor__settings-actions">
                             <button

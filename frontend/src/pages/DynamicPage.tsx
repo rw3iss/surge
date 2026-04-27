@@ -117,7 +117,14 @@ const DynamicPage: Component = () => {
                                     jsonLd={jsonLd()}
                                 />
 
-                                <Show when={pageData().title}>
+                                {/* Auto-printed page title. Gated on
+                                    the per-page `showTitle` flag (set
+                                    from the editor; defaults to true
+                                    for legacy rows where the column is
+                                    missing). When false, the operator
+                                    has chosen to let their first block
+                                    be the headline. */}
+                                <Show when={pageData().title && (pageData() as any).showTitle !== false}>
                                     <h1
                                         class="dynamic-page__title"
                                         style={{ 'text-align': (pageData() as any).titleAlignment || 'left', }}

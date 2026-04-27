@@ -13,6 +13,7 @@ import { createSsrMiddleware, } from './middleware/ssr';
 import routes from './routes';
 import setupRoutes from './routes/setup';
 import sitemapRoutes from './routes/sitemap';
+import feedRoutes from './routes/feed';
 import { logger, } from './utils/logger';
 
 /**
@@ -117,6 +118,8 @@ export function createApp(mode: AppMode = 'running',): Express {
 
         app.use(sitemapRoutes,);
         app.use(`/api/${config.apiVersion}`, sitemapRoutes,);
+        app.use(feedRoutes,);
+        app.use(`/api/${config.apiVersion}`, feedRoutes,);
         app.use(`/api/${config.apiVersion}`, routes,);
     }
 

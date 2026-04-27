@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://ryanweiss.net/api/v1/sitemap.xml
+Sitemap: https://ryanweiss.net/sitemap.xml

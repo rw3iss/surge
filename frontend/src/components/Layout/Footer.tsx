@@ -200,10 +200,20 @@ function FooterRowRenderer(props: { row: SiteFooterRow; gutterWidth?: string; },
         };
         if (r().gap) s['gap'] = r().gap!;
         if (r().useGutter) {
-            s['max-width'] = props.gutterWidth || '1200px';
+            // `useGutter` means: render the row in the site's
+            // contained-width layout. The cap is the configured
+            // max-content-width, NOT the gutter (which is padding,
+            // e.g. "10vw"). Confusingly the prop here is named
+            // `gutterWidth` but it carries appearance.gutterWidth,
+            // which is the page-padding value — using it as max-width
+            // squished every footer row to that width (a 10vw gutter
+            // produced a 10vw row). Read the CSS vars set by Layout
+            // instead so this matches how the rest of the site
+            // contains content.
+            s['max-width'] = 'var(--site-max-width, 1200px)';
             s['margin'] = '0 auto';
-            s['padding-left'] = '16px';
-            s['padding-right'] = '16px';
+            s['padding-left'] = props.gutterWidth || 'var(--site-gutter, 16px)';
+            s['padding-right'] = props.gutterWidth || 'var(--site-gutter, 16px)';
         }
         return s;
     };

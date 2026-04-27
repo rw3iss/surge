@@ -152,9 +152,9 @@ export async function createPage(data: Record<string, unknown>, userId: string,)
 
     const result = await query(
         `INSERT INTO pages (slug, title, description, meta_title, meta_description,
-                        meta_keywords, og_image, status, is_homepage, show_in_nav,
-                        nav_order, is_private, access_level, created_by, publish_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                        meta_keywords, og_image, status, is_homepage, show_title,
+                        show_in_nav, nav_order, is_private, access_level, created_by, publish_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
      RETURNING *`,
         [
             data.slug,
@@ -166,6 +166,10 @@ export async function createPage(data: Record<string, unknown>, userId: string,)
             data.ogImage,
             data.status || 'draft',
             data.isHomepage || false,
+            // showTitle defaults to true for new pages — the operator
+            // can opt out per page via the editor toggle. The
+            // `?? true` (not `|| true`) preserves an explicit `false`.
+            data.showTitle ?? true,
             data.showInNav || false,
             data.navOrder || 0,
             data.isPrivate || false,

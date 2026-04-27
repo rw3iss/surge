@@ -30,7 +30,7 @@
  *   full  — render every content block, no clipping or expansion UI.
  */
 import type { Block, } from '@rw/shared';
-import { Component, createMemo, createResource, createSignal, For, Show, } from 'solid-js';
+import { Component, createEffect, createMemo, createResource, createSignal, For, onCleanup, Show, } from 'solid-js';
 import { fetchPostList, type PostWithBlocks, } from '../services/postsService';
 import { BlockRenderer, } from './BlockRenderer/BlockRenderer';
 import './PostListRenderer.scss';
@@ -231,6 +231,18 @@ interface PostListItemProps {
 
 const PostListItem: Component<PostListItemProps> = (props,) => {
     const [expanded, setExpanded,] = createSignal(false,);
+    /** Whether the rendered body actually exceeds the configured
+     *  max-height. Measured live with a ResizeObserver below. The
+     *  See-All bar only renders when this is true so we don't lie to
+     *  the reader about there being more content when there isn't. */
+    const [overflows, setOverflows,] = createSignal(false,);
+    /** Ref to the body wrapper — the element whose height is clamped
+     *  in short mode. We measure overflow here (not on `__content`)
+     *  because the operator's intent is "clip the whole post preview
+     *  to N pixels", which includes meta + excerpt + content blocks
+     *  together. Clipping only the content-blocks slice was leaking
+     *  long excerpts above the fold. */
+    let bodyRef: HTMLDivElement | undefined;
 
     const brevity = () => props.settings.brevity;
     const allowExpand = () => props.settings.allowExpand;
@@ -246,125 +258,175 @@ const PostListItem: Component<PostListItemProps> = (props,) => {
      *  never clip. */
     const isClipped = () => isShortMode() && !expanded();
 
-    return (
-        <article class={`post-list-item post-list-item--${brevity()}`}>
-            {/* ─── Title (always shown) ─── */}
-            <h3 class="post-list-item__title">
-                <a href={`/posts/${props.post.slug}`}>{props.post.title}</a>
-            </h3>
+    // Measure overflow whenever the content's natural size or the
+    // configured max-height changes. We compare scrollHeight (the
+    // intrinsic content size, ignoring max-height) against the
+    // clipped clientHeight (post max-height application). When the
+    // element is collapsed and there's hidden content past the cut,
+    // scrollHeight > clientHeight.
+    createEffect(() => {
+        if (!bodyRef) return;
+        // Touch reactive deps so the effect re-runs on signal changes.
+        void maxHeight();
+        void brevity();
+        void expanded();
 
-            {/* ─── Top "Hide All" bar — only when expanded in short mode ─── */}
-            <Show when={isShortMode() && allowExpand() && expanded()}>
+        const measure = () => {
+            if (!bodyRef) return;
+            // scrollHeight reflects the body's intrinsic size
+            // regardless of max-height. clientHeight reflects the
+            // clamped (visible) size. Difference > 1px ⇒ content is
+            // hidden past the cut. The 1px tolerance dodges sub-
+            // pixel rounding flicker.
+            const natural = bodyRef.scrollHeight;
+            const visible = bodyRef.clientHeight;
+            setOverflows(natural > visible + 1,);
+        };
+
+        measure();
+
+        // Observe layout changes (font load, image decode, RTE updates,
+        // viewport resize) so the bar appears/disappears reactively.
+        const ro = new ResizeObserver(measure,);
+        ro.observe(bodyRef,);
+        onCleanup(() => ro.disconnect(),);
+    },);
+
+    /** True when the See-All affordance should render: short mode is
+     *  on, the operator allowed expansion, the content actually
+     *  overflows, and we're not already expanded. */
+    const showSeeAllBar = () => isShortMode() && allowExpand() && overflows() && !expanded();
+    /** True when the Hide-All affordance should render: same conditions
+     *  as See-All except expanded is the active state. */
+    const showHideAllBar = () => isShortMode() && allowExpand() && expanded();
+    /** True when either bar is rendered — drives the article's
+     *  `--has-bar` modifier so its bottom corners flatten cleanly into
+     *  the bar's curved bottom corners. */
+    const hasEdgeBar = () => showSeeAllBar() || showHideAllBar();
+
+    return (
+        // Wrap the article + edge bar in a flex column so they read as
+        // a single unit. The bar visually extends the post card —
+        // bottom corners curve, top edge meets the card's bottom border
+        // seamlessly. Only one bar can be shown at a time (See vs Hide
+        // are mutually exclusive in short mode).
+        <div class="post-list-item-wrap">
+            <article class={`post-list-item post-list-item--${brevity()} ${hasEdgeBar() ? 'post-list-item--has-bar' : ''}`}>
+                {/* ─── Title (always visible, never clipped) ─── */}
+                <h3 class="post-list-item__title">
+                    <a href={`/posts/${props.post.slug}`}>{props.post.title}</a>
+                </h3>
+
+                {/* ─── Body (clipped together in short mode) ─────────
+                    The body wraps every below-title element so the
+                    operator's "Short max height" applies to the whole
+                    preview, not just the content-blocks slice. */}
+                <div
+                    ref={bodyRef}
+                    class={`post-list-item__body ${isClipped() ? 'post-list-item__body--clipped' : ''}`}
+                    style={{ '--post-short-max-height': maxHeight(), }}
+                >
+                    {/* ─── Meta row: date(s) + tags ─── */}
+                    <Show when={props.settings.showDateCreated || props.settings.showDateUpdated || (props.settings.showTags && props.post.tags?.length)}>
+                        <div class="post-list-item__meta">
+                            <Show when={props.settings.showDateCreated}>
+                                <span class="post-list-item__date" title="Published">
+                                    {formatDate(props.post.publishedAt || props.post.createdAt,)}
+                                </span>
+                            </Show>
+                            <Show when={props.settings.showDateUpdated && props.post.updatedAt}>
+                                <span class="post-list-item__date post-list-item__date--updated" title="Last updated">
+                                    Updated {formatDate(props.post.updatedAt,)}
+                                </span>
+                            </Show>
+                            <Show when={props.settings.showTags && props.post.tags?.length}>
+                                <span class="post-list-item__tags">
+                                    <For each={props.post.tags}>
+                                        {(t,) => <span class="post-list-item__tag">#{t}</span>}
+                                    </For>
+                                </span>
+                            </Show>
+                        </div>
+                    </Show>
+
+                    {/* ─── Excerpt ─── */}
+                    <Show when={props.settings.showExcerpt && props.post.excerpt}>
+                        <p class="post-list-item__excerpt">{props.post.excerpt}</p>
+                    </Show>
+
+                    {/* ─── Content blocks (short / full only) ─── */}
+                    <Show when={brevity() !== 'brief'}>
+                        <div class="post-list-item__content">
+                            <Show
+                                when={props.post.contentBlocks && props.post.contentBlocks.length > 0}
+                                fallback={
+                                    // Fall back to the raw content string when no
+                                    // structured blocks were hydrated (legacy posts).
+                                    <Show when={props.post.content}>
+                                        <div class="post-list-item__legacy-content rich-text" innerHTML={props.post.content} />
+                                    </Show>
+                                }
+                            >
+                                <For each={props.post.contentBlocks}>
+                                    {(b,) => {
+                                        // The list endpoint returns blocks shaped per
+                                        // post_content_blocks (id/type/data). The public
+                                        // BlockRenderer expects the page-block shape
+                                        // (settings/title/content). Normalize so the
+                                        // same renderer handles both.
+                                        const block: Block = {
+                                            id: b.id,
+                                            pageId: '',
+                                            type: b.type as Block['type'],
+                                            title: (b.title as string) || (b.data as any)?.title || null,
+                                            content: (b.content as string) || (b.data as any)?.content || null,
+                                            settings: ((b.data as any) || b.settings || {}) as Block['settings'],
+                                            order: b.sortOrder ?? 0,
+                                            isVisible: true,
+                                            createdAt: new Date(),
+                                            updatedAt: new Date(),
+                                        } as Block;
+                                        return <BlockRenderer block={block} />;
+                                    }}
+                                </For>
+                            </Show>
+                        </div>
+                    </Show>
+                </div>
+            </article>
+
+            {/* ─── Edge bars: hang off the bottom of the post card.
+                One at a time — See-all when collapsed + overflowing,
+                Hide-all when expanded. The bar is a full-width
+                clickable area; its bottom corners curve to match the
+                card's radius, the top is flush with the card so the
+                two read as a continuous shape. */}
+            <Show when={showSeeAllBar()}>
                 <button
                     type="button"
-                    class="post-list-item__bar post-list-item__bar--top"
-                    onClick={() => setExpanded(false,)}
-                    aria-label="Collapse post"
+                    class="post-list-item__edge-bar post-list-item__edge-bar--see"
+                    onClick={() => setExpanded(true,)}
+                    aria-label="Expand post"
                 >
-                    <span class="post-list-item__bar-arrow">▲</span>
-                    <span class="post-list-item__bar-label">Hide all</span>
-                    <span class="post-list-item__bar-arrow">▲</span>
+                    <span class="post-list-item__edge-bar-arrow">▼</span>
+                    <span class="post-list-item__edge-bar-label">See all</span>
+                    <span class="post-list-item__edge-bar-arrow">▼</span>
                 </button>
             </Show>
 
-            {/* ─── Meta row: date(s) + tags ─── */}
-            <Show when={props.settings.showDateCreated || props.settings.showDateUpdated || (props.settings.showTags && props.post.tags?.length)}>
-                <div class="post-list-item__meta">
-                    <Show when={props.settings.showDateCreated}>
-                        <span class="post-list-item__date" title="Published">
-                            {formatDate(props.post.publishedAt || props.post.createdAt,)}
-                        </span>
-                    </Show>
-                    <Show when={props.settings.showDateUpdated && props.post.updatedAt}>
-                        <span class="post-list-item__date post-list-item__date--updated" title="Last updated">
-                            Updated {formatDate(props.post.updatedAt,)}
-                        </span>
-                    </Show>
-                    <Show when={props.settings.showTags && props.post.tags?.length}>
-                        <span class="post-list-item__tags">
-                            <For each={props.post.tags}>
-                                {(t,) => <span class="post-list-item__tag">#{t}</span>}
-                            </For>
-                        </span>
-                    </Show>
-                </div>
-            </Show>
-
-            {/* ─── Excerpt ─── */}
-            <Show when={props.settings.showExcerpt && props.post.excerpt}>
-                <p class="post-list-item__excerpt">{props.post.excerpt}</p>
-            </Show>
-
-            {/* ─── Content (short / full only) ─── */}
-            <Show when={brevity() !== 'brief'}>
-                <div
-                    class={`post-list-item__content ${isClipped() ? 'post-list-item__content--clipped' : ''}`}
-                    style={isClipped() ? { 'max-height': maxHeight(), } : {}}
+            <Show when={showHideAllBar()}>
+                <button
+                    type="button"
+                    class="post-list-item__edge-bar post-list-item__edge-bar--hide"
+                    onClick={() => setExpanded(false,)}
+                    aria-label="Collapse post"
                 >
-                    <Show
-                        when={props.post.contentBlocks && props.post.contentBlocks.length > 0}
-                        fallback={
-                            // Fall back to the raw content string when no
-                            // structured blocks were hydrated (legacy posts).
-                            <Show when={props.post.content}>
-                                <div class="post-list-item__legacy-content rich-text" innerHTML={props.post.content} />
-                            </Show>
-                        }
-                    >
-                        <For each={props.post.contentBlocks}>
-                            {(b,) => {
-                                // The list endpoint returns blocks shaped per
-                                // post_content_blocks (id/type/data). The public
-                                // BlockRenderer expects the page-block shape
-                                // (settings/title/content). Normalize so the
-                                // same renderer handles both.
-                                const block: Block = {
-                                    id: b.id,
-                                    pageId: '',
-                                    type: b.type as Block['type'],
-                                    title: (b.title as string) || (b.data as any)?.title || null,
-                                    content: (b.content as string) || (b.data as any)?.content || null,
-                                    settings: ((b.data as any) || b.settings || {}) as Block['settings'],
-                                    order: b.sortOrder ?? 0,
-                                    isVisible: true,
-                                    createdAt: new Date(),
-                                    updatedAt: new Date(),
-                                } as Block;
-                                return <BlockRenderer block={block} />;
-                            }}
-                        </For>
-                    </Show>
-
-                    {/* ─── Bottom "See all" overlay (short, collapsed) ─── */}
-                    <Show when={isShortMode() && allowExpand() && !expanded()}>
-                        <button
-                            type="button"
-                            class="post-list-item__bar post-list-item__bar--bottom post-list-item__bar--see-all"
-                            onClick={() => setExpanded(true,)}
-                            aria-label="Expand post"
-                        >
-                            <span class="post-list-item__bar-arrow">▼</span>
-                            <span class="post-list-item__bar-label">See all</span>
-                            <span class="post-list-item__bar-arrow">▼</span>
-                        </button>
-                    </Show>
-                </div>
-
-                {/* ─── Bottom "Hide all" bar — only when expanded in short mode ─── */}
-                <Show when={isShortMode() && allowExpand() && expanded()}>
-                    <button
-                        type="button"
-                        class="post-list-item__bar post-list-item__bar--bottom"
-                        onClick={() => setExpanded(false,)}
-                        aria-label="Collapse post"
-                    >
-                        <span class="post-list-item__bar-arrow">▲</span>
-                        <span class="post-list-item__bar-label">Hide all</span>
-                        <span class="post-list-item__bar-arrow">▲</span>
-                    </button>
-                </Show>
+                    <span class="post-list-item__edge-bar-arrow">▲</span>
+                    <span class="post-list-item__edge-bar-label">Hide all</span>
+                    <span class="post-list-item__edge-bar-arrow">▲</span>
+                </button>
             </Show>
-        </article>
+        </div>
     );
 };
 

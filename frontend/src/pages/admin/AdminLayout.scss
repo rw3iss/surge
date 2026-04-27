@@ -1985,17 +1985,10 @@
     border: none;
     border-radius: 0;
 
-    // The floating hover bar is hidden by default, shown on hover
-    .content-block__hover-bar {
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-    }
-
-    &:hover .content-block__hover-bar {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    // Hover bar is now in flow above the content (see &__hover-bar
+    // below), so we don't toggle visibility on hover any more — it's
+    // a persistent header row. Selected / dirty styling on the bar
+    // itself still varies, but visibility is always 1.
   }
 
   // ─── SELECTED (editing in flyout) ───
@@ -2017,11 +2010,7 @@
     }
 
     .content-block__hover-bar {
-      opacity: 1 !important;
-      pointer-events: auto !important;
       background: rgba($primary-color, 0.12);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
     }
   }
 
@@ -2038,29 +2027,25 @@
     }
   }
 
-  // ─── Floating hover bar (preview mode) ───
+  // ─── Header bar (in flow, above the content) ───
+  // Was previously absolute-positioned and hover-revealed, which made
+  // it float over the block's preview and obscure content. It now
+  // sits as a regular row at the top of the block — same visual
+  // height it always had, just inline with the content rather than
+  // overlaid on top.
   &__hover-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
+    position: relative;
     display: flex;
     align-items: center;
     gap: $spacing-xs;
     padding: 6px $spacing-sm;
     background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     font-size: $font-size-xs;
 
     &--dirty {
       background: rgba(245, 166, 35, 0.18);
       border-bottom-color: rgba(245, 166, 35, 0.25);
-      // Always visible when dirty — even without hover
-      opacity: 1 !important;
-      pointer-events: auto !important;
     }
   }
 

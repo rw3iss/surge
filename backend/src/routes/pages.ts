@@ -25,6 +25,7 @@ const pageSchema = z.object({
     status: z.enum(['draft', 'published', 'scheduled', 'archived', 'deleted',],).optional(),
     publishAt: z.string().datetime().nullable().optional(),
     isHomepage: z.boolean().optional(),
+    showTitle: z.boolean().optional(),
     showInNav: z.boolean().optional(),
     navOrder: z.number().int().optional(),
     isPrivate: z.boolean().optional(),

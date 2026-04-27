@@ -8,6 +8,7 @@ import ConfirmModal from '../../components/admin/ConfirmModal';
 import EditorSaveBar from '../../components/admin/EditorSaveBar';
 import PreviewOverlay from '../../components/admin/PreviewOverlay';
 import RevisionsPanel from '../../components/admin/RevisionsPanel';
+import Tooltip from '../../components/admin/Tooltip';
 import { BlockRenderer, } from '../../components/BlockRenderer';
 import { Header, } from '../../components/Layout/Header';
 import { useToast, } from '../../components/Toast';
@@ -113,6 +114,10 @@ const AdminPageEditor: Component = () => {
     const [title, setTitle,] = createSignal('',);
     const [titleAlignment, setTitleAlignment,] = createSignal('left',);
     const [slug, setSlug,] = createSignal('',);
+    /** Whether the page renderer prints the page title above the
+     *  content blocks. Default true so new pages get the title for
+     *  free; the operator can opt out per page. */
+    const [showTitle, setShowTitle,] = createSignal(true,);
     const [status, setStatus,] = createSignal('draft',);
     const [accessLevel, setAccessLevel,] = createSignal('public',);
     // Whether this page is the site's homepage. The slug stays a normal
@@ -140,6 +145,10 @@ const AdminPageEditor: Component = () => {
             setSlug(p.slug || '',);
             setStatus(p.status || 'draft',);
             setAccessLevel(p.accessLevel || 'public',);
+            // Default true preserves prior behavior for legacy rows
+            // saved before this column existed (mapRow returns
+            // `undefined` for missing columns).
+            setShowTitle((p as any).showTitle !== false,);
             setIsHomepage(Boolean((p as any).isHomepage,),);
             if (p.blocks?.length) {
                 const converted = p.blocks.map((b: any,) => pageBlockToBlockData(b,));
@@ -186,6 +195,7 @@ const AdminPageEditor: Component = () => {
             status: status(),
             accessLevel: accessLevel(),
             isHomepage: isHomepage(),
+            showTitle: showTitle(),
             blocks: blocks(),
         }),
     },);
@@ -203,6 +213,7 @@ const AdminPageEditor: Component = () => {
                 status: status(),
                 accessLevel: accessLevel(),
                 isHomepage: isHomepage(),
+                showTitle: showTitle(),
             };
 
             let pageId = params.id;
@@ -360,6 +371,24 @@ const AdminPageEditor: Component = () => {
                                 placeholder="page-slug"
                             />
                             <small class="form-help">URL: /{slug()}</small>
+                        </div>
+                        {/* "Show title on page" toggle — sits in the
+                            same single-line layout as the homepage
+                            toggle in the sidebar; reuses those classes
+                            so spacing / typography stay consistent. */}
+                        <div class="form-group page-editor__homepage-section">
+                            <label class="page-editor__homepage-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={showTitle()}
+                                    onChange={(e,) => { setShowTitle(e.currentTarget.checked,); markDirty(); }}
+                                />
+                                <span class="page-editor__homepage-toggle-label">Show title on page</span>
+                                <Tooltip
+                                    header="Show title on page"
+                                    content="When on, the page renderer prints this page's title as a heading above the content blocks. Turn it off when your first block (e.g. a hero or carousel) already provides the visual headline and you don't want a duplicate."
+                                />
+                            </label>
                         </div>
                     </div>
                     <div class="editor-properties__sidebar">

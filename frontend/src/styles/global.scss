@@ -86,6 +86,23 @@ button {
   outline-offset: 2px;
 }
 
+// ─── Active-outline suppression (configurable) ─────────────
+// By default we strip the browser's lingering focus ring that
+// stays on clickable elements after a mouse click — most
+// designers find it visually distracting. Keyboard focus
+// (`:focus-visible`) is preserved above so tab navigation
+// remains accessible (the only WCAG-relevant focus indicator).
+//
+// A future site setting will toggle this off by adding
+// `data-active-outlines="show"` to the <html> element. When
+// that attribute is present, the browser-default click ring
+// returns. Default state = attribute absent = no click rings.
+html:not([data-active-outlines='show']) {
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
 // Selection
 ::selection {
   background-color: var(--site-primary, #{$primary-color});
