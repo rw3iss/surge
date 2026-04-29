@@ -45,10 +45,14 @@ const HeroBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record
     );
 };
 
-const HtmlBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record<string, any>,) => void; }> = (props,) => (
+/** HTML body content is edited inline on the block preview itself
+ *  (HtmlInlineEditor) — the flyout panel only shows the general
+ *  settings (block style, padding, etc.) for HTML blocks. */
+const HtmlBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record<string, any>,) => void; }> = () => (
     <div class="form-group">
-        <label>Custom HTML</label>
-        <textarea rows={10} value={props.data.content || ''} onInput={(e,) => props.onUpdate({ ...props.data, content: e.currentTarget.value, },)} placeholder="Enter raw HTML..." style={{ 'font-family': 'monospace', 'font-size': '0.9em', }} />
+        <small class="form-help" style={{ color: '#888', }}>
+            HTML content is edited directly on the block — click the block to switch between Code and Preview modes.
+        </small>
     </div>
 );
 

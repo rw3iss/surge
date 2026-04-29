@@ -2,6 +2,8 @@ import { Component, createSignal, For, Match, Show, Switch, } from 'solid-js';
 import { type BlockType, getBlockLabel, } from '../../../config/blockTypes';
 import AddBlockMenu from './AddBlockMenu';
 import BlockPreview from './BlockPreview';
+import HtmlInlineEditor from './HtmlInlineEditor';
+import RichTextEditor from '../editors/RichTextEditor';
 import ConfirmModal from '../common/ConfirmModal';
 
 // Re-export so existing imports `{ BlockType } from './ContentBlock'`
@@ -166,6 +168,28 @@ const ContentBlock: Component<ContentBlockProps> = (props,) => {
                             allBlocks={props.allBlocks}
                             ownProps={props}
                         />
+                    </Match>
+                    <Match when={props.block.type === 'html' && props.isSelected}>
+                        <HtmlInlineEditor
+                            blockId={props.block.id}
+                            content={props.block.data.content || ''}
+                            onChange={(next,) => props.onUpdate(props.block.id, {
+                                ...props.block.data,
+                                content: next,
+                            },)}
+                        />
+                    </Match>
+                    <Match when={(props.block.type === 'rich_text' || props.block.type === 'text') && props.isSelected}>
+                        <div class="rich-text-inline-editor">
+                            <RichTextEditor
+                                value={props.block.data.content || ''}
+                                onChange={(next,) => props.onUpdate(props.block.id, {
+                                    ...props.block.data,
+                                    content: next,
+                                },)}
+                                placeholder="Type your content here…"
+                            />
+                        </div>
                     </Match>
                     <Match when={true}>
                         <BlockPreview block={props.block} />

@@ -2214,6 +2214,104 @@
   }
 }
 
+// ─── HTML inline editor ─────────────────────────────────────────────
+
+.html-inline-editor {
+  border: 1px solid #d8d8d8;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.html-inline-editor__toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f6f6f6;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.html-inline-editor__tab {
+  font-size: $font-size-xs;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  font-family: inherit;
+  color: #555;
+
+  &:hover { background: #ececec; }
+
+  &--active {
+    background: #fff;
+    border-color: #d0d0d0;
+    color: #111;
+    font-weight: 600;
+  }
+}
+
+.html-inline-editor__body {
+  position: relative;
+  // height is set inline (drag-resize / persisted)
+}
+
+.html-inline-editor__cm {
+  height: 100%;
+  overflow: auto;
+
+  .cm-editor {
+    height: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 13px;
+  }
+}
+
+.html-inline-editor__preview {
+  height: 100%;
+  overflow: auto;
+  padding: $spacing-md;
+}
+
+// ─── Rich text inline editor ───────────────────────────────────────
+
+.rich-text-inline-editor {
+  border: 1px solid #d8d8d8;
+  border-radius: $border-radius-sm;
+  background: #fff;
+  min-height: 100px;
+
+  // Tighter padding than the side-panel version — the block already
+  // contributes some padding through its block-style wrapper.
+  > * {
+    width: 100%;
+  }
+}
+
+.html-inline-editor__resizer {
+  height: 8px;
+  cursor: ns-resize;
+  background: #f0f0f0;
+  border-top: 1px solid #e0e0e0;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 2px;
+    background: #c0c0c0;
+    border-radius: 2px;
+  }
+
+  &:hover { background: #e8e8e8; }
+}
+
 .content-block-ghost {
   z-index: $z-index-modal;
   pointer-events: none;
