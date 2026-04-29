@@ -46,11 +46,16 @@ export type BlockType =
     | 'document'
     | 'url_link'
     | 'carousel'
-    | 'spacer';
+    | 'spacer'
+    | 'group'
+    | 'group_item';
 
 export interface Block {
     id: string;
     pageId: string;
+    /** Parent block id; null for top-level blocks. Children of a group/group_item
+     *  reference the parent via this field. */
+    parentBlockId: string | null;
     type: BlockType;
     title?: string;
     content?: string;
@@ -59,6 +64,8 @@ export interface Block {
     isVisible: boolean;
     createdAt: Date;
     updatedAt: Date;
+    /** In-memory tree assembly. Populated by `buildBlockTree()`; not stored. */
+    children?: Block[];
 }
 
 export interface BlockSettings {

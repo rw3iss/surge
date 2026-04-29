@@ -115,12 +115,14 @@ CREATE INDEX idx_pages_nav ON pages(show_in_nav, nav_order);
 
 CREATE TYPE block_type AS ENUM (
     'rich_text', 'post', 'post_list', 'form', 'image', 'video',
-    'gallery', 'social_feed', 'campaign', 'hero', 'html'
+    'gallery', 'social_feed', 'campaign', 'hero', 'html',
+    'group', 'group_item'
 );
 
 CREATE TABLE blocks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    parent_block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
     type block_type NOT NULL,
     title VARCHAR(255),
     content TEXT,
@@ -133,6 +135,7 @@ CREATE TABLE blocks (
 
 CREATE INDEX idx_blocks_page_id ON blocks(page_id);
 CREATE INDEX idx_blocks_order ON blocks(page_id, "order");
+CREATE INDEX idx_blocks_parent_order ON blocks(parent_block_id, "order");
 
 -- =====================================================
 -- CONTENT MANAGEMENT - POSTS (Blog)

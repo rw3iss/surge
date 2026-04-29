@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams, } from '@solidjs/router';
-import type { ContentAccessLevel, Page, } from '@rw/shared';
+import { buildBlockTree, type ContentAccessLevel, type Page, } from '@rw/shared';
 import { Component, createResource, createSignal, For, lazy, Show, } from 'solid-js';
 import { BlockRenderer, } from '../components/blocks/BlockRenderer';
 import ContentGate from '../components/auth/ContentGate';
@@ -133,7 +133,7 @@ const DynamicPage: Component = () => {
                                     </h1>
                                 </Show>
 
-                                <For each={pageData().blocks}>
+                                <For each={buildBlockTree(pageData().blocks ?? [])}>
                                     {(block,) => (
                                         <Show when={block.isVisible}>
                                             <BlockRenderer block={block} />

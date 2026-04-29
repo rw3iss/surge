@@ -194,19 +194,25 @@ export async function removeBlock(
     },);
 }
 
+/**
+ * Reorder siblings of a single parent. `parentBlockId = null` means the
+ * top-level block list. Phase-1 scope: intra-parent only — re-parenting
+ * via this call is rejected by the repo.
+ */
 export async function reorderBlocks(
     pageId: string,
+    parentBlockId: string | null,
     blockIds: string[],
     ctx: AuditContext,
 ): Promise<void> {
-    await repo.reorderBlocks(pageId, blockIds,);
+    await repo.reorderBlocks(pageId, parentBlockId, blockIds,);
     await cache.invalidatePageCache(pageId,);
     await logAudit({
         userId: ctx.userId,
         action: 'reorder',
         entityType: 'page-blocks',
         entityId: pageId,
-        newValues: { blockIds, },
+        newValues: { parentBlockId, blockIds, },
         ipAddress: ctx.ipAddress,
         userAgent: ctx.userAgent,
     },);

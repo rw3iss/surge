@@ -1,4 +1,4 @@
-import type { Page, } from '@rw/shared';
+import { buildBlockTree, type Page, } from '@rw/shared';
 import { Component, createResource, For, Show, } from 'solid-js';
 import { BlockRenderer, } from '../components/blocks/BlockRenderer';
 import SeoHead from '../components/common/seo/SeoHead';
@@ -58,7 +58,7 @@ const Home: Component = () => {
             >
                 {(pageData,) => (
                     <>
-                        <For each={pageData().blocks}>
+                        <For each={buildBlockTree(pageData().blocks ?? [])}>
                             {(block,) => (
                                 <Show when={block.isVisible}>
                                     <BlockRenderer block={block} />

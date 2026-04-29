@@ -346,10 +346,13 @@ router.delete('/:pageId/blocks/:blockId', authenticate(), requireAdmin, async (r
 
 router.put('/:pageId/blocks/reorder', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
     try {
-        const { blockIds, } = req.body;
+        const { blockIds, parentBlockId, } = req.body;
         if (!Array.isArray(blockIds,)) throw new ValidationError('blockIds must be an array',);
 
-        await pagesRepo.reorderBlocks(req.params.pageId, blockIds,);
+        // parentBlockId is optional; null/missing means the top-level list.
+        const parentId = (parentBlockId as string | null | undefined) ?? null;
+
+        await pagesRepo.reorderBlocks(req.params.pageId, parentId, blockIds,);
         await cache.invalidatePageCache(req.params.pageId,);
         sendSuccess(res, { message: 'Blocks reordered', },);
     } catch (error) {

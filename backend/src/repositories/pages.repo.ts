@@ -13,7 +13,11 @@ import {
 } from './base.repo';
 import * as blockStylesRepo from './blockStyles.repo';
 
-const SANITIZABLE_BLOCK_TYPES = ['rich_text', 'html',];
+// Rich text body is sanitized because the editor surface (WYSIWYG)
+// shouldn't accept arbitrary scripts. The custom HTML block is intentionally
+// NOT sanitized — admins explicitly use it to author raw markup, and the
+// page editor is admin-only.
+const SANITIZABLE_BLOCK_TYPES = ['rich_text',];
 
 // ─── Pages ───
 
@@ -199,8 +203,11 @@ export async function deletePage(id: string,): Promise<void> {
 
 export async function findBlocksByPageId(pageId: string, visibleOnly = false,): Promise<Block[]> {
     const visibleClause = visibleOnly ? 'AND is_visible = true' : '';
+    // Order by parent first so tree assembly is stable even if positions
+    // collide between parents; then by "order" within each parent.
     const result = await query(
-        `SELECT * FROM blocks WHERE page_id = $1 ${visibleClause} ORDER BY "order" ASC`,
+        `SELECT * FROM blocks WHERE page_id = $1 ${visibleClause}
+         ORDER BY parent_block_id NULLS FIRST, "order" ASC`,
         [pageId,],
     );
     return mapRows<Block>(result.rows,);
@@ -242,12 +249,19 @@ export async function createBlock(pageId: string, data: Record<string, unknown>,
     // Verify page exists
     await findByIdOrThrow('pages', pageId, 'Page',);
 
+    const parentBlockId = (data.parentBlockId as string | null | undefined) ?? null;
+
+    // Next order is per-parent: top-level blocks share an order space; each
+    // group_item has its own order space for its children.
     const maxOrder = await query(
-        'SELECT COALESCE(MAX("order"), -1) + 1 as next_order FROM blocks WHERE page_id = $1',
-        [pageId,],
+        `SELECT COALESCE(MAX("order"), -1) + 1 as next_order FROM blocks
+         WHERE page_id = $1 AND parent_block_id IS NOT DISTINCT FROM $2`,
+        [pageId, parentBlockId,],
     );
 
-    // Sanitize HTML content for rich_text and html block types
+    // Sanitize HTML content for rich_text block; html blocks store raw markup
+    // because admin authors are trusted and explicitly use the block to inject
+    // HTML.
     const content = (typeof data.content === 'string' && SANITIZABLE_BLOCK_TYPES.includes(data.type as string,)) ?
         sanitize(data.content,) :
         data.content;
@@ -260,11 +274,12 @@ export async function createBlock(pageId: string, data: Record<string, unknown>,
     delete cleanSettings.__styleRef;
 
     const result = await query(
-        `INSERT INTO blocks (page_id, type, title, content, settings, "order", is_visible, style)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO blocks (page_id, parent_block_id, type, title, content, settings, "order", is_visible, style)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
         [
             pageId,
+            parentBlockId,
             data.type,
             data.title,
             content,
@@ -291,6 +306,7 @@ export async function updateBlock(pageId: string, blockId: string, data: Record<
         content: 'content',
         order: '"order"',
         isVisible: 'is_visible',
+        parentBlockId: 'parent_block_id',
     };
 
     for (const [key, dbCol,] of Object.entries(fieldMap,)) {
@@ -351,10 +367,37 @@ export async function deleteBlock(pageId: string, blockId: string,): Promise<voi
     }
 }
 
-export async function reorderBlocks(pageId: string, blockIds: string[],): Promise<void> {
+/**
+ * Reorder a set of sibling blocks (same `parentBlockId`) on a page.
+ * Pass `parentBlockId = null` for the top-level list.
+ *
+ * Rejects if any provided block id has a different parent than the one
+ * declared — prevents a buggy client from accidentally reparenting via
+ * a reorder call.
+ */
+export async function reorderBlocks(
+    pageId: string,
+    parentBlockId: string | null,
+    blockIds: string[],
+): Promise<void> {
+    if (blockIds.length === 0) return;
+
+    // Validate every block belongs to the declared parent.
+    const check = await query(
+        `SELECT id FROM blocks
+         WHERE page_id = $1
+           AND parent_block_id IS NOT DISTINCT FROM $2
+           AND id = ANY($3::uuid[])`,
+        [pageId, parentBlockId, blockIds,],
+    );
+    if (check.rows.length !== blockIds.length) {
+        throw new Error('reorderBlocks: some blocks do not belong to this parent',);
+    }
+
     for (let i = 0; i < blockIds.length; i++) {
         await query(
-            `UPDATE blocks SET "order" = $1, updated_at = NOW() WHERE id = $2 AND page_id = $3`,
+            `UPDATE blocks SET "order" = $1, updated_at = NOW()
+             WHERE id = $2 AND page_id = $3`,
             [i, blockIds[i], pageId,],
         );
     }

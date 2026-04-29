@@ -118,6 +118,12 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                             }}
                         />
                     </Match>
+                    <Match when={props.block.type === 'group'}>
+                        <GroupBlock block={props.block} />
+                    </Match>
+                    <Match when={props.block.type === 'group_item'}>
+                        <GroupItemBlock block={props.block} />
+                    </Match>
                 </Switch>
             </div>
         </div>
@@ -617,6 +623,48 @@ const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
                 options={options()}
                 gutterWidth={appearance()?.gutterWidth}
             />
+        </Show>
+    );
+};
+
+// ─── Group + group_item ─────────────────────────────────────────────
+//
+// Phase-1 scaffolding: recurse over children. Layout CSS (direction,
+// columns, item min/max, wrap, align/justify) is applied in Phase 2;
+// for now group renders as a simple flex container so any data placed
+// here doesn't visually collapse, and group_item renders its single
+// child unwrapped.
+
+const GroupBlock: Component<{ block: Block; }> = (props,) => {
+    const children = () => (props.block.children || []) as Block[];
+    return (
+        <div class="block--group">
+            <For each={children()}>
+                {(child,) => (
+                    <Show when={child.isVisible !== false}>
+                        <BlockRenderer block={child} />
+                    </Show>
+                )}
+            </For>
+        </div>
+    );
+};
+
+const GroupItemBlock: Component<{ block: Block; }> = (props,) => {
+    const children = () => (props.block.children || []) as Block[];
+    // Empty group_items render nothing on the public site (placeholder
+    // picker is admin-only, in the editor BlockPreview).
+    return (
+        <Show when={children().length > 0}>
+            <div class="block--group_item">
+                <For each={children()}>
+                    {(child,) => (
+                        <Show when={child.isVisible !== false}>
+                            <BlockRenderer block={child} />
+                        </Show>
+                    )}
+                </For>
+            </div>
         </Show>
     );
 };
