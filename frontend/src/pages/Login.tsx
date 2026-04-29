@@ -1,6 +1,6 @@
 import { A, useNavigate, useSearchParams, } from '@solidjs/router';
 import { Component, createSignal, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { isFeatureEnabled, isPatreonEnabled, siteName, } from '../stores/siteSettings';
 import { useAuth, } from '../stores/auth';
 import './Login.scss';

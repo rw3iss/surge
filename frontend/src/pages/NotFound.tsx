@@ -1,6 +1,6 @@
 import { A, } from '@solidjs/router';
 import { Component, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { siteLogo, siteName, } from '../stores/siteSettings';
 import './NotFound.scss';
 

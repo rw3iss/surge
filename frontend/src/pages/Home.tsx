@@ -1,7 +1,7 @@
 import type { Page, } from '@rw/shared';
 import { Component, createResource, For, Show, } from 'solid-js';
-import { BlockRenderer, } from '../components/BlockRenderer';
-import SeoHead from '../components/SeoHead';
+import { BlockRenderer, } from '../components/blocks/BlockRenderer';
+import SeoHead from '../components/common/seo/SeoHead';
 import { fetchHomepage, } from '../services/api';
 import { siteDescription, siteLogo, siteName, } from '../stores/siteSettings';
 import { buildOrganization, } from '../utils/schema';

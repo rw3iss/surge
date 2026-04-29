@@ -1,5 +1,5 @@
 import { Component, createSignal, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { submitContactMessage, } from '../services/api';
 import { siteName, } from '../stores/siteSettings';
 import './Contact.scss';

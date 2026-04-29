@@ -1,9 +1,9 @@
 import { MetaProvider, } from '@solidjs/meta';
 import { Route, Router, } from '@solidjs/router';
 import { Component, lazy, Suspense, } from 'solid-js';
-import { AppErrorBoundary, } from './components/ErrorBoundary';
-import { Layout, } from './components/Layout';
-import { ToastProvider, } from './components/Toast';
+import { AppErrorBoundary, } from './components/common/ErrorBoundary';
+import { Layout, } from './components/layout';
+import { ToastProvider, } from './components/common/toast';
 import { AuthProvider, } from './stores/auth';
 import './styles/global.scss';
 

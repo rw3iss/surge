@@ -1,6 +1,6 @@
 import { loadStripe, Stripe, } from '@stripe/stripe-js';
 import { Component, createResource, createSignal, For, onMount, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { siteName, } from '../stores/siteSettings';
 import { api, } from '../services/api';
 import { useAuth, } from '../stores/auth';

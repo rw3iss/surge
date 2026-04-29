@@ -1,6 +1,6 @@
 import { A, } from '@solidjs/router';
 import { Component, createSignal, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { api, } from '../services/api';
 import { isFeatureEnabled, isPatreonEnabled, siteName, } from '../stores/siteSettings';
 import './Join.scss';

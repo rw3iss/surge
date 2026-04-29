@@ -1,8 +1,8 @@
 import { Title, } from '@solidjs/meta';
 import { A, } from '@solidjs/router';
 import { Component, createEffect, For, Show, } from 'solid-js';
-import Pagination from '../../components/admin/Pagination';
-import SortTh from '../../components/admin/SortTh';
+import Pagination from '../../components/admin/common/Pagination';
+import SortTh from '../../components/admin/common/SortTh';
 import { usePaginatedList, } from '../../hooks/usePaginatedList';
 import { useSearchFilter, } from '../../hooks/useSearchFilter';
 import { getStatusBadgeClass, } from '../../utils/badges';

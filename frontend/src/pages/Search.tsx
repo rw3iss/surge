@@ -1,6 +1,6 @@
 import { A, useSearchParams, } from '@solidjs/router';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { search, } from '../services/api';
 import { siteName, } from '../stores/siteSettings';
 

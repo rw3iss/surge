@@ -1,12 +1,12 @@
 import { Title, } from '@solidjs/meta';
 import { useSearchParams, } from '@solidjs/router';
 import { Component, createEffect, createResource, createSignal, For, lazy, onMount, Show, } from 'solid-js';
-import MediaSelectModal from '../../components/admin/MediaSelectModal';
-import MediaUploadModal from '../../components/admin/MediaUploadModal';
-import ColorPicker from '../../components/admin/ColorPicker';
-import ColorWheel from '../../components/admin/ColorWheel';
-import FontManagerPanel from '../../components/admin/FontManagerPanel';
-import Tooltip from '../../components/admin/Tooltip';
+import MediaSelectModal from '../../components/admin/media/MediaSelectModal';
+import MediaUploadModal from '../../components/admin/media/MediaUploadModal';
+import ColorPicker from '../../components/admin/appearance/ColorPicker';
+import ColorWheel from '../../components/admin/appearance/ColorWheel';
+import FontManagerPanel from '../../components/admin/appearance/FontManagerPanel';
+import Tooltip from '../../components/admin/common/Tooltip';
 import { api, fetchAdminAppearance, fetchAppearance, fetchSiteBranding, saveAdminAppearance, saveAppearance, saveSiteBranding, } from '../../services/api';
 import { fetchSwatchUsages, generateUniqueSwatchId, isValidSwatchId, loadSwatches, saveSwatches, swatches as swatchesSignal, } from '../../services/siteColors';
 import type { SiteSwatch, } from '@rw/shared';
@@ -14,8 +14,8 @@ import { reloadAdminAppearance, } from '../../stores/adminAppearance';
 import { reloadSiteSettings, } from '../../stores/siteSettings';
 
 // HeroContentEditor is now used via the 'carousel' block type, not in Settings.
-const SiteHeaderEditor = lazy(() => import('../../components/admin/SiteHeaderEditor'));
-const SiteFooterEditor = lazy(() => import('../../components/admin/SiteFooterEditor'));
+const SiteHeaderEditor = lazy(() => import('../../components/admin/editors/SiteHeaderEditor'));
+const SiteFooterEditor = lazy(() => import('../../components/admin/editors/SiteFooterEditor'));
 
 // ─── Tabs ───
 

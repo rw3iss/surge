@@ -1,8 +1,8 @@
 import { Title, } from '@solidjs/meta';
 import { A, useNavigate, useParams, } from '@solidjs/router';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
-import AutoSaveIndicator from '../../components/admin/AutoSaveIndicator';
-import EditorSaveBar from '../../components/admin/EditorSaveBar';
+import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
+import EditorSaveBar from '../../components/admin/common/EditorSaveBar';
 import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';

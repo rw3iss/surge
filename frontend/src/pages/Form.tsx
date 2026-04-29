@@ -1,8 +1,8 @@
 import { useParams, } from '@solidjs/router';
 import type { Form, } from '@rw/shared';
 import { Component, createResource, Show, } from 'solid-js';
-import FormRenderer from '../components/FormRenderer';
-import SeoHead from '../components/SeoHead';
+import FormRenderer from '../components/forms/FormRenderer';
+import SeoHead from '../components/common/seo/SeoHead';
 import { fetchForm, } from '../services/api';
 import './Form.scss';
 

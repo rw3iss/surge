@@ -1,6 +1,6 @@
 import { Title, } from '@solidjs/meta';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
-import VideoPlayer from '../../components/VideoPlayer';
+import VideoPlayer from '../../components/blocks/media/VideoPlayer';
 import { api, } from '../../services/api';
 
 function formatSize(bytes: number,): string {

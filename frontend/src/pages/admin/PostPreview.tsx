@@ -1,8 +1,8 @@
 import { useNavigate, useParams, } from '@solidjs/router';
 import { Component, createMemo, For, Show, } from 'solid-js';
-import PreviewOverlay from '../../components/admin/PreviewOverlay';
-import { Header, } from '../../components/Layout/Header';
-import PostContentBlock from '../../components/PostContentBlock';
+import PreviewOverlay from '../../components/admin/common/PreviewOverlay';
+import { Header, } from '../../components/layout/Header';
+import PostContentBlock from '../../components/blocks/posts/PostContentBlock';
 
 const PostPreview: Component = () => {
     const params = useParams();

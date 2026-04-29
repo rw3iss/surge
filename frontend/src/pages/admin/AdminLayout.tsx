@@ -1,9 +1,9 @@
 import { A, useLocation, useNavigate, } from '@solidjs/router';
 import type { AppearanceSettings, } from '@rw/shared';
 import { createEffect, createMemo, createResource, createSignal, For, ParentComponent, Show, } from 'solid-js';
-import GlobalSearch from '../../components/admin/GlobalSearch';
-import SessionExpiredModal from '../../components/SessionExpiredModal';
-import SiteLogo from '../../components/SiteLogo';
+import GlobalSearch from '../../components/admin/common/GlobalSearch';
+import SessionExpiredModal from '../../components/auth/SessionExpiredModal';
+import SiteLogo from '../../components/common/branding/SiteLogo';
 import { fetchAppearance, } from '../../services/api';
 import { swatchCssVars, } from '../../services/colorResolver';
 import { loadSwatches, swatches as swatchesSignal, } from '../../services/siteColors';

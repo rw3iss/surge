@@ -1,7 +1,7 @@
 import { A, useSearchParams, } from '@solidjs/router';
 import type { Post, } from '@rw/shared';
 import { Component, createSignal, For, onMount, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { siteName, } from '../stores/siteSettings';
 import { fetchPosts, } from '../services/api';
 import { buildCollectionPage, } from '../utils/schema';

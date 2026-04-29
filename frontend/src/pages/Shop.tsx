@@ -1,5 +1,5 @@
 import { Component, createSignal, onCleanup, onMount, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { siteName, } from '../stores/siteSettings';
 import { fetchSettings, } from '../services/api';
 import './Shop.scss';

@@ -8,7 +8,7 @@
  * doesn't feel crowded.
  */
 import { Component, JSX, Show, } from 'solid-js';
-import Tooltip from '../Tooltip';
+import Tooltip from '../common/Tooltip';
 
 export interface FormSectionProps {
     title: string;

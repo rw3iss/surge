@@ -1,9 +1,9 @@
 import { useParams, } from '@solidjs/router';
 import type { ContentAccessLevel, Post, } from '@rw/shared';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
-import ContentGate from '../components/ContentGate';
-import PostContentBlock from '../components/PostContentBlock';
-import SeoHead from '../components/SeoHead';
+import ContentGate from '../components/auth/ContentGate';
+import PostContentBlock from '../components/blocks/posts/PostContentBlock';
+import SeoHead from '../components/common/seo/SeoHead';
 import { fetchPost, } from '../services/api';
 import { useAuth, } from '../stores/auth';
 import { siteLogo, siteName, } from '../stores/siteSettings';

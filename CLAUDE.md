@@ -1,27 +1,28 @@
-# ryanweiss.net CMS
+# SiteSurge CMS
 
 ## Project Overview
 
-A custom CMS for RW portfolio site, a professional web developer. Monorepo with three workspaces: `frontend` (SolidJS), `backend` (Express/Node), `shared` (TypeScript types & utils).
+SiteSurge (a.k.a. SiteSurge CMS) is a self-hosted, feature-based, block-based general-purpose CMS. Pages, posts, campaigns, forms, users, media, social connections, plus a custom header/footer editor and a global appearance system (swatches, fonts, block-style templates).
+
+Monorepo with three workspaces: `frontend` (SolidJS), `backend` (Express/Node), `shared` (TypeScript types & utils).
 
 **Stack:** SolidJS + Vite | Express + PostgreSQL + Redis | Stripe | Patreon OAuth | S3/Local storage
 
-**Site URL:** https://ryanweiss.net/
-**Admin login:** admin@ryanweiss.net
+The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are historical and will be renamed in a future cut. Treat them as opaque package names — the product is SiteSurge.
 
-## Key Product Requirements (from INIT_Prompt.md)
-- Blog posts and media from third-party outlets (Patreon, YouTube, Instagram, Facebook, X, TikTok)
-- Social media content viewable **without leaving the site** (embedded players, not just external links)
-- Patreon SSO as the primary user system; anonymous users for non-logged-in visitors
-- Patreon members can view exclusive content on-site based on their tier
-- Clothing/merch store linked to Shopify
-- Donation campaigns with Stripe payment processing
-- Custom forms/questionnaires with results display (for polls)
-- CRM integration (Groundhogg/GiveButter) for outreach
-- SEO is explicitly critical - "all possible means for optimal SEO"
-- PWA with app shell for instant loading
-- Frontend served as static bundle on CDN (CloudFront)
-- Fully responsive (desktop, mobile, tablet)
+## Core Capabilities
+- **Block-based editor** — drag-and-drop blocks (rich text, image, video, hero, carousel, post list, social feed, form, campaign, HTML, spacer)
+- **Posts & pages** — drafts, publish, revisions, SSR body for SEO, RSS at `/feed.xml`, full-text search
+- **Campaigns + donations** — Stripe Elements, recurring subscriptions, public-donor toggle
+- **Forms / surveys / polls** — typed question library, submission inbox, CSV export
+- **Users & roles** — email/password + Patreon OAuth, member tiers, gated content, user/IP bans
+- **Media library** — sharp thumbnails, local FS or S3
+- **Social connections** — pull-based sync (YouTube, Instagram, X, Facebook, TikTok, Patreon); embeddable in posts
+- **Header & footer editors** — drag-and-drop rows + columns, fully styled
+- **Appearance** — shared color swatches (`swatch:{id}` references), custom fonts (`@font-face` injection), reusable block-style templates
+- **Backend SDK** — `cms.*` typed surface for routes / scripts / future plugins
+- **First-run setup wizard** — `/setup` walks env, migrations, seed, admin creation
+- **PWA + CDN-ready** — static frontend bundle, app shell
 
 ## Architecture
 

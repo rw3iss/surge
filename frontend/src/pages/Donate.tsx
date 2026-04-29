@@ -1,7 +1,7 @@
 import { A, } from '@solidjs/router';
 import type { Campaign, } from '@rw/shared';
 import { Component, createResource, For, Show, } from 'solid-js';
-import SeoHead from '../components/SeoHead';
+import SeoHead from '../components/common/seo/SeoHead';
 import { fetchCampaigns, } from '../services/api';
 import { siteName, } from '../stores/siteSettings';
 import './Donate.scss';

@@ -1,9 +1,9 @@
 import { useLocation, useNavigate, useParams, } from '@solidjs/router';
 import type { ContentAccessLevel, Page, } from '@rw/shared';
 import { Component, createResource, createSignal, For, lazy, Show, } from 'solid-js';
-import { BlockRenderer, } from '../components/BlockRenderer';
-import ContentGate from '../components/ContentGate';
-import SeoHead from '../components/SeoHead';
+import { BlockRenderer, } from '../components/blocks/BlockRenderer';
+import ContentGate from '../components/auth/ContentGate';
+import SeoHead from '../components/common/seo/SeoHead';
 import { fetchPage, } from '../services/api';
 import { useAuth, } from '../stores/auth';
 import { siteName, } from '../stores/siteSettings';
