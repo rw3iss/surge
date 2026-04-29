@@ -37,8 +37,22 @@ export type BlockType =
     | 'group'
     | 'group_item';
 
-/** Loose grouping for future menu organization. Flat for now. */
-export type BlockCategory = 'content' | 'media' | 'embed' | 'layout' | 'reference';
+/**
+ * Categories used to group block types in the AddBlockMenu. The label
+ * displayed for each category is set in the menu component itself so
+ * this enum stays free of i18n concerns.
+ */
+export type BlockCategory = 'text' | 'media' | 'blocks' | 'layout';
+
+/** Site-feature flag keys (mirror of SiteFeatures in @rw/shared). When
+ *  a block type sets `gating`, it's only shown in the AddBlockMenu when
+ *  that feature is enabled in site settings. */
+export type BlockGatingFeature = 'posts' | 'campaigns' | 'forms' | 'messages' | 'users' | 'patreon';
+
+/** Source of a "recent items" submenu, when applicable. The menu
+ *  fetches the last N entries from this source on hover and lets the
+ *  user pre-fill the new block with a specific item's id. */
+export type RecentSource = 'campaigns' | 'forms' | 'posts';
 
 export interface BlockTypeConfig {
     type: BlockType;
@@ -48,8 +62,17 @@ export interface BlockTypeConfig {
     description?: string;
     /** Symbol/icon. Kept as a short string so we can swap to SVG later. */
     icon?: string;
-    /** Loose category, for future grouped pickers. */
+    /** Menu category. Items without one are bucketed under "Other". */
     category?: BlockCategory;
+    /** When set, the item is hidden from the menu unless the named
+     *  site feature is enabled. */
+    gating?: BlockGatingFeature;
+    /** When set, the menu offers a submenu listing recent items of
+     *  this kind. Picking one pre-fills the new block's id field. */
+    recentSource?: RecentSource;
+    /** Field on the block's `data` payload that receives the chosen
+     *  recent item's id (e.g. 'campaignId', 'formId', 'postId'). */
+    recentDataField?: string;
     /**
      * Factory that produces the initial `data` payload when this block
      * is added. Returning `{}` (the default) keeps the block in a
@@ -87,25 +110,27 @@ const NO_DEFAULT_PADDING_TYPES: ReadonlySet<BlockType> = new Set(['carousel', 'h
  * "Add block" menu.
  */
 export const BLOCK_TYPES: BlockTypeConfig[] = [
-    { type: 'rich_text', label: 'Rich Text', icon: '¶', category: 'content', },
+    // ─── Text ─────────────────────────────────────────────
+    { type: 'rich_text', label: 'Rich Text', icon: '¶', category: 'text', },
+    { type: 'html', label: 'Custom HTML', icon: '<>', category: 'text', },
+    { type: 'url_link', label: 'URL Link', icon: '🔗', category: 'text', },
+
+    // ─── Media ────────────────────────────────────────────
     { type: 'image', label: 'Image', icon: '◧', category: 'media', },
     { type: 'video', label: 'Video', icon: '▶', category: 'media', },
-    { type: 'hero', label: 'Hero Banner', icon: '✦', category: 'layout', },
-    { type: 'html', label: 'Custom HTML', icon: '<>', category: 'content', },
-    { type: 'social_media', label: 'Social Media Post', icon: '@', category: 'embed', },
-    { type: 'social_feed', label: 'Social Feed', icon: '⌘', category: 'embed', },
-    { type: 'campaign', label: 'Campaign', icon: '$', category: 'reference', },
-    { type: 'form', label: 'Form', icon: '☐', category: 'reference', },
-    { type: 'post', label: 'Post Embed', icon: '📰', category: 'reference', },
+    { type: 'document', label: 'Document', icon: '📄', category: 'media', },
+
+    // ─── Blocks ───────────────────────────────────────────
+    { type: 'hero', label: 'Hero Banner', icon: '✦', category: 'blocks', },
+    { type: 'carousel', label: 'Carousel', icon: '⇄', category: 'blocks', },
     {
         type: 'post_list',
-        label: 'Post List',
+        label: 'Posts',
         icon: '☰',
-        category: 'reference',
-        // Sensible defaults: query enabled with 5 posts, brief mode,
-        // all meta fields shown, no specific posts, empty-message
-        // placeholder on. Specific posts and the query render
-        // independently — see PostListRenderer.
+        category: 'blocks',
+        gating: 'posts',
+        recentSource: 'posts',
+        recentDataField: 'pinnedPostIds',
         defaultData: () => ({
             pinnedPostIds: [] as string[],
             queryEnabled: true,
@@ -121,33 +146,62 @@ export const BLOCK_TYPES: BlockTypeConfig[] = [
             query: '',
         }),
     },
-    { type: 'gallery', label: 'Gallery', icon: '⊟', category: 'reference', },
-    { type: 'document', label: 'Document', icon: '📄', category: 'media', },
-    { type: 'url_link', label: 'URL Link', icon: '🔗', category: 'embed', },
-    { type: 'carousel', label: 'Carousel', icon: '⇄', category: 'layout', },
-    { type: 'spacer', label: 'Empty Space', icon: '⎵', category: 'layout', },
+    {
+        type: 'campaign',
+        label: 'Campaign',
+        icon: '$',
+        category: 'blocks',
+        gating: 'campaigns',
+        recentSource: 'campaigns',
+        recentDataField: 'campaignId',
+    },
+    {
+        type: 'form',
+        label: 'Form',
+        icon: '☐',
+        category: 'blocks',
+        gating: 'forms',
+        recentSource: 'forms',
+        recentDataField: 'formId',
+    },
+    { type: 'social_feed', label: 'Social Feed', icon: '⌘', category: 'blocks', },
+    { type: 'social_media', label: 'Social Media Post', icon: '@', category: 'blocks', },
+
+    // ─── Layout ───────────────────────────────────────────
     {
         type: 'group',
         label: 'Group',
         icon: '⊞',
         category: 'layout',
         composite: true,
-        // A new group starts with two columns. The PageEditor / save
-        // flow picks up this default and creates two empty group_item
-        // children alongside the group itself.
         defaultData: () => ({
             direction: 'horizontal',
             columns: 2,
             wrap: 'wrap',
         }),
     },
+    { type: 'spacer', label: 'Empty Space', icon: '⎵', category: 'layout', },
+
+    // ─── Hidden / legacy ──────────────────────────────────
     // 'text' is the legacy plain-text type; new content uses rich_text.
-    // We keep the label so existing rows render correctly but don't
-    // expose it in the picker (enabled: false).
     { type: 'text', label: 'Text', enabled: false, },
+    // 'post' (single embed) and 'gallery' are removed in favor of the
+    // unified Posts block (post_list) and the multi-image upgrade to
+    // 'image'. Existing rows render via legacy fallbacks; the picker
+    // doesn't surface them.
+    { type: 'post', label: 'Post Embed (legacy)', enabled: false, },
+    { type: 'gallery', label: 'Gallery (legacy)', enabled: false, },
     // group_item is created automatically when a group is added or its
     // columns count changes — never picked from the menu directly.
     { type: 'group_item', label: 'Group Slot', enabled: false, composite: true, },
+];
+
+/** Ordered category keys + their display labels for the AddBlockMenu. */
+export const MENU_CATEGORIES: Array<{ key: BlockCategory; label: string; }> = [
+    { key: 'text', label: 'Text', },
+    { key: 'media', label: 'Media', },
+    { key: 'blocks', label: 'Blocks', },
+    { key: 'layout', label: 'Layout', },
 ];
 
 /** O(1) lookup by type, derived from BLOCK_TYPES. */

@@ -51,8 +51,10 @@ interface ContentBlockProps {
     onDragStart: (e: PointerEvent, id: string,) => void;
     onToggleCollapse?: (id: string,) => void;
     /** Add a child block to a parent (group / group_item). Used by the
-     *  empty-slot AddBlockMenu inside groups. */
-    onAddChildBlock?: (type: BlockType, parentId: string,) => void;
+     *  empty-slot AddBlockMenu inside groups. `initialData` carries
+     *  the pre-filled id when the user picked from a recent-items
+     *  submenu. */
+    onAddChildBlock?: (type: BlockType, parentId: string, initialData?: Record<string, unknown>,) => void;
     blockTypes?: Array<{ type: BlockType; label: string; }>;
     onChangeType?: (id: string, newType: BlockType,) => void;
 }
@@ -313,8 +315,8 @@ const GroupItemPreview: Component<NestedPreviewProps> = (props,) => {
                                 types={(props.ownProps.blockTypes ?? []).filter(
                                     t => t.type !== 'group_item',
                                 )}
-                                onSelect={(type,) =>
-                                    props.ownProps.onAddChildBlock!(type, props.block.id,)}
+                                onSelect={(type, initialData,) =>
+                                    props.ownProps.onAddChildBlock!(type, props.block.id, initialData,)}
                             />
                         </Show>
                     </div>

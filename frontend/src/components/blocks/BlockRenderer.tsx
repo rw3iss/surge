@@ -124,6 +124,15 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     <Match when={props.block.type === 'group_item'}>
                         <GroupItemBlock block={props.block} />
                     </Match>
+                    {/* Removed block types render a polite fallback on the
+                        public site so an old page doesn't go blank.
+                        Gallery is removed; legacy `post` blocks still
+                        have a renderer (above) until Phase 4 removes them. */}
+                    <Match when={props.block.type === 'gallery'}>
+                        <div class="block--legacy" style={{ padding: '0.75rem', color: '#888', 'font-size': '0.875rem', 'font-style': 'italic', }}>
+                            (Gallery blocks are no longer supported — please update this page.)
+                        </div>
+                    </Match>
                 </Switch>
             </div>
         </div>

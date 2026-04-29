@@ -247,6 +247,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         type: BlockType,
         position: 'top' | 'bottom' = 'bottom',
         parentBlockId?: string | null,
+        initialData?: Record<string, unknown>,
     ) => {
         const tree = treeify(props.blocks,);
 
@@ -255,7 +256,10 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
             type,
             parentBlockId: parentBlockId ?? null,
             sort_order: 0,
-            data: createBlockDefaultData(type,),
+            // initialData comes from the AddBlockMenu's "recent items"
+            // submenu — pre-fills e.g. campaignId / formId / pinnedPostIds
+            // so the operator doesn't have to wire it up by hand.
+            data: { ...createBlockDefaultData(type,), ...(initialData ?? {}), },
             children: [],
         };
 
@@ -295,8 +299,12 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
     };
 
     /** Convenience for empty group_item slots: add a child to a parent. */
-    const addChildBlock = (type: BlockType, parentId: string,) => {
-        addBlock(type, 'bottom', parentId,);
+    const addChildBlock = (
+        type: BlockType,
+        parentId: string,
+        initialData?: Record<string, unknown>,
+    ) => {
+        addBlock(type, 'bottom', parentId, initialData,);
     };
 
     const updateBlock = (id: string, data: Record<string, any>,) => {
@@ -562,7 +570,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                     <AddBlockMenu
                         triggerSize="small"
                         types={blockTypes()}
-                        onSelect={(type,) => addBlock(type, 'top',)}
+                        onSelect={(type, initialData,) => addBlock(type, 'top', null, initialData,)}
                     />
                 </div>
             </Show>
@@ -669,7 +677,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                     <div class="add-block-dropdown">
                         <AddBlockMenu
                             types={blockTypes()}
-                            onSelect={(type,) => addBlock(type,)}
+                            onSelect={(type, initialData,) => addBlock(type, 'bottom', null, initialData,)}
                         />
                     </div>
                 </div>

@@ -17,6 +17,7 @@ import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
 import type { AppearanceSettings, } from '@rw/shared';
+import { invalidatePostsCache, } from '../../services/adminData';
 import { api, fetchAppearance, } from '../../services/api';
 import { BlockStyleService, } from '../../services/blockStyles';
 import { appearanceCssVars, } from '../../utils/appearanceStyle';
@@ -180,6 +181,7 @@ const AdminPostEditor: Component = () => {
             setSavedBlocks(structuredClone(blocks(),),);
             autoSave.clear();
             markClean();
+            invalidatePostsCache();
             toast.success(`Post '${title()}' saved`,);
             // For brand-new posts, switch to the persisted id URL so
             // subsequent saves PUT instead of POST. Existing posts stay
@@ -370,6 +372,7 @@ const AdminPostEditor: Component = () => {
                         const response = await api.put(`/posts/${params.id}`, { status: 'deleted', },);
                         if (response.success) {
                             markClean();
+                            invalidatePostsCache();
                             navigate('/admin/posts',);
                         } else {
                             setError((response as any).error?.message || 'Failed to delete post',);
