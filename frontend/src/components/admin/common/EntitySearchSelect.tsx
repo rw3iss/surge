@@ -1,4 +1,5 @@
 import { Component, createSignal, For, onCleanup, onMount, Show, } from 'solid-js';
+import { Portal, } from 'solid-js/web';
 
 export interface EntitySearchItem {
     id: string;
@@ -95,6 +96,11 @@ const EntitySearchSelect: Component<EntitySearchSelectProps> = (props,) => {
                 autocomplete="off"
             />
             <Show when={showDropdown()}>
+                {/* Render via Portal so the dropdown escapes any containing-
+                    block created by an ancestor's transform / will-change /
+                    contain. Without this the popover gets clipped inside
+                    flyout panels and modals even though it's position: fixed. */}
+                <Portal>
                 <div
                     class="entity-search__dropdown"
                     style={{
@@ -131,6 +137,7 @@ const EntitySearchSelect: Component<EntitySearchSelectProps> = (props,) => {
                         </div>
                     </Show>
                 </div>
+                </Portal>
             </Show>
         </div>
     );

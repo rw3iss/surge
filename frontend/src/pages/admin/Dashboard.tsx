@@ -8,11 +8,12 @@ import { isFeatureEnabled, loadSiteSettings, siteSettings, } from '../../stores/
  * Site features rendered in the dashboard panel. Order matches the
  * Settings → Features section so the experience reads consistently.
  */
-const DASHBOARD_FEATURES: Array<{ key: 'posts' | 'campaigns' | 'forms' | 'messages'; label: string; }> = [
+const DASHBOARD_FEATURES: Array<{ key: 'posts' | 'campaigns' | 'forms' | 'messages' | 'users'; label: string; }> = [
     { key: 'posts', label: 'Posts', },
     { key: 'campaigns', label: 'Campaigns', },
     { key: 'forms', label: 'Forms', },
     { key: 'messages', label: 'Messages', },
+    { key: 'users', label: 'Users', },
 ];
 
 const AdminDashboard: Component = () => {

@@ -78,11 +78,26 @@ const ContentBlock: Component<ContentBlockProps> = (props,) => {
     return (
         <div
             id={props.block.id}
+            data-block-id={props.block.id}
+            data-parent-id={props.block.parentBlockId ?? ''}
             class={`content-block content-block--preview content-block--${props.block.type} ${
                 props.isSelected ? 'content-block--selected' : ''
             } ${props.isDragging ? 'content-block--dragging' : ''}`}
             onClick={(e,) => {
-                if ((e.target as HTMLElement).closest('button, .content-block__hover-drag, .content-block__options-menu, .add-block-dropdown',)) return;
+                const tgt = e.target as HTMLElement;
+                if (tgt.closest('button, .content-block__hover-drag, .content-block__options-menu, .add-block-dropdown',)) return;
+                // Inline editors (HTML / Rich Text) own their own focus
+                // semantics — clicks inside should select the block (so
+                // the settings panel opens) but never deselect it. The
+                // user moves out of edit mode by clicking the block's
+                // hover bar, another block, or outside.
+                const insideInlineEditor = tgt.closest(
+                    '.html-inline-editor, .rich-text-inline-editor, .rich-text-editor',
+                );
+                if (insideInlineEditor) {
+                    if (!props.isSelected) props.onToggleEdit(props.block.id,);
+                    return;
+                }
                 e.stopPropagation();
                 props.onToggleEdit(props.block.id,);
             }}

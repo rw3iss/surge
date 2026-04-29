@@ -381,6 +381,15 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         const blockEl = (e.target as HTMLElement).closest('.content-block',) as HTMLElement;
         if (!blockEl) return;
 
+        // Scope DnD to siblings of the same parent. The dragged block's
+        // `data-parent-id` (empty string for top-level) defines which
+        // other content-blocks are valid drop targets. Cross-parent
+        // drag isn't supported in this phase; nested-group reordering
+        // currently uses the up/down buttons.
+        const parentSelector = blockEl.dataset.parentId
+            ? `[data-parent-id="${blockEl.dataset.parentId}"]`
+            : '[data-parent-id=""]';
+
         const rect = blockEl.getBoundingClientRect();
         const offsetY = e.clientY - rect.top;
         const offsetX = e.clientX - rect.left;
@@ -390,9 +399,13 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         setGhostStyle({ top: rect.top, left: rect.left, width: rect.width, },);
         setDraggingId(id,);
 
-        const listEl = blockEl.parentElement;
-        let currentBlocks = [...props.blocks,];
-        let currentIndex = currentBlocks.findIndex(b => b.id === id);
+        // Tree-aware move within the dragged block's parent. Build a
+        // siblings array (current order of blocks with the same parent),
+        // mutate that, and emit a flat list rebuilt from the rest.
+        const draggedParentId: string | null = blockEl.dataset.parentId || null;
+        const siblings = () => props.blocks.filter(b => (b.parentBlockId ?? null) === draggedParentId);
+        let currentSiblings = siblings();
+        let currentIndex = currentSiblings.findIndex(b => b.id === id);
 
         const handleMove = (moveEvt: PointerEvent,) => {
             moveEvt.preventDefault();
@@ -407,8 +420,10 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                     null
             );
 
-            if (!listEl) return;
-            const blockEls = Array.from(listEl.querySelectorAll('.content-block',),) as HTMLElement[];
+            // Drop targets are sibling content-blocks (same parent only).
+            const blockEls = Array.from(
+                document.querySelectorAll(`.content-block${parentSelector}`,),
+            ) as HTMLElement[];
             const cursorY = moveEvt.clientY;
 
             let newIndex = currentIndex;
@@ -423,16 +438,36 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
             }
             newIndex = Math.max(
                 0,
-                Math.min(currentBlocks.length - 1, newIndex > currentIndex ? newIndex - 1 : newIndex,),
+                Math.min(currentSiblings.length - 1, newIndex > currentIndex ? newIndex - 1 : newIndex,),
             );
 
             if (newIndex !== currentIndex) {
-                const arr = [...currentBlocks,];
+                const arr = [...currentSiblings,];
                 const [item,] = arr.splice(currentIndex, 1,);
                 arr.splice(newIndex, 0, item,);
-                currentBlocks = arr;
+                currentSiblings = arr;
                 currentIndex = newIndex;
-                props.onBlocksChange(arr.map((b, i,) => ({ ...b, sort_order: i, })),);
+
+                // Rebuild via the tree so the parents-before-children
+                // invariant survives — descendants travel with their
+                // moved parent in the flat array.
+                const tree = treeify(props.blocks,);
+                const reorderInTree = (nodes: BlockNode[],): boolean => {
+                    // Find the sibling list at this level.
+                    const allMatch = nodes.length > 0 &&
+                        nodes.every(n => (n.parentBlockId ?? null) === draggedParentId);
+                    if (allMatch && nodes.some(n => n.id === id)) {
+                        nodes.sort((a, b,) => arr.findIndex(s => s.id === a.id) -
+                            arr.findIndex(s => s.id === b.id),);
+                        return true;
+                    }
+                    for (const n of nodes) {
+                        if (reorderInTree(n.children,)) return true;
+                    }
+                    return false;
+                };
+                reorderInTree(tree,);
+                props.onBlocksChange(flattenTree(tree,),);
             }
         };
 

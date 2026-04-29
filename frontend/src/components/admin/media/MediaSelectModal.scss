@@ -61,7 +61,8 @@
   }
 
   &__search {
-    flex: 1;
+    flex: 1 1 320px;
+    min-width: 0;
     padding: $spacing-sm $spacing-md;
     border: 1px solid $border-color;
     border-radius: $border-radius-md;
