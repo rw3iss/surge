@@ -67,7 +67,6 @@ const NAV_ITEMS: NavItem[] = [
     { path: '/admin/users', label: 'Users', icon: 'users', feature: 'users', },
     { path: '/admin/messages', label: 'Messages', icon: 'messages', feature: 'messages', },
     { path: '/admin/settings', label: 'Settings', icon: 'settings', },
-    { path: '/admin/developer', label: 'Developer', icon: 'developer', sysadminOnly: true, },
 ];
 
 const COLLAPSED_KEY = 'admin-sidebar-collapsed';

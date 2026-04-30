@@ -566,7 +566,7 @@ against a real page, this is where to look.
 | SSR head meta (server-injected, no JS required) | `backend/src/services/ssr/metaBuilder.ts` |
 | SSR routing + cache | `backend/src/services/ssr/routes.ts` |
 | RSS feed | `backend/src/routes/feed.ts` |
-| Sitemap.xml | `backend/src/services/sitemap.ts` (builder) + `backend/src/routes/sitemap.ts` (cached HTTP route) + `backend/scripts/generate-sitemap.ts` (CLI). Cache busts on page/post/campaign/form change via `services/cache.ts`. Manual rebuild button under `/admin/developer`. CLI: `npm run sitemap` (stdout) or `npm run sitemap -- --out path.xml`. |
+| Sitemap.xml | `backend/src/services/sitemap.ts` (builder) + `backend/src/routes/sitemap.ts` (cached HTTP route) + `backend/scripts/generate-sitemap.ts` (CLI). Cache busts on page/post/campaign/form change via `services/cache.ts`. Manual rebuild button under `/admin/settings → Admin → Admin Operations`. CLI: `npm run sitemap` (stdout) or `npm run sitemap -- --out path.xml`. |
 | `robots.txt` | `frontend/public/robots.txt` |
 | Canonical host / HTTPS / redirect rules | nginx conf / deploy scripts |
 | Public site Header (semantic `<header>` + `<nav>`) | `frontend/src/components/layout/Header.tsx` |

@@ -6,6 +6,8 @@ import MediaUploadModal from '../../components/admin/media/MediaUploadModal';
 import ColorPicker from '../../components/admin/appearance/ColorPicker';
 import ColorWheel from '../../components/admin/appearance/ColorWheel';
 import FontManagerPanel from '../../components/admin/appearance/FontManagerPanel';
+import JobManagementPanel from '../../components/admin/panels/JobManagementPanel';
+import SitemapPanel from '../../components/admin/panels/SitemapPanel';
 import Tooltip from '../../components/admin/common/Tooltip';
 import { api, fetchAdminAppearance, fetchAppearance, fetchSiteBranding, saveAdminAppearance, saveAppearance, saveSiteBranding, } from '../../services/api';
 import { fetchSwatchUsages, generateUniqueSwatchId, isValidSwatchId, loadSwatches, saveSwatches, swatches as swatchesSignal, } from '../../services/siteColors';
@@ -1731,11 +1733,25 @@ const AdminSettings: Component = () => {
 
                 {/* ─── Admin Tab ─── */}
                 <Show when={activeTab() === 'admin'}>
+                    <h2 class="settings-subheading">Admin Appearance</h2>
                     <p class="form-help" style={{ 'margin-bottom': '1rem', }}>
                         Customize the colors used by the admin chrome — sidebar, page area, and panel
                         backgrounds. Leave any field empty to inherit the default theme.
                     </p>
                     <AdminAppearancePanel />
+
+                    <h2 class="settings-subheading" style={{ 'margin-top': '2rem', }}>Admin Operations</h2>
+                    <p class="form-help" style={{ 'margin-bottom': '1rem', }}>
+                        One-shot maintenance tasks. Each runs immediately when triggered;
+                        nothing here is scheduled.
+                    </p>
+                    <SitemapPanel />
+
+                    <h2 class="settings-subheading" style={{ 'margin-top': '2rem', }}>Job Management</h2>
+                    <p class="form-help" style={{ 'margin-bottom': '1rem', }}>
+                        Background jobs registered with the server's cron runner.
+                    </p>
+                    <JobManagementPanel />
                 </Show>
             </div>
         </div>

@@ -42,7 +42,6 @@ const AdminMessages = lazy(() => import('./pages/admin/Messages'));
 const AdminMessageView = lazy(() => import('./pages/admin/MessageView'));
 const AdminMedia = lazy(() => import('./pages/admin/Media'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
-const AdminDeveloper = lazy(() => import('./pages/admin/Developer'));
 const AdminPagePreview = lazy(() => import('./pages/admin/PagePreview'));
 const AdminPostPreview = lazy(() => import('./pages/admin/PostPreview'));
 
@@ -108,7 +107,6 @@ const App: Component = () => {
                                     <Route path="/messages/:id" component={AdminMessageView} />
                                     <Route path="/media" component={AdminMedia} />
                                     <Route path="/settings" component={AdminSettings} />
-                                    <Route path="/developer" component={AdminDeveloper} />
                                 </Route>
 
                                 {/* Setup wizard — outside the main Layout so it can render its own chrome. */}
