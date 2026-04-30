@@ -108,7 +108,10 @@ export async function cached<T,>(
  *  so the next read picks up fresh data. */
 export function invalidateNamespace(namespace: string,): void {
     const prefix = `${namespace}:`;
-    for (const k of [...cache.keys(),]) {
+    // Map iteration is safe with concurrent delete of the current key
+    // (the spec guarantees a deleted-while-iterating key is skipped),
+    // so we don't need to snapshot the key set first.
+    for (const k of cache.keys()) {
         if (k.startsWith(prefix,)) cache.delete(k,);
     }
 }
