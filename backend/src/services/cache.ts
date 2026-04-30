@@ -74,6 +74,13 @@ export async function delPattern(pattern: string,): Promise<void> {
     }
 }
 
+/** Drop the cached sitemap.xml so the next request rebuilds it from
+ *  current content. Called from every page / post / campaign / form
+ *  invalidator below, plus from the explicit admin regenerate route. */
+export async function invalidateSitemapCache(): Promise<void> {
+    await del('sitemap:xml',);
+}
+
 export async function invalidatePageCache(pageId?: string,): Promise<void> {
     if (pageId) {
         await del(`page:${pageId}`,);
@@ -92,6 +99,7 @@ export async function invalidatePageCache(pageId?: string,): Promise<void> {
     await delPattern('navigation:*',);
     // Invalidate SSR cache for all public pages when any page changes
     await delPattern('ssr:html:*',);
+    await invalidateSitemapCache();
 }
 
 export async function invalidatePostCache(postId?: string,): Promise<void> {
@@ -101,6 +109,7 @@ export async function invalidatePostCache(postId?: string,): Promise<void> {
     }
     await delPattern('posts:*',);
     await delPattern('ssr:html:*',);
+    await invalidateSitemapCache();
 }
 
 export async function invalidateCampaignCache(campaignId?: string,): Promise<void> {
@@ -110,6 +119,7 @@ export async function invalidateCampaignCache(campaignId?: string,): Promise<voi
     await delPattern('campaigns:*',);
     await delPattern('donations:*',);
     await delPattern('ssr:html:*',);
+    await invalidateSitemapCache();
 }
 
 export async function invalidateFormCache(formId?: string,): Promise<void> {
@@ -117,6 +127,7 @@ export async function invalidateFormCache(formId?: string,): Promise<void> {
         await del(`form:${formId}`,);
     }
     await delPattern('forms:*',);
+    await invalidateSitemapCache();
 }
 
 export async function invalidateUserCache(userId?: string,): Promise<void> {
@@ -193,6 +204,7 @@ export const cache = {
     invalidateFormCache,
     invalidateUserCache,
     invalidateSettingsCache,
+    invalidateSitemapCache,
     flushAll,
     healthCheck,
     close: closeRedis,

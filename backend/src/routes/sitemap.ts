@@ -1,102 +1,24 @@
+/**
+ * Public sitemap.xml route — cached for 1 hour and busted on content
+ * changes via the invalidators in services/cache.ts. Mounted at the
+ * site root so crawlers find it at the canonical `/sitemap.xml` URL.
+ *
+ * Also exposes an admin POST that drops the cache and returns the
+ * fresh URL count, for the "Regenerate sitemap" button in the admin.
+ */
 import { Request, Response, Router, } from 'express';
-import { config, } from '../config';
-import { query, } from '../db';
+import { authenticate, requireAdmin, type AuthenticatedRequest, } from '../middleware/auth';
 import { cache, } from '../services/cache';
+import { buildSitemap, countSitemapUrls, } from '../services/sitemap';
+import { sendSuccess, } from '../utils/response';
 import { logger, } from '../utils/logger';
 
 const router = Router();
-
-const SITE_URL = config.frontendUrl.replace(/\/$/, '',);
 const CACHE_KEY = 'sitemap:xml';
 const CACHE_TTL = 3600; // 1 hour
 
-interface SitemapRow {
-    slug: string;
-    updated_at: string;
-}
-
-function escapeXml(str: string,): string {
-    return str
-        .replace(/&/g, '&amp;',)
-        .replace(/</g, '&lt;',)
-        .replace(/>/g, '&gt;',)
-        .replace(/"/g, '&quot;',)
-        .replace(/'/g, '&apos;',);
-}
-
-function formatDate(date: string,): string {
-    return new Date(date,).toISOString().split('T',)[0];
-}
-
-function urlEntry(loc: string, lastmod?: string, changefreq?: string, priority?: number,): string {
-    let entry = `  <url>\n    <loc>${escapeXml(loc,)}</loc>\n`;
-    if (lastmod) {
-        entry += `    <lastmod>${formatDate(lastmod,)}</lastmod>\n`;
-    }
-    if (changefreq) {
-        entry += `    <changefreq>${changefreq}</changefreq>\n`;
-    }
-    if (priority !== undefined) {
-        entry += `    <priority>${priority.toFixed(1,)}</priority>\n`;
-    }
-    entry += '  </url>\n';
-    return entry;
-}
-
-async function generateSitemap(): Promise<string> {
-    // Query all public content in parallel
-    const [pagesResult, postsResult, campaignsResult, formsResult,] = await Promise.all([
-        query<SitemapRow>(
-            `SELECT slug, updated_at FROM pages WHERE status = 'published' AND is_private = false AND is_homepage = false ORDER BY updated_at DESC`,
-        ),
-        query<SitemapRow>(
-            `SELECT slug, updated_at FROM posts WHERE status = 'published' AND is_private = false ORDER BY updated_at DESC`,
-        ),
-        query<SitemapRow>(
-            `SELECT slug, updated_at FROM campaigns WHERE status = 'active' AND is_published = true ORDER BY updated_at DESC`,
-        ),
-        query<SitemapRow>(
-            `SELECT slug, updated_at FROM forms WHERE status = 'published' ORDER BY updated_at DESC`,
-        ),
-    ],);
-
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-
-    // Static pages
-    xml += urlEntry(`${SITE_URL}/`, undefined, 'daily', 1.0,);
-    xml += urlEntry(`${SITE_URL}/donate`, undefined, 'weekly', 0.8,);
-    xml += urlEntry(`${SITE_URL}/contact`, undefined, 'monthly', 0.6,);
-    xml += urlEntry(`${SITE_URL}/posts`, undefined, 'daily', 0.8,);
-    xml += urlEntry(`${SITE_URL}/join`, undefined, 'monthly', 0.7,);
-
-    // Dynamic pages
-    for (const page of pagesResult.rows) {
-        xml += urlEntry(`${SITE_URL}/${page.slug}`, page.updated_at, 'weekly', 0.8,);
-    }
-
-    // Posts
-    for (const post of postsResult.rows) {
-        xml += urlEntry(`${SITE_URL}/posts/${post.slug}`, post.updated_at, 'weekly', 0.7,);
-    }
-
-    // Campaigns
-    for (const campaign of campaignsResult.rows) {
-        xml += urlEntry(`${SITE_URL}/campaigns/${campaign.slug}`, campaign.updated_at, 'weekly', 0.6,);
-    }
-
-    // Forms
-    for (const form of formsResult.rows) {
-        xml += urlEntry(`${SITE_URL}/forms/${form.slug}`, form.updated_at, 'monthly', 0.5,);
-    }
-
-    xml += '</urlset>';
-    return xml;
-}
-
 router.get('/sitemap.xml', async (_req: Request, res: Response,) => {
     try {
-        // Check cache first
         const cached = await cache.get<string>(CACHE_KEY,);
         if (cached) {
             res.set('Content-Type', 'application/xml',);
@@ -104,9 +26,7 @@ router.get('/sitemap.xml', async (_req: Request, res: Response,) => {
             return;
         }
 
-        const xml = await generateSitemap();
-
-        // Cache for 1 hour
+        const xml = await buildSitemap();
         await cache.set(CACHE_KEY, xml, CACHE_TTL,);
 
         res.set('Content-Type', 'application/xml',);
@@ -118,5 +38,29 @@ router.get('/sitemap.xml', async (_req: Request, res: Response,) => {
         );
     }
 },);
+
+/** Admin: drop the cached sitemap + rebuild now. Returns the URL count
+ *  so the operator gets a quick confirmation. Also useful from cron /
+ *  CI via a session-cookie or token-based admin call. */
+router.post(
+    '/admin/sitemap/regenerate',
+    authenticate(),
+    requireAdmin,
+    async (_req: AuthenticatedRequest, res: Response,) => {
+        try {
+            await cache.invalidateSitemapCache();
+            const xml = await buildSitemap();
+            await cache.set(CACHE_KEY, xml, CACHE_TTL,);
+            sendSuccess(res, {
+                urlCount: countSitemapUrls(xml,),
+                bytes: xml.length,
+                regeneratedAt: new Date().toISOString(),
+            },);
+        } catch (error) {
+            logger.error('Admin sitemap regenerate failed', { error, },);
+            res.status(500,).json({ success: false, error: 'Regenerate failed', },);
+        }
+    },
+);
 
 export default router;

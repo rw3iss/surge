@@ -1,6 +1,7 @@
 import { Title, } from '@solidjs/meta';
-import { Component, createResource, For, Show, } from 'solid-js';
-import { fetchCrons, } from '../../services/api';
+import { Component, createResource, createSignal, For, Show, } from 'solid-js';
+import { api, fetchCrons, } from '../../services/api';
+import { useToast, } from '../../components/common/toast';
 
 interface CronJob {
     name: string;
@@ -15,10 +16,33 @@ interface CronJob {
 }
 
 const AdminDeveloper: Component = () => {
+    const toast = useToast();
     const [crons, { refetch, },] = createResource(async () => {
         const response = await fetchCrons();
         return response.success ? (response as any).data as CronJob[] : [];
     },);
+
+    // ─── Sitemap regenerate ───
+    const [sitemapBusy, setSitemapBusy,] = createSignal(false,);
+    const [sitemapInfo, setSitemapInfo,] = createSignal<{ urlCount: number; bytes: number; regeneratedAt: string; } | null>(null,);
+
+    const regenerateSitemap = async () => {
+        setSitemapBusy(true,);
+        try {
+            const response = await api.post('/admin/sitemap/regenerate', {},);
+            if (response.success) {
+                const data = (response as any).data as { urlCount: number; bytes: number; regeneratedAt: string; };
+                setSitemapInfo(data,);
+                toast.success(`Sitemap rebuilt: ${data.urlCount} URLs (${(data.bytes / 1024).toFixed(1,)} KB)`,);
+            } else {
+                toast.error('Failed to regenerate sitemap',);
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to regenerate sitemap',);
+        } finally {
+            setSitemapBusy(false,);
+        }
+    };
 
     const formatDate = (iso: string | null,) => {
         if (!iso) return '--';
@@ -46,6 +70,37 @@ const AdminDeveloper: Component = () => {
             <div class="admin-header">
                 <h1>Developer Tools</h1>
                 <p class="admin-header__subtitle">System internals and scheduled jobs.</p>
+            </div>
+
+            <div class="admin-section">
+                <div class="admin-section__header">
+                    <h2>Sitemap</h2>
+                    <a href="/sitemap.xml" target="_blank" rel="noopener" class="btn btn--small btn--ghost">
+                        View /sitemap.xml ↗
+                    </a>
+                </div>
+                <p class="text-muted" style={{ 'margin-top': 0, }}>
+                    Auto-rebuilds when pages, posts, campaigns, or forms change.
+                    Use the button to force a rebuild now (drops the Redis cache and
+                    re-queries the DB).
+                </p>
+                <div style={{ display: 'flex', 'align-items': 'center', gap: '12px', 'margin-top': '12px', }}>
+                    <button
+                        class="btn btn--secondary"
+                        onClick={regenerateSitemap}
+                        disabled={sitemapBusy()}
+                    >
+                        {sitemapBusy() ? 'Regenerating…' : 'Regenerate sitemap'}
+                    </button>
+                    <Show when={sitemapInfo()}>
+                        {(info,) => (
+                            <span class="text-muted" style={{ 'font-size': '0.85rem', }}>
+                                {info().urlCount} URLs · {(info().bytes / 1024).toFixed(1,)} KB ·
+                                rebuilt {new Date(info().regeneratedAt,).toLocaleTimeString()}
+                            </span>
+                        )}
+                    </Show>
+                </div>
             </div>
 
             <div class="admin-section">
