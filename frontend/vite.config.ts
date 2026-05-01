@@ -38,6 +38,20 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // The default navigateFallback intercepts every navigation
+        // request and serves the SPA's index.html. That breaks
+        // backend-served HTML/XML routes (sitemap.xml, feed.xml,
+        // robots.txt) and every API call: the SW would hand the SPA
+        // shell back instead of the real response. Deny those paths
+        // so they pass through to the network and hit the backend.
+        navigateFallbackDenylist: [
+            /^\/api\//,
+            /^\/sitemap\.xml$/,
+            /^\/feed\.xml$/,
+            /^\/robots\.txt$/,
+            /^\/uploads\//,
+            /^\/avatars\//,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\./i,
