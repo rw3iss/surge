@@ -79,7 +79,7 @@ export async function runInstallation(
             error: (error as Error).message,
             applied: applied.map((s,) => s.id,),
         },);
-        for (const step of applied.toReversed()) {
+        for (const step of [...applied,].reverse()) {
             if (!step.rollback) continue;
             try {
                 await step.rollback(ctx,);
