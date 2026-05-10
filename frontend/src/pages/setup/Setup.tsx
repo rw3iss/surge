@@ -43,6 +43,13 @@ const SetupPage: Component = () => {
         }
     },);
 
+    // Default admin-user toggle: on only when no admin exists yet.
+    createEffect(() => {
+        const s = statusResource();
+        if (!s) return;
+        setState('adminUser', 'enabled', (s.detected.adminCount ?? 0) === 0,);
+    },);
+
     // Pre-fill the database section from detected hint when the user
     // hasn't typed anything yet.
     createEffect(() => {

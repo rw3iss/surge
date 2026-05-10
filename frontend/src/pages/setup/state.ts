@@ -26,7 +26,7 @@ export const initialState: WizardState = {
         password: '',
     },
     adminUser: {
-        enabled: true,
+        enabled: false,
         email: '',
         password: '',
         confirmPassword: '',

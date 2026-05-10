@@ -6,18 +6,12 @@
   border-bottom: 1px solid $border-color;
 
   // ─── Sticky toggle ─────────────────────────────────────────
-  // `--no-sticky` opts out of the sticky positioning so the header
-  // scrolls away with the page like any other in-flow element.
   &--no-sticky {
     position: relative;
     top: auto;
   }
 
   // ─── Auto-hide on scroll ───────────────────────────────────
-  // Smooth slide-up/down animation. When the scroll listener flips
-  // `--auto-hidden` on, the header transforms out of view; flipping
-  // it back off restores the natural translate(0). Using transform
-  // (not display/visibility) keeps the slide cheap and animatable.
   &--auto-hide {
     transition: transform 0.25s ease;
     will-change: transform;
@@ -54,7 +48,20 @@
     display: flex;
     align-items: center;
     text-decoration: none;
-    color: $text-color;
+    color: inherit;
+  }
+
+  // Mobile-only logo shown in custom header mode (desktop uses items inside custom-items)
+  &__mobile-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+
+    @include md {
+      display: none;
+    }
   }
 
   &__nav {
@@ -67,54 +74,13 @@
     }
 
     // In custom header mode, pull the nav out of flow so it doesn't
-    // push the custom-items layout. It stays visible and inherits the
-    // container's padding via its absolute positioning context.
+    // push the custom-items layout.
     .header--custom & {
       position: absolute;
       right: 0;
       top: 0;
       height: 100%;
       padding-right: inherit;
-    }
-
-    &--open {
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      top: 64px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: $background;
-      padding: $spacing-lg;
-      overflow-y: auto;
-      gap: $spacing-md;
-
-      .header__nav-list {
-        flex-direction: column;
-        width: 100%;
-      }
-
-      .header__nav-item {
-        width: 100%;
-      }
-
-      .header__nav-link {
-        display: block;
-        padding: $spacing-md;
-        font-size: $font-size-lg;
-        border-radius: $border-radius-md;
-
-        &:hover,
-        &--active {
-          background: $background-dark;
-        }
-      }
-
-      .header__actions {
-        width: 100%;
-        margin-top: $spacing-md;
-      }
     }
   }
 
@@ -223,6 +189,7 @@
     }
   }
 
+  // Hamburger button — mobile only
   &__mobile-toggle {
     display: flex;
     flex-direction: column;
@@ -234,6 +201,7 @@
     background: none;
     border: none;
     cursor: pointer;
+    flex-shrink: 0;
 
     @include md {
       display: none;
@@ -257,19 +225,24 @@
   &__mobile-toggle-bar {
     width: 100%;
     height: 2px;
-    background: $text-color;
+    background: currentColor;
     transition: all $transition-fast;
   }
 
   // ─── Custom header items ───
 
   &__custom-items {
-    display: flex;
+    // Hidden on mobile — the mobile-logo + hamburger take over
+    display: none;
     align-items: center;
     gap: 0;
     flex: 1;
     min-width: 0;
-    overflow-x: auto;
+
+    @include md {
+      display: flex;
+      overflow-x: auto;
+    }
   }
 
   &__custom-img {
@@ -280,10 +253,6 @@
   &__custom-image-link {
     display: block;
     text-decoration: none;
-
-    img {
-      // Styles applied inline from component for width/height/margin/object-fit
-    }
   }
 
   &__custom-text {
@@ -325,5 +294,115 @@
 
   &__custom-spacer {
     flex-shrink: 1;
+  }
+
+  // ─── Mobile flyout overlay ───────────────────────────────────
+  // Rendered as a sibling of <header> (not inside it) to avoid
+  // any transform/stacking-context issues from auto-hide.
+
+  &__mobile-flyout {
+    position: fixed;
+    inset: 0;
+    z-index: $z-index-modal;
+    background: $background;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    // Never shown on desktop
+    @include md {
+      display: none;
+    }
+
+    &-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      // Match the mobile header container: same height and horizontal padding
+      // so the logo sits in exactly the same position when the flyout opens.
+      height: 64px;
+      padding: 0 $container-padding;
+      border-bottom: 1px solid $border-color;
+      flex-shrink: 0;
+    }
+
+    &-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: none;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-md;
+      cursor: pointer;
+      font-size: 16px;
+      color: $text-color;
+      line-height: 1;
+      transition: background $transition-fast;
+
+      &:hover {
+        background: $background-dark;
+      }
+    }
+
+    &-nav {
+      padding: $spacing-lg;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+
+      // Override the nav-list to stack vertically in the flyout
+      .header__nav-list {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .header__nav-item {
+        width: 100%;
+      }
+
+      .header__nav-link {
+        display: block;
+        padding: $spacing-md;
+        font-size: $font-size-lg;
+        border-radius: $border-radius-md;
+
+        &:hover,
+        &--active {
+          background: $background-dark;
+          color: var(--site-primary, #{$primary-color});
+        }
+      }
+    }
+
+    &-label {
+      display: block;
+      padding: $spacing-sm $spacing-md;
+      font-size: $font-size-sm;
+      color: $text-light;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    &-actions {
+      margin-top: auto;
+      padding-top: $spacing-lg;
+      border-top: 1px solid $border-color;
+      width: 100%;
+
+      .header__user {
+        border-left: none;
+        padding-left: 0;
+        margin-left: 0;
+      }
+
+      .header__user-name {
+        display: block !important;
+      }
+    }
   }
 }

@@ -598,13 +598,8 @@ const SocialBlock: Component<{ block: Block; }> = (props,) => {
         },
     );
 
-    const hasRowHeight = () => layout() === 'row' && !!rowHeight();
-
     return (
-        <div
-            class={`social-block${hasRowHeight() ? ' social-block--has-height' : ''}`}
-            style={hasRowHeight() ? { height: rowHeight(), } : undefined}
-        >
+        <div class="social-block">
             <Show
                 when={useAutoFeed() ? (posts()?.length ?? 0) > 0 : filledItems().length > 0}
                 fallback={
@@ -620,6 +615,9 @@ const SocialBlock: Component<{ block: Block; }> = (props,) => {
                     style={{
                         ...(blockStyle()?.padding ? { padding: blockStyle()!.padding, } : {}),
                         ...(blockStyle()?.gap ? { gap: blockStyle()!.gap, } : {}),
+                        // rowHeight only constrains card height in the row layout;
+                        // the outer block dimensions are left to the block style system.
+                        ...(layout() === 'row' && rowHeight() ? { '--social-row-height': rowHeight(), } : {}),
                     }}
                 >
                     <Show

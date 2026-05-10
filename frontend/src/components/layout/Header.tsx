@@ -97,13 +97,6 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
         }
 
         case 'image_link': {
-            // Make the anchor itself a column-flex so its single child
-            // (the image) can be horizontally aligned via align-items.
-            // The previous implementation set `margin: auto` on the
-            // image and forced `width: 100%`, which left no free
-            // horizontal space — so center/right alignment had no
-            // visible effect and the image just sat wherever the
-            // anchor's natural sizing placed it.
             const alignMap: Record<string, string> = {
                 left: 'flex-start',
                 center: 'center',
@@ -121,18 +114,11 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
                 if (item().padding) s['padding'] = item().padding!;
                 return s;
             };
-            const imgStyle = () => {
-                // Let the image keep its natural aspect; cap at the
-                // anchor's width so it never overflows. Width can
-                // still be forced by the operator via item.width on
-                // the anchor (the image fills it via min-width).
-                const s: Record<string, string> = {
-                    display: 'block',
-                    'max-width': '100%',
-                    height: 'auto',
-                };
-                return s;
-            };
+            const imgStyle = () => ({
+                display: 'block',
+                'max-width': '100%',
+                height: 'auto',
+            });
             return (
                 <a
                     href={item().url || '#'}
@@ -197,7 +183,6 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
             );
 
         case 'menu':
-            // Basic rendering as a text link for now
             return (
                 <Show
                     when={!item().openInNewTab && item().url && !item().url!.startsWith('http',)}
@@ -247,6 +232,39 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
     }
 }
 
+// ─── Mobile flyout nav item ───
+
+function MobileNavItem(props: { item: SiteHeaderItem; onClose: () => void; },) {
+    const item = () => props.item;
+    const isInternal = () =>
+        !item().openInNewTab && !!item().url && !item().url!.startsWith('http',);
+
+    if (item().type === 'text') {
+        return <span class="header__mobile-flyout-label">{item().text}</span>;
+    }
+
+    return (
+        <Show
+            when={isInternal()}
+            fallback={
+                <a
+                    href={item().url || '#'}
+                    target={item().openInNewTab ? '_blank' : undefined}
+                    rel={item().openInNewTab ? 'noopener noreferrer' : undefined}
+                    class="header__nav-link"
+                    onClick={props.onClose}
+                >
+                    {item().text}
+                </a>
+            }
+        >
+            <A href={item().url || '/'} class="header__nav-link" onClick={props.onClose}>
+                {item().text}
+            </A>
+        </Show>
+    );
+}
+
 // ─── Header Component ───
 
 export const Header: Component<HeaderProps> = (props,) => {
@@ -262,33 +280,26 @@ export const Header: Component<HeaderProps> = (props,) => {
         return path === `/${slug}` || path.startsWith(`/${slug}/`,);
     };
 
-    const toggleMobileMenu = () => {
-        setMobileMenuOpen(!mobileMenuOpen(),);
-    };
-
-    const closeMobileMenu = () => {
-        setMobileMenuOpen(false,);
-    };
+    const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen(),);
+    const closeMobileMenu = () => setMobileMenuOpen(false,);
 
     const hasCustomHeader = () => props.headerSettings?.items && props.headerSettings.items.length > 0;
 
+    // Items to show in the mobile flyout: text, text_link, button, menu — no spacers/images
+    const mobileNavItems = () => {
+        if (!hasCustomHeader()) return [];
+        return (props.headerSettings?.items ?? [])
+            .filter(i => ['text', 'text_link', 'button', 'menu',].includes(i.type,),)
+            .toSorted((a, b,) => a.order - b.order,);
+    };
+
     // ─── Sticky / auto-hide behavior ────────────────────────────
-    // Defaults preserve the historic behavior: sticky=on, autoHide=off.
-    // When `sticky` is off the header is in flow and scrolls away.
-    // When `autoHide` is on we slide the header out of view on
-    // downward scroll past a small threshold and restore it on
-    // upward scroll. The slide is a CSS transform so the header
-    // doesn't reflow surrounding content.
     const isStickyEnabled = () => props.headerSettings?.sticky !== false;
     const isAutoHideEnabled = () => props.headerSettings?.autoHide === true;
 
     const [hidden, setHidden,] = createSignal(false,);
 
     createEffect(() => {
-        // Only attach the scroll listener when auto-hide is on.
-        // Re-evaluating the listener lifecycle whenever the toggle
-        // flips lets the operator turn it on/off live without a
-        // full page reload.
         if (!isAutoHideEnabled()) {
             setHidden(false,);
             return;
@@ -296,21 +307,18 @@ export const Header: Component<HeaderProps> = (props,) => {
         if (typeof window === 'undefined') return;
 
         let lastY = window.scrollY;
-        const THRESHOLD = 8; // ignore tiny jitter
-        const TOP_GUARD = 4; // never hide near the very top
+        const THRESHOLD = 8;
+        const TOP_GUARD = 4;
 
         const onScroll = () => {
             const y = window.scrollY;
             const delta = y - lastY;
             if (Math.abs(delta,) < THRESHOLD) return;
             if (y < TOP_GUARD) {
-                // Snap back into view at the top of the page.
                 setHidden(false,);
             } else if (delta > 0) {
-                // Scrolling down — hide.
                 setHidden(true,);
             } else {
-                // Scrolling up — show.
                 setHidden(false,);
             }
             lastY = y;
@@ -339,18 +347,12 @@ export const Header: Component<HeaderProps> = (props,) => {
         const tc = colorCssValue(props.headerSettings?.textColor, '',);
         if (tc) s['color'] = tc;
         if (props.headerSettings?.margin) s['margin'] = props.headerSettings.margin;
-        // Padding is applied to the container (not the header) so it
-        // actually affects the content inside, including auth buttons.
         return s;
     };
 
     const containerStyle = () => {
         if (!hasCustomHeader()) return {};
         const s: Record<string, string> = {};
-        // Parse the padding shorthand into individual sides so nothing
-        // can partially override it. CSS specificity of longhands beats
-        // shorthands when both appear — using all four longhands avoids
-        // that trap entirely.
         const pad = props.headerSettings?.padding;
         if (pad) {
             const parts = pad.trim().split(/\s+/,);
@@ -363,7 +365,6 @@ export const Header: Component<HeaderProps> = (props,) => {
             s['padding-bottom'] = bottom;
             s['padding-left'] = left;
         }
-        // Gutter override — takes precedence over padding-left/right
         if (props.headerSettings?.applyGutter && props.gutterWidth && props.gutterWidth !== '0') {
             s['padding-left'] = props.gutterWidth;
             s['padding-right'] = props.gutterWidth;
@@ -371,134 +372,296 @@ export const Header: Component<HeaderProps> = (props,) => {
         return s;
     };
 
+    // Background/color for mobile flyout matches the header's configured background
+    const flyoutStyle = () => {
+        const s: Record<string, string> = {};
+        const bg = colorCssValue(props.headerSettings?.backgroundColor, '',);
+        if (bg) s['background'] = bg;
+        const tc = colorCssValue(props.headerSettings?.textColor, '',);
+        if (tc) s['color'] = tc;
+        return s;
+    };
+
+    // Flyout head padding mirrors the header container's horizontal padding so
+    // the logo sits in the exact same position when the flyout opens.
+    const flyoutHeadStyle = () => {
+        const cs = containerStyle();
+        const s: Record<string, string> = {};
+        if (cs['padding-left']) s['padding-left'] = cs['padding-left'];
+        if (cs['padding-right']) s['padding-right'] = cs['padding-right'];
+        return s;
+    };
+
     return (
-        <header class={headerClass()} style={headerStyle()}>
-            <div class="header__container" style={containerStyle()}>
-                <Show when={!hasCustomHeader()}>
-                    <A href="/" class="header__logo" onClick={closeMobileMenu}>
-                        <SiteLogo name={props.siteName} logoSrc={props.logo} />
-                    </A>
-                </Show>
-
-                <Show when={hasCustomHeader()}>
-                    <div
-                        class="header__custom-items"
-                        style={{ gap: (props.headerSettings as any)?.itemSpacing || undefined, }}
-                    >
-                        <For each={props.headerSettings!.items}>
-                            {(item,) => <HeaderItem item={item} />}
-                        </For>
-                    </div>
-                </Show>
-
-                <nav class={`header__nav ${mobileMenuOpen() ? 'header__nav--open' : ''}`}>
+        <>
+            <header class={headerClass()} style={headerStyle()}>
+                <div class="header__container" style={containerStyle()}>
+                    {/* Non-custom: logo always visible */}
                     <Show when={!hasCustomHeader()}>
-                        <ul class="header__nav-list">
-                            <For each={props.navigation}>
-                                {(item,) => (
-                                    <Show when={item.isVisible}>
+                        <A href="/" class="header__logo" onClick={closeMobileMenu}>
+                            <SiteLogo name={props.siteName} logoSrc={props.logo} />
+                        </A>
+                    </Show>
+
+                    {/* Custom header: mobile-only logo (hidden on desktop, custom items handle it) */}
+                    <Show when={hasCustomHeader()}>
+                        <A href="/" class="header__mobile-logo" onClick={closeMobileMenu}>
+                            <SiteLogo name={props.siteName} logoSrc={props.logo} />
+                        </A>
+                    </Show>
+
+                    {/* Custom header items — hidden on mobile, shown on desktop */}
+                    <Show when={hasCustomHeader()}>
+                        <div
+                            class="header__custom-items"
+                            style={{ gap: (props.headerSettings as any)?.itemSpacing || undefined, }}
+                        >
+                            <For each={props.headerSettings!.items}>
+                                {(item,) => <HeaderItem item={item} />}
+                            </For>
+                        </div>
+                    </Show>
+
+                    {/* Desktop nav */}
+                    <nav class="header__nav">
+                        <Show when={!hasCustomHeader()}>
+                            <ul class="header__nav-list">
+                                <For each={props.navigation}>
+                                    {(item,) => (
+                                        <Show when={item.isVisible}>
+                                            <li class="header__nav-item">
+                                                <Show
+                                                    when={item.isExternal}
+                                                    fallback={
+                                                        <A
+                                                            href={item.slug === 'home' ? '/' : `/${item.slug}`}
+                                                            class={`header__nav-link ${
+                                                                isActive(item.slug,) ? 'header__nav-link--active' : ''
+                                                            }`}
+                                                            onClick={closeMobileMenu}
+                                                        >
+                                                            {item.label}
+                                                        </A>
+                                                    }
+                                                >
+                                                    <a
+                                                        href={item.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="header__nav-link"
+                                                    >
+                                                        {item.label}
+                                                    </a>
+                                                </Show>
+                                            </li>
+                                        </Show>
+                                    )}
+                                </For>
+                            </ul>
+                        </Show>
+
+                        <Show when={auth.isAuthenticated && (auth.user?.role === 'admin' || auth.user?.role === 'sysadmin')}>
+                            <ul class="header__nav-list">
+                                <li class="header__nav-item">
+                                    <A
+                                        href="/admin"
+                                        class={`header__nav-link ${isActive('admin',) ? 'header__nav-link--active' : ''}`}
+                                        onClick={closeMobileMenu}
+                                    >
+                                        Admin
+                                    </A>
+                                </li>
+                            </ul>
+                        </Show>
+
+                        <div class="header__actions">
+                            <Show
+                                when={auth.isAuthenticated}
+                                fallback={
+                                    <A href="/login" class="header__btn header__btn--primary" onClick={closeMobileMenu}>
+                                        Sign In
+                                    </A>
+                                }
+                            >
+                                <div class="header__user">
+                                    <Show when={auth.user?.avatarUrl}>
+                                        <img
+                                            src={auth.user?.avatarUrl}
+                                            alt={auth.user?.displayName}
+                                            class="header__user-avatar"
+                                        />
+                                    </Show>
+                                    <span class="header__user-name">{auth.user?.displayName}</span>
+                                    <button
+                                        class="header__logout-btn"
+                                        onClick={() => {
+                                            auth.logout();
+                                            closeMobileMenu();
+                                        }}
+                                        title="Sign Out"
+                                        aria-label="Sign Out"
+                                    >
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                                            <polyline points="16 17 21 12 16 7" />
+                                            <line x1="21" y1="12" x2="9" y2="12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </Show>
+                        </div>
+                    </nav>
+
+                    {/* Hamburger — visible on mobile only */}
+                    <button
+                        class={`header__mobile-toggle ${mobileMenuOpen() ? 'header__mobile-toggle--open' : ''}`}
+                        onClick={toggleMobileMenu}
+                        aria-label="Toggle menu"
+                        aria-expanded={mobileMenuOpen()}
+                    >
+                        <span class="header__mobile-toggle-bar" />
+                        <span class="header__mobile-toggle-bar" />
+                        <span class="header__mobile-toggle-bar" />
+                    </button>
+                </div>
+            </header>
+
+            {/* Mobile flyout — full-screen overlay, sibling of header to avoid transform stacking */}
+            <Show when={mobileMenuOpen()}>
+                <div class="header__mobile-flyout" style={flyoutStyle()}>
+                    {/* Flyout header row */}
+                    <div class="header__mobile-flyout-head" style={flyoutHeadStyle()}>
+                        <A href="/" class="header__logo" onClick={closeMobileMenu}>
+                            <SiteLogo name={props.siteName} logoSrc={props.logo} />
+                        </A>
+                        <button
+                            class="header__mobile-flyout-close"
+                            onClick={closeMobileMenu}
+                            aria-label="Close menu"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    {/* Flyout nav items */}
+                    <nav class="header__mobile-flyout-nav">
+                        {/* Items from custom header config */}
+                        <Show when={hasCustomHeader() && mobileNavItems().length > 0}>
+                            <ul class="header__nav-list">
+                                <For each={mobileNavItems()}>
+                                    {(item,) => (
                                         <li class="header__nav-item">
-                                            <Show
-                                                when={item.isExternal}
-                                                fallback={
-                                                    <A
-                                                        href={item.slug === 'home' ? '/' : `/${item.slug}`}
-                                                        class={`header__nav-link ${
-                                                            isActive(item.slug,) ? 'header__nav-link--active' : ''
-                                                        }`}
+                                            <MobileNavItem item={item} onClose={closeMobileMenu} />
+                                        </li>
+                                    )}
+                                </For>
+                            </ul>
+                        </Show>
+
+                        {/* Standard navigation items (non-custom header) */}
+                        <Show when={!hasCustomHeader()}>
+                            <ul class="header__nav-list">
+                                <For each={props.navigation}>
+                                    {(item,) => (
+                                        <Show when={item.isVisible}>
+                                            <li class="header__nav-item">
+                                                <Show
+                                                    when={item.isExternal}
+                                                    fallback={
+                                                        <A
+                                                            href={item.slug === 'home' ? '/' : `/${item.slug}`}
+                                                            class={`header__nav-link ${isActive(item.slug,) ? 'header__nav-link--active' : ''}`}
+                                                            onClick={closeMobileMenu}
+                                                        >
+                                                            {item.label}
+                                                        </A>
+                                                    }
+                                                >
+                                                    <a
+                                                        href={item.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="header__nav-link"
                                                         onClick={closeMobileMenu}
                                                     >
                                                         {item.label}
-                                                    </A>
-                                                }
-                                            >
-                                                <a
-                                                    href={item.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    class="header__nav-link"
-                                                >
-                                                    {item.label}
-                                                </a>
-                                            </Show>
-                                        </li>
-                                    </Show>
-                                )}
-                            </For>
-                        </ul>
-                    </Show>
-
-                    {/* Admin link - inline with other nav links, no special styling */}
-                    <Show when={auth.isAuthenticated && (auth.user?.role === 'admin' || auth.user?.role === 'sysadmin')}>
-                        <ul class="header__nav-list">
-                            <li class="header__nav-item">
-                                <A
-                                    href="/admin"
-                                    class={`header__nav-link ${isActive('admin',) ? 'header__nav-link--active' : ''}`}
-                                    onClick={closeMobileMenu}
-                                >
-                                    Admin
-                                </A>
-                            </li>
-                        </ul>
-                    </Show>
-
-                    <div class="header__actions">
-                        <Show
-                            when={auth.isAuthenticated}
-                            fallback={
-                                <A href="/login" class="header__btn header__btn--primary" onClick={closeMobileMenu}>
-                                    Sign In
-                                </A>
-                            }
-                        >
-                            <div class="header__user">
-                                <Show when={auth.user?.avatarUrl}>
-                                    <img
-                                        src={auth.user?.avatarUrl}
-                                        alt={auth.user?.displayName}
-                                        class="header__user-avatar"
-                                    />
-                                </Show>
-                                <span class="header__user-name">{auth.user?.displayName}</span>
-                                <button
-                                    class="header__logout-btn"
-                                    onClick={() => {
-                                        auth.logout();
-                                        closeMobileMenu();
-                                    }}
-                                    title="Sign Out"
-                                    aria-label="Sign Out"
-                                >
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    >
-                                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                                        <polyline points="16 17 21 12 16 7" />
-                                        <line x1="21" y1="12" x2="9" y2="12" />
-                                    </svg>
-                                </button>
-                            </div>
+                                                    </a>
+                                                </Show>
+                                            </li>
+                                        </Show>
+                                    )}
+                                </For>
+                            </ul>
                         </Show>
-                    </div>
-                </nav>
 
-                <button
-                    class={`header__mobile-toggle ${mobileMenuOpen() ? 'header__mobile-toggle--open' : ''}`}
-                    onClick={toggleMobileMenu}
-                    aria-label="Toggle menu"
-                    aria-expanded={mobileMenuOpen()}
-                >
-                    <span class="header__mobile-toggle-bar" />
-                    <span class="header__mobile-toggle-bar" />
-                    <span class="header__mobile-toggle-bar" />
-                </button>
-            </div>
-        </header>
+                        {/* Admin link */}
+                        <Show when={auth.isAuthenticated && (auth.user?.role === 'admin' || auth.user?.role === 'sysadmin')}>
+                            <ul class="header__nav-list">
+                                <li class="header__nav-item">
+                                    <A
+                                        href="/admin"
+                                        class={`header__nav-link ${isActive('admin',) ? 'header__nav-link--active' : ''}`}
+                                        onClick={closeMobileMenu}
+                                    >
+                                        Admin
+                                    </A>
+                                </li>
+                            </ul>
+                        </Show>
+
+                        {/* Auth actions */}
+                        <div class="header__actions header__mobile-flyout-actions">
+                            <Show
+                                when={auth.isAuthenticated}
+                                fallback={
+                                    <A href="/login" class="header__btn header__btn--primary" onClick={closeMobileMenu}>
+                                        Sign In
+                                    </A>
+                                }
+                            >
+                                <div class="header__user">
+                                    <Show when={auth.user?.avatarUrl}>
+                                        <img
+                                            src={auth.user?.avatarUrl}
+                                            alt={auth.user?.displayName}
+                                            class="header__user-avatar"
+                                        />
+                                    </Show>
+                                    <span class="header__user-name" style={{ display: 'block', }}>
+                                        {auth.user?.displayName}
+                                    </span>
+                                    <button
+                                        class="header__logout-btn"
+                                        onClick={() => { auth.logout(); closeMobileMenu(); }}
+                                        title="Sign Out"
+                                        aria-label="Sign Out"
+                                    >
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                                            <polyline points="16 17 21 12 16 7" />
+                                            <line x1="21" y1="12" x2="9" y2="12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </Show>
+                        </div>
+                    </nav>
+                </div>
+            </Show>
+        </>
     );
 };

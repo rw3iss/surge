@@ -91,6 +91,10 @@
         }
     }
 
+    .ui-alert {
+        margin-bottom: $spacing-lg;
+    }
+
     &__footer {
         position: sticky;
         bottom: $spacing-md;
