@@ -11,6 +11,8 @@ import {
     Component, createResource, createSignal, For, onMount, Show,
 } from 'solid-js';
 import type { MailingList, MailingListSubscriber, } from '@rw/shared';
+import { FormField, FormSection, } from '../../components/admin/forms';
+import Toggle from '../../components/admin/common/Toggle';
 import SubscriberFormModal from '../../components/admin/mailing-lists/SubscriberFormModal';
 import { mailingListsApi, } from '../../services/api';
 
@@ -145,68 +147,69 @@ const MailingListEdit: Component = () => {
 
             <section class="admin-section">
                 <header class="admin-section__header"><h2>Settings</h2></header>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input
-                            type="text"
-                            value={name()}
-                            onInput={(e,) => {
-                                setName(e.currentTarget.value,);
-                                if (isNew() && !slug()) setSlug(slugify(e.currentTarget.value,),);
-                            }}
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Slug</label>
-                        <input
-                            type="text"
-                            value={slug()}
-                            onInput={(e,) => setSlug(slugify(e.currentTarget.value,),)}
-                            placeholder="newsletter"
-                        />
-                        <small class="form-help">Public subscribe URL: <code>/lists/{slug() || '<slug>'}/subscribe</code></small>
-                    </div>
-                    <div class="form-group form-group--full">
-                        <label>Description</label>
-                        <textarea
-                            rows={2}
-                            value={description()}
-                            onInput={(e,) => setDescription(e.currentTarget.value,)}
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={isEnabled()}
-                                onChange={(e,) => setIsEnabled(e.currentTarget.checked,)}
+
+                <div class="list-settings__grid">
+                    <FormSection title="Identity">
+                        <div class="list-settings__row">
+                            <FormField label="Name" class="list-settings__field--grow">
+                                <input
+                                    type="text"
+                                    value={name()}
+                                    onInput={(e,) => {
+                                        setName(e.currentTarget.value,);
+                                        if (isNew() && !slug()) setSlug(slugify(e.currentTarget.value,),);
+                                    }}
+                                />
+                            </FormField>
+                            <FormField
+                                label="Slug"
+                                hint={`Public subscribe URL: /lists/${slug() || '<slug>'}/subscribe`}
+                                class="list-settings__field--grow"
+                            >
+                                <input
+                                    type="text"
+                                    value={slug()}
+                                    onInput={(e,) => setSlug(slugify(e.currentTarget.value,),)}
+                                    placeholder="newsletter"
+                                />
+                            </FormField>
+                        </div>
+                        <FormField label="Description">
+                            <textarea
+                                rows={2}
+                                value={description()}
+                                onInput={(e,) => setDescription(e.currentTarget.value,)}
                             />
-                            <span>Enabled</span>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
+                        </FormField>
+                    </FormSection>
+
+                    <FormSection title="Subscription policy">
+                        <FormField label="Enabled" inline>
+                            <Toggle checked={isEnabled()} onChange={setIsEnabled} ariaLabel="Enabled" />
+                        </FormField>
+                        <FormField
+                            label="Registered users only"
+                            hint="Public subscribe requires a logged-in user."
+                            inline
+                        >
+                            <Toggle
                                 checked={registeredUsersOnly()}
-                                onChange={(e,) => setRegisteredUsersOnly(e.currentTarget.checked,)}
+                                onChange={setRegisteredUsersOnly}
+                                ariaLabel="Registered users only"
                             />
-                            <span>Registered users only</span>
-                        </label>
-                        <small class="form-help">Public subscribe requires a logged-in user.</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
+                        </FormField>
+                        <FormField
+                            label="Double opt-in"
+                            hint="Subscribers must click a confirmation link before receiving mail."
+                            inline
+                        >
+                            <Toggle
                                 checked={doubleOptIn()}
-                                onChange={(e,) => setDoubleOptIn(e.currentTarget.checked,)}
+                                onChange={setDoubleOptIn}
+                                ariaLabel="Double opt-in"
                             />
-                            <span>Double opt-in</span>
-                        </label>
-                        <small class="form-help">Subscribers must click a confirmation link before receiving mail.</small>
-                    </div>
+                        </FormField>
+                    </FormSection>
                 </div>
             </section>
 

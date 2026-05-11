@@ -13,6 +13,8 @@ import {
 } from 'solid-js';
 import type { MailTemplate, VariableDescriptor, } from '@rw/shared';
 import BlockEditor, { BlockData, } from '../../components/admin/blocks/BlockEditor';
+import { FormField, FormSection, } from '../../components/admin/forms';
+import Toggle from '../../components/admin/common/Toggle';
 import MailPreviewModal from '../../components/admin/mail/MailPreviewModal';
 import { backendToEditor, BackendBlock, editorToBackend, } from '../../components/admin/mail/blockConverters';
 import { mailTemplatesApi, } from '../../services/api';
@@ -129,43 +131,85 @@ const MailTemplateEdit: Component = () => {
                 <div class="alert alert--error">{error()}</div>
             </Show>
 
-            <section class="admin-section">
+            <section class="admin-section template-settings">
                 <header class="admin-section__header"><h2>Settings</h2></header>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" value={name()} onInput={(e,) => setName(e.currentTarget.value,)} />
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" checked={isEnabled()} onChange={(e,) => setIsEnabled(e.currentTarget.checked,)} />
-                            <span style="margin-left: .5rem">Enabled</span>
-                        </label>
-                    </div>
-                    <div class="form-group form-group--full">
-                        <label>Description</label>
-                        <textarea rows={2} value={description()} onInput={(e,) => setDescription(e.currentTarget.value,)} />
-                    </div>
-                    <div class="form-group">
-                        <label>Subject <small class="form-help-muted">(supports {`{{variables}}`})</small></label>
-                        <input type="text" value={subject()} onInput={(e,) => setSubject(e.currentTarget.value,)} />
-                    </div>
-                    <div class="form-group">
-                        <label>Preheader <small class="form-help-muted">(preview-pane line)</small></label>
-                        <input type="text" value={preheader()} onInput={(e,) => setPreheader(e.currentTarget.value,)} />
-                    </div>
-                    <div class="form-group">
-                        <label>From name</label>
-                        <input type="text" value={fromName()} onInput={(e,) => setFromName(e.currentTarget.value,)} placeholder="Defaults to site name" />
-                    </div>
-                    <div class="form-group">
-                        <label>From email</label>
-                        <input type="email" value={fromEmail()} onInput={(e,) => setFromEmail(e.currentTarget.value,)} placeholder="Defaults to EMAIL_FROM" />
-                    </div>
-                    <div class="form-group form-group--full">
-                        <label>Reply-to</label>
-                        <input type="email" value={replyTo()} onInput={(e,) => setReplyTo(e.currentTarget.value,)} />
-                    </div>
+
+                <div class="template-settings__grid">
+                    <FormSection title="Identity">
+                        <div class="template-settings__row">
+                            <FormField label="Name" class="template-settings__field--grow">
+                                <input
+                                    type="text"
+                                    value={name()}
+                                    onInput={(e,) => setName(e.currentTarget.value,)}
+                                />
+                            </FormField>
+                            <FormField label="Enabled" inline>
+                                <Toggle checked={isEnabled()} onChange={setIsEnabled} ariaLabel="Enabled" />
+                            </FormField>
+                        </div>
+                        <FormField label="Description">
+                            <textarea
+                                rows={2}
+                                value={description()}
+                                onInput={(e,) => setDescription(e.currentTarget.value,)}
+                            />
+                        </FormField>
+                    </FormSection>
+
+                    <FormSection title="Email headers">
+                        <FormField
+                            label="Subject"
+                            hint={`Shown in the recipient's inbox. Supports {{variables}}.`}
+                        >
+                            <input
+                                type="text"
+                                value={subject()}
+                                onInput={(e,) => setSubject(e.currentTarget.value,)}
+                            />
+                        </FormField>
+                        <FormField
+                            label="Preheader"
+                            hint="Short preview-pane line shown next to the subject."
+                        >
+                            <input
+                                type="text"
+                                value={preheader()}
+                                onInput={(e,) => setPreheader(e.currentTarget.value,)}
+                            />
+                        </FormField>
+                    </FormSection>
+
+                    <FormSection title="Sender">
+                        <div class="template-settings__row">
+                            <FormField label="From name" class="template-settings__field--grow">
+                                <input
+                                    type="text"
+                                    value={fromName()}
+                                    onInput={(e,) => setFromName(e.currentTarget.value,)}
+                                    placeholder="Defaults to site name"
+                                />
+                            </FormField>
+                            <FormField label="From email" class="template-settings__field--grow">
+                                <input
+                                    type="email"
+                                    value={fromEmail()}
+                                    onInput={(e,) => setFromEmail(e.currentTarget.value,)}
+                                    placeholder="Defaults to EMAIL_FROM"
+                                />
+                            </FormField>
+                        </div>
+                        <FormField
+                            label="Reply-to"
+                            hint="Where replies land. Leave blank to use From email."
+                        >
+                            <input
+                                type="email"
+                                value={replyTo()}
+                                onInput={(e,) => setReplyTo(e.currentTarget.value,)}
+                            />
+                        </FormField>
+                    </FormSection>
                 </div>
             </section>
 

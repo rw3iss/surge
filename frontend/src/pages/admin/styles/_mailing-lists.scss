@@ -228,6 +228,40 @@
     }
 }
 
+// ─── Settings card (template + list edit pages) ─────────────────────
+//
+// Both /admin/mail-templates/:id and /admin/mailing-lists/:id wrap
+// their top form in a FormSection-driven layout. Sections stack
+// vertically; rows inside use flex so paired fields (e.g. Name +
+// Slug) sit side-by-side on wide screens and stack on narrow ones.
+.template-settings,
+.list-settings {
+    &__grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    &__row {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+
+        > * { min-width: 0; }
+    }
+
+    &__field--grow { flex: 1 1 240px; }
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+        &__row {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        &__field--grow { flex: 1 1 auto; width: 100%; }
+    }
+}
+
 // ─── Jobs (Sent) table row ──────────────────────────────────────────
 
 .job-row {
