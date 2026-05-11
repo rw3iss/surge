@@ -3,6 +3,7 @@ import path from 'path';
 import { createApp, } from './app';
 import { config, getConfig, loadConfig, } from './config';
 import { closePool, initPool, } from './db/client';
+import { runMigrations, } from './db/migrator';
 import { cache, } from './services/cache';
 import { cronRegistry, } from './services/cron';
 import { verifyEmailConfig, } from './services/email';
@@ -36,6 +37,24 @@ async function bootRunningMode(): Promise<void> {
     logger.info('Connecting to database...',);
     initPool();
     logger.info('Database connected',);
+
+    // Apply any pending migrations. Idempotent — re-running on an
+    // up-to-date DB is a no-op. Feature-tagged migrations are
+    // automatically skipped when their feature is disabled (see
+    // `getEnabledFeatures` in `db/migrator.ts`). This means new
+    // feature-scoped migrations land naturally on the next restart
+    // once the feature is enabled, without requiring the operator to
+    // run the CLI manually.
+    try {
+        const result = await runMigrations();
+        if (result.appliedCount > 0) {
+            logger.info(`Boot-time migrations applied: ${result.appliedFilenames.join(', ',)}`,);
+        }
+    } catch (err) {
+        logger.error('Boot-time migrations failed', { error: err, },);
+        // Don't crash — surface the error and continue. The operator
+        // can still hit /api/v1/health and inspect the issue.
+    }
 
     logger.info('Connecting to Redis...',);
     const redisHealthy = await cache.healthCheck();

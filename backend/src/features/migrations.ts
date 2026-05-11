@@ -61,8 +61,14 @@ export async function applyFeatureMigrations(
     for (const filename of filenames) {
         if (appliedSet.has(filename,)) continue;
         const filePath = path.join(MIGRATIONS_DIR, filename,);
+        // Tolerate missing files: feature registries can declare future
+        // phase migrations before the SQL ships. The boot-time runner
+        // (or the next feature toggle) will pick them up once they
+        // appear on disk. Erroring here would block all earlier
+        // migrations from committing in the same transaction.
         if (!fs.existsSync(filePath,)) {
-            throw new Error(`Feature ${key}: migration ${filename} not found at ${filePath}`,);
+            logger.warn(`Feature ${key}: migration ${filename} not on disk yet — skipping`,);
+            continue;
         }
         const sql = fs.readFileSync(filePath, 'utf-8',);
         const tag = parseFeatureHeader(sql,);
