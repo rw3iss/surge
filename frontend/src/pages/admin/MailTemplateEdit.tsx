@@ -15,6 +15,7 @@ import type { MailTemplate, VariableDescriptor, } from '@rw/shared';
 import BlockEditor, { BlockData, } from '../../components/admin/blocks/BlockEditor';
 import { FormField, FormSection, } from '../../components/admin/forms';
 import Toggle from '../../components/admin/common/Toggle';
+import Tooltip from '../../components/admin/common/Tooltip';
 import MailPreviewModal from '../../components/admin/mail/MailPreviewModal';
 import { backendToEditor, BackendBlock, editorToBackend, } from '../../components/admin/mail/blockConverters';
 import { mailTemplatesApi, } from '../../services/api';
@@ -219,8 +220,8 @@ const MailTemplateEdit: Component = () => {
                 onBlocksChange={setBlocks}
             />
 
-            <section class="admin-section">
-                <header class="admin-section__header">
+            <section class="admin-section variables-reference-section">
+                <header class="admin-section__header variables-reference-section__header">
                     <button
                         type="button"
                         class="collapsible-toggle"
@@ -228,6 +229,23 @@ const MailTemplateEdit: Component = () => {
                     >
                         {varsRefOpen() ? '▼' : '▶'} Variables reference ({variableCatalog().length})
                     </button>
+                    <Tooltip
+                        header="Variables"
+                        content={
+                            <>
+                                <p style={{ margin: '0 0 0.5rem', }}>
+                                    Use these <code>{`{{tokens}}`}</code> inside any content
+                                    block (Rich Text, Custom HTML, URL Link, etc.) or in the
+                                    Subject / Preheader fields. They're replaced with each
+                                    recipient's data at send time.
+                                </p>
+                                <p style={{ margin: 0, }}>
+                                    Example: <code>{`Hi {{user.name}}!`}</code> →
+                                    <strong> Hi Jane!</strong>
+                                </p>
+                            </>
+                        }
+                    />
                 </header>
                 <Show when={varsRefOpen()}>
                     <table class="admin-table variable-catalog">

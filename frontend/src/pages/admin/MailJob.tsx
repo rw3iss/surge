@@ -130,6 +130,22 @@ const MailJob: Component = () => {
                 {(j,) => (
                     <>
                         <section class="admin-section">
+                            <div
+                                class="progress-bar"
+                                role="progressbar"
+                                aria-label="Send progress"
+                                aria-valuenow={progress()}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                            >
+                                <div class="progress-bar__fill" style={{ width: `${progress()}%`, }} />
+                                <span class="progress-bar__label">
+                                    {j().sentCount + j().failedCount} / {j().totalRecipients} ({progress()}%)
+                                </span>
+                            </div>
+                        </section>
+
+                        <section class="admin-section">
                             <div class="job-summary">
                                 {/* Row 1 — list + total recipients */}
                                 <div class="job-summary__row job-summary__row--header">
@@ -196,11 +212,6 @@ const MailJob: Component = () => {
                                         </div>
                                     </dl>
                                 </div>
-                            </div>
-
-                            <div class="progress-bar" aria-label="Send progress">
-                                <div class="progress-bar__fill" style={{ width: `${progress()}%`, }} />
-                                <span class="progress-bar__label">{progress()}%</span>
                             </div>
 
                             <Show when={j().error}>
