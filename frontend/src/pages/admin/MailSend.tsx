@@ -54,6 +54,16 @@ const MailSend: Component = () => {
         blocks: [],
     },);
 
+    // Snapshot of the chosen template's state at the moment it was
+    // loaded into the draft. Used to compute `templateWasModified` at
+    // send time so the job detail page can show "(custom)" when the
+    // operator edited blocks / meta after picking a template.
+    const [loadedTemplateSnapshot, setLoadedTemplateSnapshot,] = createSignal<{
+        subject: string; preheader: string;
+        fromName: string; fromEmail: string; replyTo: string;
+        blocksJson: string;
+    } | null>(null,);
+
     onMount(async () => {
         const [lr, tr,] = await Promise.all([mailingListsApi.list(), mailTemplatesApi.list(),],);
         if (lr.success && lr.data) setLists(lr.data as MailingList[],);
@@ -65,11 +75,13 @@ const MailSend: Component = () => {
     const loadTemplate = async (id: string,): Promise<void> => {
         if (id === '' || id === '__new__') {
             setDraft({ templateId: null, blocks: [], });
+            setLoadedTemplateSnapshot(null,);
             return;
         }
         const r = await mailTemplatesApi.get(id,);
         if (r.success && r.data) {
             const d = r.data as MailTemplate & { blocks: BackendBlock[]; };
+            const blocks = backendToEditor(d.blocks ?? [],);
             setDraft({
                 templateId: d.id,
                 subject: d.subject ?? '',
@@ -77,9 +89,33 @@ const MailSend: Component = () => {
                 fromName: d.fromName ?? '',
                 fromEmail: d.fromEmail ?? '',
                 replyTo: d.replyTo ?? '',
-                blocks: backendToEditor(d.blocks ?? [],),
+                blocks,
             });
+            setLoadedTemplateSnapshot({
+                subject: d.subject ?? '',
+                preheader: d.preheader ?? '',
+                fromName: d.fromName ?? '',
+                fromEmail: d.fromEmail ?? '',
+                replyTo: d.replyTo ?? '',
+                // JSON the editor-shape blocks so deep compare is a
+                // single string match at send time.
+                blocksJson: JSON.stringify(blocks,),
+            },);
         }
+    };
+
+    /** True when the operator picked a template and then edited
+     *  blocks / meta. False when the template is untouched or when no
+     *  template was picked at all. */
+    const isModifiedFromTemplate = (): boolean => {
+        const snap = loadedTemplateSnapshot();
+        if (!snap || !draft.templateId) return false;
+        return draft.subject !== snap.subject
+            || draft.preheader !== snap.preheader
+            || draft.fromName !== snap.fromName
+            || draft.fromEmail !== snap.fromEmail
+            || draft.replyTo !== snap.replyTo
+            || JSON.stringify(draft.blocks,) !== snap.blocksJson;
     };
 
     const canConfirm = (): boolean => Boolean(draft.listId,) && draft.subject.trim().length > 0
@@ -92,6 +128,7 @@ const MailSend: Component = () => {
             const r = await mailSendApi.send({
                 listId: draft.listId,
                 templateId: draft.templateId,
+                templateWasModified: isModifiedFromTemplate(),
                 subject: draft.subject,
                 preheader: draft.preheader || undefined,
                 fromName: draft.fromName || undefined,

@@ -74,6 +74,7 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureConfig> = {
             '034_create_mail_send_jobs.sql',
             '035_create_mail_send_recipients.sql',
             '036_seed_mailing_lists_feature_setting.sql',
+            '037_add_send_job_template_snapshot.sql',
         ],
     },
 };

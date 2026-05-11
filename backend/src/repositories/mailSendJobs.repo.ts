@@ -27,6 +27,12 @@ interface DbRow {
     error: string | null;
     created_by: string | null;
     created_at: Date;
+    template_name_snapshot: string | null;
+    template_was_modified: boolean;
+    // Optional joined columns; only present when the query left-joined
+    // them (findById, listRecent).
+    list_name?: string | null;
+    template_current_name?: string | null;
 }
 
 function map(row: DbRow,): MailSendJob {
@@ -42,6 +48,7 @@ function map(row: DbRow,): MailSendJob {
         failedCount: row.failed_count,
         createdBy: row.created_by,
         createdAt: row.created_at.toISOString(),
+        templateWasModified: row.template_was_modified,
     };
     if (row.preheader) out.preheader = row.preheader;
     if (row.from_name) out.fromName = row.from_name;
@@ -50,12 +57,28 @@ function map(row: DbRow,): MailSendJob {
     if (row.started_at) out.startedAt = row.started_at.toISOString();
     if (row.completed_at) out.completedAt = row.completed_at.toISOString();
     if (row.error) out.error = row.error;
+    // Prefer the live template name when it's still there (handles a
+    // rename gracefully); fall back to the snapshot when the template
+    // has been deleted.
+    if (row.list_name !== undefined) out.listName = row.list_name;
+    if (row.template_current_name || row.template_name_snapshot) {
+        out.templateName = row.template_current_name ?? row.template_name_snapshot;
+    }
     return out;
 }
 
 export interface CreateInput {
     listId: string;
     templateId?: string | null;
+    /** Snapshot of the source template's name at send time. The job
+     *  retains this string even if the template is later renamed or
+     *  deleted, so the job detail page can always identify the
+     *  source. */
+    templateNameSnapshot?: string | null;
+    /** True when the operator edited the template's blocks / meta
+     *  inline before sending. The detail page surfaces this as
+     *  "Template Name (custom)". */
+    templateWasModified?: boolean;
     subject: string;
     preheader?: string;
     fromName?: string;
@@ -69,12 +92,15 @@ export interface CreateInput {
 export async function create(input: CreateInput,): Promise<MailSendJob> {
     const r = await query<DbRow>(`
         INSERT INTO mail_send_jobs
-            (list_id, template_id, subject, preheader, from_name, from_email, reply_to,
+            (list_id, template_id, template_name_snapshot, template_was_modified,
+             subject, preheader, from_name, from_email, reply_to,
              rendered_html_template, total_recipients, created_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, COALESCE($4, FALSE), $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
     `, [
         input.listId, input.templateId ?? null,
+        input.templateNameSnapshot ?? null,
+        input.templateWasModified ?? null,
         input.subject, input.preheader ?? null,
         input.fromName ?? null, input.fromEmail ?? null, input.replyTo ?? null,
         input.renderedHtmlTemplate, input.totalRecipients,
@@ -84,7 +110,19 @@ export async function create(input: CreateInput,): Promise<MailSendJob> {
 }
 
 export async function findById(id: string,): Promise<MailSendJob | null> {
-    const r = await query<DbRow>(`SELECT * FROM mail_send_jobs WHERE id = $1`, [id,],);
+    // LEFT JOIN both source tables so the detail page can show the
+    // list name + the (possibly renamed) template name without a
+    // second roundtrip.
+    const r = await query<DbRow>(
+        `SELECT j.*,
+                l.name AS list_name,
+                t.name AS template_current_name
+         FROM mail_send_jobs j
+         LEFT JOIN mailing_lists  l ON l.id = j.list_id
+         LEFT JOIN mail_templates t ON t.id = j.template_id
+         WHERE j.id = $1`,
+        [id,],
+    );
     return r.rows[0] ? map(r.rows[0],) : null;
 }
 
@@ -93,29 +131,35 @@ export async function findRunning(): Promise<MailSendJob[]> {
     return r.rows.map(map,);
 }
 
-export interface JobWithListName extends MailSendJob { listName: string | null; }
-
-interface DbRowWithList extends DbRow { list_name: string | null; }
-
-function mapWithList(row: DbRowWithList,): JobWithListName {
-    return { ...map(row,), listName: row.list_name, };
-}
+/**
+ * `MailSendJob` with the joined `listName` guaranteed to be present.
+ * Re-export for callers that want a non-optional narrowing.
+ *
+ * @deprecated The base `MailSendJob.listName` field carries the same
+ * data when the repo reads via `findById` or `listRecent`.
+ */
+export type JobWithListName = MailSendJob & { listName: string | null; };
 
 /**
  * Recent jobs across all lists for the admin /mailing-lists index
- * page. Joins on `mailing_lists` for the list name so the table can
- * render without a second roundtrip.
+ * page. Joins on `mailing_lists` for the list name (and on
+ * `mail_templates` for the current template name, gracefully NULL
+ * when the template has been deleted) so the table can render
+ * without a second roundtrip.
  */
 export async function listRecent(limit = 50, offset = 0,): Promise<JobWithListName[]> {
-    const r = await query<DbRowWithList>(
-        `SELECT j.*, l.name AS list_name
+    const r = await query<DbRow>(
+        `SELECT j.*,
+                l.name AS list_name,
+                t.name AS template_current_name
          FROM mail_send_jobs j
-         LEFT JOIN mailing_lists l ON l.id = j.list_id
+         LEFT JOIN mailing_lists  l ON l.id = j.list_id
+         LEFT JOIN mail_templates t ON t.id = j.template_id
          ORDER BY j.created_at DESC
          LIMIT $1 OFFSET $2`,
         [limit, offset,],
     );
-    return r.rows.map(mapWithList,);
+    return r.rows.map((row,) => ({ ...map(row,), listName: row.list_name ?? null, }),);
 }
 
 export async function listForList(listId: string, limit = 20,): Promise<MailSendJob[]> {

@@ -351,6 +351,7 @@ export const mailSendApi = {
     send: (data: {
         listId: string;
         templateId?: string | null;
+        templateWasModified?: boolean;
         subject: string;
         preheader?: string;
         fromName?: string;

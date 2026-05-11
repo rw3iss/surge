@@ -60,7 +60,18 @@ export type MailSendJobStatus = 'pending' | 'running' | 'completed' | 'failed' |
 export interface MailSendJob {
     id: string;
     listId: string;
+    /** Name of the list at send time — joined on read, not stored on
+     *  the job row (the FK on list_id is RESTRICT so the list still
+     *  exists). */
+    listName?: string | null;
     templateId?: string | null;
+    /** Template name captured at send time. Survives the source
+     *  template being renamed or deleted. */
+    templateName?: string | null;
+    /** True when the operator edited blocks / meta after picking a
+     *  template (or when they chose "new blank template"). The detail
+     *  page shows "Template Name (custom)" when set. */
+    templateWasModified?: boolean;
     subject: string;
     preheader?: string;
     fromName?: string;

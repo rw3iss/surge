@@ -16,6 +16,7 @@ import * as jobs from '../repositories/mailSendJobs.repo';
 import * as recipients from '../repositories/mailSendRecipients.repo';
 import * as lists from '../repositories/mailingLists.repo';
 import * as subs from '../repositories/mailingListSubscribers.repo';
+import * as templates from '../repositories/mailTemplates.repo';
 import * as templateBlocks from '../repositories/mailTemplateBlocks.repo';
 import { logAudit, } from '../services/audit';
 import { renderMailHtml, } from '../services/mail/renderer';
@@ -37,6 +38,10 @@ const blockSchema = z.object({
 const sendSchema = z.object({
     listId: z.string().uuid(),
     templateId: z.string().uuid().nullable().optional(),
+    /** Frontend tracks whether the operator edited any block / meta
+     *  field after loading the chosen template; the detail page
+     *  surfaces this as a "(custom)" suffix on the template name. */
+    templateWasModified: z.boolean().optional(),
     subject: z.string().min(1,).max(1000,),
     preheader: z.string().max(255,).optional(),
     fromName: z.string().max(255,).optional(),
@@ -77,9 +82,20 @@ router.post('/send', authenticate(), requireAdmin, async (req: AuthenticatedRequ
 
         const subscribed = await subs.listSubscribedForSend(list.id,);
 
+        // Snapshot the source template's name now, so the job detail
+        // page can still identify the source even if the template is
+        // later renamed or deleted.
+        let templateNameSnapshot: string | null = null;
+        if (parsed.data.templateId) {
+            const tpl = await templates.findById(parsed.data.templateId,);
+            templateNameSnapshot = tpl?.name ?? null;
+        }
+
         const job = await jobs.create({
             listId: list.id,
             templateId: parsed.data.templateId ?? null,
+            templateNameSnapshot,
+            templateWasModified: parsed.data.templateWasModified ?? false,
             subject: parsed.data.subject,
             preheader: parsed.data.preheader,
             fromName: parsed.data.fromName,

@@ -131,6 +131,21 @@ const MailJob: Component = () => {
                     <>
                         <section class="admin-section">
                             <div class="job-summary">
+                                <div>
+                                    <strong>List:</strong> {j().listName ?? <em class="form-help-muted">(deleted)</em>}
+                                </div>
+                                <div>
+                                    <strong>Template:</strong>{' '}
+                                    <Show
+                                        when={j().templateName}
+                                        fallback={<em class="form-help-muted">Custom (no template)</em>}
+                                    >
+                                        {j().templateName}
+                                        <Show when={j().templateWasModified}>
+                                            {' '}<span class="job-summary__custom-tag">(custom)</span>
+                                        </Show>
+                                    </Show>
+                                </div>
                                 <div><strong>Subject:</strong> {j().subject}</div>
                                 <div><strong>Status:</strong> <span class={`badge ${statusBadge()}`}>{j().status}</span></div>
                                 <div><strong>Recipients:</strong> {j().totalRecipients}</div>
