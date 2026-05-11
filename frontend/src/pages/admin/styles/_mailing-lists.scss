@@ -263,9 +263,11 @@
     // Scoped FormSection overrides. The base primitive renders its
     // title at $font-size-sm/600 (tight; sized for flyout panels).
     // On these page-level settings cards we lift it so the section
-    // boundaries are obvious without being heavy.
+    // boundaries are obvious without being heavy, and cap the width
+    // so long input rows don't sprawl edge-to-edge on wide displays.
     .admin-form-section {
         gap: 0.85rem;
+        max-width: 1200px;
 
         &__title {
             font-size: 1.05rem;
