@@ -66,8 +66,8 @@ const MailPreviewModal: Component<Props> = (p,) => {
 
     return (
         <Portal>
-            <div class="modal-overlay" onClick={p.onClose}>
-                <div class="modal mail-preview-modal" onClick={(e,) => e.stopPropagation()}>
+            <div class="confirm-modal-overlay" onClick={p.onClose}>
+                <div class="mail-preview-modal" onClick={(e,) => e.stopPropagation()}>
                     <header class="mail-preview-modal__header">
                         <div class="mail-preview-modal__subject">
                             <span class="mail-preview-modal__label">Subject:</span>

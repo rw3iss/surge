@@ -10,6 +10,7 @@ import { A, useNavigate, useParams, } from '@solidjs/router';
 import {
     Component, createResource, createSignal, For, onMount, Show,
 } from 'solid-js';
+import { Portal, } from 'solid-js/web';
 import type { MailingList, MailingListSubscriber, } from '@rw/shared';
 import { mailingListsApi, } from '../../services/api';
 
@@ -336,8 +337,9 @@ const SubscriberFormModal: Component<SubscriberFormModalProps> = (p,) => {
     };
 
     return (
-        <div class="modal-overlay" onClick={p.onClose}>
-            <div class="modal subscriber-modal" onClick={(e,) => e.stopPropagation()}>
+        <Portal>
+            <div class="confirm-modal-overlay" onClick={p.onClose}>
+                <div class="subscriber-modal" onClick={(e,) => e.stopPropagation()}>
                 <h3>{isEditing() ? 'Edit Subscriber' : 'Add Subscriber'}</h3>
                 <Show when={error()}>
                     <div class="alert alert--error">{error()}</div>
@@ -383,6 +385,7 @@ const SubscriberFormModal: Component<SubscriberFormModalProps> = (p,) => {
                 </div>
             </div>
         </div>
+        </Portal>
     );
 };
 

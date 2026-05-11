@@ -32,8 +32,8 @@ const FeatureDependencyModal: Component<Props> = (p,) => {
 
     return (
         <Portal>
-            <div class="modal-overlay" onClick={p.onCancel}>
-                <div class="modal feature-dep-modal" onClick={(e,) => e.stopPropagation()}>
+            <div class="confirm-modal-overlay" onClick={p.onCancel}>
+                <div class="feature-dep-modal" onClick={(e,) => e.stopPropagation()}>
                     <h3>{verbCap()} {targetLabel()}?</h3>
                     <p>
                         {p.mode === 'enable'
