@@ -6,8 +6,10 @@
 import { Title, } from '@solidjs/meta';
 import { A, } from '@solidjs/router';
 import { Component, createResource, For, Show, } from 'solid-js';
-import type { MailingList, MailTemplate, } from '@rw/shared';
-import { mailingListsApi, mailTemplatesApi, } from '../../services/api';
+import type { MailingList, MailSendJob, MailTemplate, } from '@rw/shared';
+import { mailingListsApi, mailSendApi, mailTemplatesApi, } from '../../services/api';
+
+type JobWithListName = MailSendJob & { listName: string | null; };
 
 const MailingLists: Component = () => {
     const [lists,] = createResource(async () => {
@@ -18,6 +20,23 @@ const MailingLists: Component = () => {
         const res = await mailTemplatesApi.list();
         return res.success ? (res as { data: MailTemplate[]; }).data : [];
     },);
+    const [jobs,] = createResource(async () => {
+        const res = await mailSendApi.listJobs({ limit: 50, },);
+        return res.success ? (res as { data: JobWithListName[]; }).data : [];
+    },);
+
+    const statusBadge = (s: MailSendJob['status'],): string => {
+        switch (s) {
+            case 'completed': return 'badge--success';
+            case 'failed':
+            case 'cancelled': return 'badge--danger';
+            case 'running':
+            case 'pending': return 'badge--info';
+            default: return '';
+        }
+    };
+
+    const formatTimestamp = (iso?: string,): string => iso ? new Date(iso,).toLocaleString() : '—';
 
     return (
         <div class="mailing-lists-page">
@@ -60,6 +79,49 @@ const MailingLists: Component = () => {
                                                 <td>{l.isEnabled ? <span class="badge badge--success">Enabled</span> : <span class="badge">Disabled</span>}</td>
                                                 <td>
                                                     <A href={`/admin/mailing-lists/${l.id}`} class="btn btn--small btn--secondary">Edit</A>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </For>
+                                </tbody>
+                            </table>
+                        </div>
+                    </Show>
+                </Show>
+            </section>
+
+            <section class="admin-section">
+                <header class="admin-section__header">
+                    <h2>Jobs (Sending…)</h2>
+                </header>
+                <Show when={!jobs.loading} fallback={<p>Loading…</p>}>
+                    <Show
+                        when={(jobs() ?? []).length > 0}
+                        fallback={<div class="empty-state"><em>No send jobs yet.</em></div>}
+                    >
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>List</th>
+                                        <th>Status</th>
+                                        <th>Progress</th>
+                                        <th>Started</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <For each={jobs() ?? []}>
+                                        {(j,) => (
+                                            <tr>
+                                                <td><A href={`/admin/mail/jobs/${j.id}`}>{j.subject}</A></td>
+                                                <td>{j.listName ?? <em class="form-help-muted">(deleted)</em>}</td>
+                                                <td><span class={`badge ${statusBadge(j.status,)}`}>{j.status}</span></td>
+                                                <td>{j.sentCount + j.failedCount}/{j.totalRecipients}</td>
+                                                <td>{formatTimestamp(j.startedAt,)}</td>
+                                                <td>
+                                                    <A href={`/admin/mail/jobs/${j.id}`} class="btn btn--small btn--secondary">View</A>
                                                 </td>
                                             </tr>
                                         )}

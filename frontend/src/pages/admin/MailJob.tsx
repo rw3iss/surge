@@ -36,8 +36,8 @@ const MailJob: Component = () => {
     );
 
     let pollHandle: ReturnType<typeof setInterval> | null = null;
-    onMount(async () => {
-        await fetchJob();
+    const startPolling = (): void => {
+        if (pollHandle) return;
         pollHandle = setInterval(async () => {
             const j = job();
             if (j && (j.status === 'pending' || j.status === 'running')) {
@@ -48,6 +48,10 @@ const MailJob: Component = () => {
                 pollHandle = null;
             }
         }, 2000,);
+    };
+    onMount(async () => {
+        await fetchJob();
+        startPolling();
     },);
     onCleanup(() => { if (pollHandle) clearInterval(pollHandle,); },);
 
@@ -78,6 +82,9 @@ const MailJob: Component = () => {
             if (!r.success) setError(typeof r.error === 'string' ? r.error : 'Retry failed.',);
             await fetchJob();
             refetchRecipients();
+            // The worker just started a fresh run — re-arm polling so
+            // progress updates appear live.
+            startPolling();
         } finally { setBusy(false,); }
     };
 
@@ -98,10 +105,19 @@ const MailJob: Component = () => {
                 <h1>Send Job</h1>
                 <div class="admin-header__actions">
                     <Show when={job()?.status === 'running' || job()?.status === 'pending'}>
-                        <button type="button" class="btn btn--danger" onClick={handleCancel} disabled={busy()}>Cancel</button>
+                        <button type="button" class="btn btn--danger" onClick={handleCancel} disabled={busy()}>
+                            {job()?.status === 'pending' ? 'Stop' : 'Cancel'}
+                        </button>
+                    </Show>
+                    <Show when={job()?.status === 'cancelled'}>
+                        <button type="button" class="btn btn--primary" onClick={handleRetry} disabled={busy()}>
+                            Resume
+                        </button>
                     </Show>
                     <Show when={(job()?.failedCount ?? 0) > 0 && (job()?.status === 'completed' || job()?.status === 'failed')}>
-                        <button type="button" class="btn btn--secondary" onClick={handleRetry} disabled={busy()}>Retry failed</button>
+                        <button type="button" class="btn btn--secondary" onClick={handleRetry} disabled={busy()}>
+                            Retry failed
+                        </button>
                     </Show>
                 </div>
             </div>

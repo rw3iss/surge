@@ -358,6 +358,12 @@ export const mailSendApi = {
         replyTo?: string;
         blocks: unknown[];
     },) => api.post('/mail/send', data,),
+    listJobs: (params: { limit?: number; offset?: number; } = {},) => {
+        const qs = new URLSearchParams();
+        if (params.limit !== undefined) qs.set('limit', String(params.limit,),);
+        if (params.offset !== undefined) qs.set('offset', String(params.offset,),);
+        return api.get(`/mail/jobs?${qs.toString()}`,);
+    },
     job: (id: string,) => api.get(`/mail/jobs/${id}`,),
     recipients: (id: string, params: { status?: string; limit?: number; offset?: number; } = {},) => {
         const qs = new URLSearchParams();

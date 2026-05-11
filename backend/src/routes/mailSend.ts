@@ -127,6 +127,14 @@ router.post('/send', authenticate(), requireAdmin, async (req: AuthenticatedRequ
     } catch (e) { handleRouteError(res, e, 'send mail',); }
 },);
 
+router.get('/jobs', authenticate(), requireAdmin, async (req, res,) => {
+    try {
+        const limit = req.query.limit ? Number(req.query.limit,) : undefined;
+        const offset = req.query.offset ? Number(req.query.offset,) : undefined;
+        sendSuccess(res, await jobs.listRecent(limit, offset,),);
+    } catch (e) { handleRouteError(res, e, 'list jobs',); }
+},);
+
 router.get('/jobs/:id', authenticate(), requireAdmin, async (req, res,) => {
     try {
         const j = await jobs.findById(req.params.id,);
@@ -147,21 +155,45 @@ router.get('/jobs/:id/recipients', authenticate(), requireAdmin, async (req, res
     } catch (e) { handleRouteError(res, e, 'list recipients',); }
 },);
 
+/**
+ * Resume or retry. Works for:
+ *   - cancelled jobs: any still-pending recipients get picked up;
+ *     failed recipients are reset to pending too.
+ *   - failed/completed jobs with failed recipients: failed → pending.
+ *   - running/pending jobs: no-op (caller should use Cancel first).
+ */
 router.post('/jobs/:id/retry', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
     try {
         const job = await jobs.findById(req.params.id,);
         if (!job) throw new NotFoundError('Job not found',);
-        const reset = await recipients.resetFailedToPending(req.params.id,);
-        if (reset > 0) {
-            // Adjust the job counter so the progress bar shows progress
-            // against the retried recipients rather than carrying forward
-            // the old failure count.
-            await query(
-                `UPDATE mail_send_jobs SET failed_count = failed_count - $1, status = 'pending' WHERE id = $2`,
-                [reset, req.params.id,],
-            );
-            setImmediate(() => { void kickJob(req.params.id,); },);
+        if (job.status === 'running' || job.status === 'pending') {
+            // Nothing to do — worker is already processing or queued.
+            return sendSuccess(res, { reset: 0, },);
         }
+        const reset = await recipients.resetFailedToPending(req.params.id,);
+        // Adjust failed_count if we moved any back to pending, and
+        // reset status to pending so the worker picks the job up.
+        // cancelled jobs that had remaining pending rows are also
+        // resumed by this single status flip.
+        await query(
+            `UPDATE mail_send_jobs
+             SET failed_count = failed_count - $1,
+                 status = 'pending',
+                 completed_at = NULL,
+                 error = NULL
+             WHERE id = $2`,
+            [reset, req.params.id,],
+        );
+        await logAudit({
+            userId: req.userId!,
+            action: 'update',
+            entityType: 'mail_send_job',
+            entityId: req.params.id,
+            newValues: { resumed: true, reset, },
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent',),
+        },);
+        setImmediate(() => { void kickJob(req.params.id,); },);
         sendSuccess(res, { reset, },);
     } catch (e) { handleRouteError(res, e, 'retry job',); }
 },);

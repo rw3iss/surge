@@ -93,6 +93,31 @@ export async function findRunning(): Promise<MailSendJob[]> {
     return r.rows.map(map,);
 }
 
+export interface JobWithListName extends MailSendJob { listName: string | null; }
+
+interface DbRowWithList extends DbRow { list_name: string | null; }
+
+function mapWithList(row: DbRowWithList,): JobWithListName {
+    return { ...map(row,), listName: row.list_name, };
+}
+
+/**
+ * Recent jobs across all lists for the admin /mailing-lists index
+ * page. Joins on `mailing_lists` for the list name so the table can
+ * render without a second roundtrip.
+ */
+export async function listRecent(limit = 50, offset = 0,): Promise<JobWithListName[]> {
+    const r = await query<DbRowWithList>(
+        `SELECT j.*, l.name AS list_name
+         FROM mail_send_jobs j
+         LEFT JOIN mailing_lists l ON l.id = j.list_id
+         ORDER BY j.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset,],
+    );
+    return r.rows.map(mapWithList,);
+}
+
 export async function listForList(listId: string, limit = 20,): Promise<MailSendJob[]> {
     const r = await query<DbRow>(
         `SELECT * FROM mail_send_jobs WHERE list_id = $1 ORDER BY created_at DESC LIMIT $2`,
