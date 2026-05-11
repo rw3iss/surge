@@ -302,3 +302,31 @@ export const fetchBlockStyles = () => api.get('/block-styles',);
 export const createBlockStyle = (data: any,) => api.post('/block-styles', data,);
 export const updateBlockStyle = (id: string, data: any,) => api.put(`/block-styles/${id}`, data,);
 export const deleteBlockStyle = (id: string,) => api.delete(`/block-styles/${id}`,);
+
+// ─── Mailing Lists API ─────────────────────────────────────────────
+
+export const mailingListsApi = {
+    list: () => api.get('/mailing-lists',),
+    get: (id: string,) => api.get(`/mailing-lists/${id}`,),
+    create: (data: Record<string, unknown>,) => api.post('/mailing-lists', data,),
+    update: (id: string, data: Record<string, unknown>,) => api.put(`/mailing-lists/${id}`, data,),
+    remove: (id: string,) => api.delete(`/mailing-lists/${id}`,),
+    listSubscribers: (id: string, params: { search?: string; status?: string; limit?: number; offset?: number; } = {},) => {
+        const qs = new URLSearchParams();
+        if (params.search) qs.set('search', params.search,);
+        if (params.status) qs.set('status', params.status,);
+        if (params.limit !== undefined) qs.set('limit', String(params.limit,),);
+        if (params.offset !== undefined) qs.set('offset', String(params.offset,),);
+        return api.get(`/mailing-lists/${id}/subscribers?${qs.toString()}`,);
+    },
+    addSubscriber: (id: string, data: Record<string, unknown>,) =>
+        api.post(`/mailing-lists/${id}/subscribers`, data,),
+    updateSubscriber: (id: string, subId: string, data: Record<string, unknown>,) =>
+        api.put(`/mailing-lists/${id}/subscribers/${subId}`, data,),
+    removeSubscriber: (id: string, subId: string,) =>
+        api.delete(`/mailing-lists/${id}/subscribers/${subId}`,),
+    bulkRemoveSubscribers: (id: string, ids: string[],) =>
+        api.post(`/mailing-lists/${id}/subscribers/bulk-delete`, { ids, },),
+    forceConfirm: (id: string, subId: string,) =>
+        api.post(`/mailing-lists/${id}/subscribers/${subId}/force-confirm`, {},),
+};

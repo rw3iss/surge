@@ -1,0 +1,73 @@
+@use 'sass:color';
+@use '../../../styles/variables' as *;
+
+.mailing-lists-page,
+.mailing-list-edit-page {
+    .admin-section {
+        margin-bottom: 2rem;
+
+        &__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        &__actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+
+            input[type='search'] {
+                min-width: 200px;
+            }
+        }
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+
+        .form-group--full {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .admin-header__back {
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        color: var(--admin-text-muted, $text-light);
+        text-decoration: none;
+
+        &:hover { color: var(--site-primary, $primary-color); }
+    }
+
+    .empty-state {
+        padding: 2rem;
+        text-align: center;
+        color: var(--admin-text-muted, $text-light);
+    }
+}
+
+.subscriber-modal {
+    max-width: 480px;
+    background: #fff;
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px;
+
+    h3 { margin: 0 0 1rem; }
+
+    .modal-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+
+        .btn--danger { margin-right: auto; }
+    }
+}

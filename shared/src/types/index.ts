@@ -4,6 +4,7 @@ export * from './campaign';
 export * from './content';
 export * from './form';
 export * from './hero';
+export * from './mail';
 export * from './message';
 export * from './siteHeader';
 export * from './user';

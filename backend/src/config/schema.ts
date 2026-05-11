@@ -45,6 +45,11 @@ export const envSchema = z.object({
     SMTP_PASS: z.string().optional(),
     EMAIL_FROM: z.string().optional(),
 
+    MAIL_PROVIDER: z.enum(['smtp', 'mailgun', 'sendgrid', 'postmark',]).default('smtp',),
+    MAIL_SEND_CONCURRENCY: z.string().transform(Number,).default('10',),
+    MAIL_SEND_DELAY_MS: z.string().transform(Number,).default('50',),
+    MAIL_UNSUBSCRIBE_SECRET: z.string().optional(),
+
     DATA_DIR: z.string().default('./data',),
     UPLOAD_MAX_SIZE_MB: z.string().transform(Number,).default('500',),
     UPLOAD_DIR: z.string().default('./uploads',),

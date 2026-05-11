@@ -60,6 +60,13 @@ export interface Config {
         from: string | undefined;
     };
 
+    mail: {
+        provider: 'smtp' | 'mailgun' | 'sendgrid' | 'postmark';
+        sendConcurrency: number;
+        sendDelayMs: number;
+        unsubscribeSecret: string;
+    };
+
     dataDir: string;
 
     upload: {
@@ -162,6 +169,18 @@ function build(parsed: EnvVars,): Config {
             user: parsed.SMTP_USER,
             pass: parsed.SMTP_PASS,
             from: parsed.EMAIL_FROM,
+        },
+
+        mail: {
+            provider: (parsed.MAIL_PROVIDER ?? 'smtp') as Config['mail']['provider'],
+            sendConcurrency: parsed.MAIL_SEND_CONCURRENCY ?? 10,
+            sendDelayMs: parsed.MAIL_SEND_DELAY_MS ?? 50,
+            // Falls back to JWT_SECRET so installs without an explicit
+            // MAIL_UNSUBSCRIBE_SECRET still get a stable, secret HMAC
+            // key. Operators can rotate by setting the env var
+            // explicitly — old tokens become invalid, which is fine
+            // because re-sends regenerate them.
+            unsubscribeSecret: parsed.MAIL_UNSUBSCRIBE_SECRET || parsed.JWT_SECRET || '',
         },
 
         dataDir: parsed.DATA_DIR,
