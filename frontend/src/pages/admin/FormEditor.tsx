@@ -3,6 +3,7 @@ import { A, useNavigate, useParams, } from '@solidjs/router';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
 import EditorSaveBar from '../../components/admin/common/EditorSaveBar';
+import Toggle from '../../components/admin/common/Toggle';
 import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
@@ -358,31 +359,19 @@ const FormEditor: Component = () => {
                         </div>
 
                         <div class="form-group">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={showResults()}
-                                    onChange={(e,) => {
-                                        setShowResults((e.target as HTMLInputElement).checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Show results to respondents after submission</span>
-                            </label>
+                            <Toggle
+                                checked={showResults()}
+                                onChange={(next,) => { setShowResults(next,); markDirty(); }}
+                                label="Show results to respondents after submission"
+                            />
                         </div>
 
                         <div class="form-group">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={allowMultiple()}
-                                    onChange={(e,) => {
-                                        setAllowMultiple((e.target as HTMLInputElement).checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Allow multiple submissions per user</span>
-                            </label>
+                            <Toggle
+                                checked={allowMultiple()}
+                                onChange={(next,) => { setAllowMultiple(next,); markDirty(); }}
+                                label="Allow multiple submissions per user"
+                            />
                         </div>
                     </section>
 
@@ -536,17 +525,13 @@ const FormEditor: Component = () => {
                                             </Show>
 
                                             <div class="form-group">
-                                                <label class="checkbox-label">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={question.isRequired}
-                                                        onChange={(e,) =>
-                                                            updateQuestion(index(), {
-                                                                isRequired: (e.target as HTMLInputElement).checked,
-                                                            },)}
-                                                    />
-                                                    <span>Required</span>
-                                                </label>
+                                                <Toggle
+                                                    checked={question.isRequired}
+                                                    onChange={(next,) =>
+                                                        updateQuestion(index(), { isRequired: next, },)}
+                                                    label="Required"
+                                                    size="sm"
+                                                />
                                             </div>
                                         </div>
                                     </div>

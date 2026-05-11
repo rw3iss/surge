@@ -6,6 +6,7 @@ import AddBlockMenu from './AddBlockMenu';
 import BlockEditController from './BlockEditController';
 import ContentBlock, { BlockData, BlockType, } from './ContentBlock';
 import FlyoutPanel, { type FlyoutMode, } from '../common/FlyoutPanel';
+import Toggle from '../common/Toggle';
 
 export type { BlockData, BlockType, } from './ContentBlock';
 
@@ -630,14 +631,12 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                                 </Show>
                             </svg>
                         </button>
-                        <label class="block-editor__height-toggle">
-                            <input
-                                type="checkbox"
-                                checked={showDeviceHeight()}
-                                onChange={(e,) => setShowDeviceHeight(e.currentTarget.checked,)}
-                            />
-                            <span>Show fold</span>
-                        </label>
+                        <Toggle
+                            checked={showDeviceHeight()}
+                            onChange={setShowDeviceHeight}
+                            label="Show fold"
+                            size="sm"
+                        />
                     </div>
                 </Show>
             </Show>

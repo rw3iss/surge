@@ -1,6 +1,7 @@
 import { Title, } from '@solidjs/meta';
 import { useNavigate, useParams, } from '@solidjs/router';
 import { Component, createEffect, createResource, createSignal, Show, } from 'solid-js';
+import Toggle from '../../components/admin/common/Toggle';
 import { api, } from '../../services/api';
 
 const PROVIDER_NAMES: Record<string, string> = {
@@ -108,40 +109,23 @@ const AdminConnectionEditor: Component = () => {
                 <div class="form-section">
                     <h2>Settings</h2>
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={enabled()}
-                                onChange={(e,) => setEnabled(e.currentTarget.checked,)}
-                            />
-                            Enabled
-                        </label>
+                        <Toggle checked={enabled()} onChange={setEnabled} label="Enabled" />
                         <span class="form-help">When disabled, this connection won't sync or auto-publish.</span>
                     </div>
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={autoPublish()}
-                                onChange={(e,) => setAutoPublish(e.currentTarget.checked,)}
-                            />
-                            Auto-publish posts
-                        </label>
+                        <Toggle checked={autoPublish()} onChange={setAutoPublish} label="Auto-publish posts" />
                         <span class="form-help">Automatically import and publish posts from {providerName()}.</span>
                     </div>
                     <Show when={autoPublish()}>
                         <div class="form-group" style={{ 'margin-left': '1.5rem', }}>
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={publishAll()}
-                                    onChange={(e,) => {
-                                        setPublishAll(e.currentTarget.checked,);
-                                        if (e.currentTarget.checked) setAutoPublishCount(null,);
-                                    }}
-                                />
-                                Publish all posts
-                            </label>
+                            <Toggle
+                                checked={publishAll()}
+                                onChange={(next,) => {
+                                    setPublishAll(next,);
+                                    if (next) setAutoPublishCount(null,);
+                                }}
+                                label="Publish all posts"
+                            />
                             <Show when={!publishAll()}>
                                 <div style={{ 'margin-top': '0.5rem', }}>
                                     <label>Number of recent posts to publish</label>

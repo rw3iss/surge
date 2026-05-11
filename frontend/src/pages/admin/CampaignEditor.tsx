@@ -2,6 +2,7 @@ import { Title, } from '@solidjs/meta';
 import { useNavigate, useParams, } from '@solidjs/router';
 import { Component, createResource, createSignal, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
+import Toggle from '../../components/admin/common/Toggle';
 import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
@@ -235,17 +236,11 @@ const CampaignEditor: Component = () => {
                     </div>
 
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={hasGoal()}
-                                onChange={(e,) => {
-                                    setHasGoal((e.target as HTMLInputElement).checked,);
-                                    markDirty();
-                                }}
-                            />
-                            <span>Set a fundraising goal</span>
-                        </label>
+                        <Toggle
+                            checked={hasGoal()}
+                            onChange={(next,) => { setHasGoal(next,); markDirty(); }}
+                            label="Set a fundraising goal"
+                        />
                     </div>
 
                     <Show when={hasGoal()}>
@@ -311,17 +306,11 @@ const CampaignEditor: Component = () => {
                     </div>
 
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={isPublished()}
-                                onChange={(e,) => {
-                                    setIsPublished((e.target as HTMLInputElement).checked,);
-                                    markDirty();
-                                }}
-                            />
-                            <span>Published (visible to the public)</span>
-                        </label>
+                        <Toggle
+                            checked={isPublished()}
+                            onChange={(next,) => { setIsPublished(next,); markDirty(); }}
+                            label="Published (visible to the public)"
+                        />
                     </div>
 
                     <div class="form-group">

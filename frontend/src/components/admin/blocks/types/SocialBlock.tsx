@@ -9,6 +9,7 @@
  */
 import { Component, createMemo, createSignal, For, Index, onCleanup, onMount, Show, } from 'solid-js';
 import { api, } from '../../../../services/api';
+import Toggle from '../../common/Toggle';
 import SocialPostSelectModal, { type SocialPost, } from '../SocialPostSelectModal';
 
 /** Editor for the unified Social block. Picks a provider, sets a count,
@@ -163,14 +164,11 @@ const SocialBlock: Component<SocialBlockProps> = (props,) => {
 
                     {/* Show comments — preserved from old SocialMedia editor */}
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={props.data.showComments || false}
-                                onChange={(e,) => update({ showComments: e.currentTarget.checked, },)}
-                            />
-                            <span>Show comments</span>
-                        </label>
+                        <Toggle
+                            checked={props.data.showComments || false}
+                            onChange={(next,) => update({ showComments: next, },)}
+                            label="Show comments"
+                        />
                     </div>
                 </Show>
             </Show>

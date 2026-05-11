@@ -6,6 +6,7 @@ import BlockEditor, { BlockData, } from '../../components/admin/blocks/BlockEdit
 import CollapsiblePanel from '../../components/admin/common/CollapsiblePanel';
 import ConfirmModal from '../../components/admin/common/ConfirmModal';
 import EditorSaveBar from '../../components/admin/common/EditorSaveBar';
+import Toggle from '../../components/admin/common/Toggle';
 import PreviewOverlay from '../../components/admin/common/PreviewOverlay';
 import RevisionsPanel from '../../components/admin/panels/RevisionsPanel';
 import Tooltip from '../../components/admin/common/Tooltip';
@@ -413,18 +414,17 @@ const AdminPageEditor: Component = () => {
                             toggle in the sidebar; reuses those classes
                             so spacing / typography stay consistent. */}
                         <div class="form-group page-editor__homepage-section">
-                            <label class="page-editor__homepage-toggle">
-                                <input
-                                    type="checkbox"
+                            <div class="page-editor__homepage-toggle">
+                                <Toggle
                                     checked={showTitle()}
-                                    onChange={(e,) => { setShowTitle(e.currentTarget.checked,); markDirty(); }}
+                                    onChange={(next,) => { setShowTitle(next,); markDirty(); }}
+                                    label="Show title on page"
                                 />
-                                <span class="page-editor__homepage-toggle-label">Show title on page</span>
                                 <Tooltip
                                     header="Show title on page"
                                     content="When on, the page renderer prints this page's title as a heading above the content blocks. Turn it off when your first block (e.g. a hero or carousel) already provides the visual headline and you don't want a duplicate."
                                 />
-                            </label>
+                            </div>
                         </div>
                     </div>
                     <div class="editor-properties__sidebar">
@@ -451,17 +451,11 @@ const AdminPageEditor: Component = () => {
                             </select>
                         </div>
                         <div class="form-group page-editor__homepage-section">
-                            {/* Single-line toggle: checkbox left, label right.
-                                Help text wraps below on its own line so the
-                                toggle row stays scannable. */}
-                            <label class="page-editor__homepage-toggle">
-                                <input
-                                    type="checkbox"
-                                    checked={isHomepage()}
-                                    onChange={(e,) => { setIsHomepage(e.currentTarget.checked,); markDirty(); }}
-                                />
-                                <span class="page-editor__homepage-toggle-label">Use as homepage</span>
-                            </label>
+                            <Toggle
+                                checked={isHomepage()}
+                                onChange={(next,) => { setIsHomepage(next,); markDirty(); }}
+                                label="Use as homepage"
+                            />
                             <small class="form-help page-editor__homepage-help">
                                 Show this page at <code>/</code>. The page is still reachable at <code>/{slug() || 'slug'}</code>.
                                 Must be <strong>published</strong> to appear on the public site. Only one page can be the homepage at a time.

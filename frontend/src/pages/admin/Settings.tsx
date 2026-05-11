@@ -15,6 +15,7 @@ import type { SiteSwatch, } from '@rw/shared';
 import { reloadAdminAppearance, } from '../../stores/adminAppearance';
 import { reloadSiteSettings, } from '../../stores/siteSettings';
 import FeatureToggleRow from '../../components/admin/features/FeatureToggleRow';
+import Toggle from '../../components/admin/common/Toggle';
 import { FEATURES, } from '../../config/features';
 
 // HeroContentEditor is now used via the 'carousel' block type, not in Settings.
@@ -328,38 +329,21 @@ function ConnectionsPanel() {
                                     </Show>
 
                                     <div class="form-group">
-                                        <label class="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={enabled()}
-                                                onChange={(e,) => setEnabled(e.currentTarget.checked,)}
-                                            />
-                                            <span>Enabled</span>
-                                        </label>
+                                        <Toggle checked={enabled()} onChange={setEnabled} label="Enabled" />
                                     </div>
                                     <div class="form-group">
-                                        <label class="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={autoPublish()}
-                                                onChange={(e,) => setAutoPublish(e.currentTarget.checked,)}
-                                            />
-                                            <span>Auto-publish posts</span>
-                                        </label>
+                                        <Toggle checked={autoPublish()} onChange={setAutoPublish} label="Auto-publish posts" />
                                     </div>
                                     <Show when={autoPublish()}>
                                         <div class="form-group" style={{ 'padding-left': '1.5rem', }}>
-                                            <label class="checkbox-label">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={publishAll()}
-                                                    onChange={(e,) => {
-                                                        setPublishAll(e.currentTarget.checked,);
-                                                        if (e.currentTarget.checked) setAutoPublishCount(null,);
-                                                    }}
-                                                />
-                                                <span>Publish all posts</span>
-                                            </label>
+                                            <Toggle
+                                                checked={publishAll()}
+                                                onChange={(next,) => {
+                                                    setPublishAll(next,);
+                                                    if (next) setAutoPublishCount(null,);
+                                                }}
+                                                label="Publish all posts"
+                                            />
                                             <Show when={!publishAll()}>
                                                 <div style={{ 'margin-top': '0.5rem', }}>
                                                     <label>Number of recent posts</label>

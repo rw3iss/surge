@@ -1,5 +1,6 @@
 import { batch, Component, createSignal, For, Match, onMount, Show, Switch, } from 'solid-js';
 import { BlockStyleData, BlockStyleService, } from '../../../services/blockStyles';
+import Toggle from '../common/Toggle';
 import type { BlockData, BlockType, } from './ContentBlock';
 import BlockStyleEditor from './blockStyles/BlockStyleEditor';
 import CampaignBlock from './types/CampaignBlock';
@@ -294,19 +295,16 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
 
             {/* ─── Default padding toggle ─── */}
             <div class="bec-field">
-                <label class="bec-toggle">
-                    <input
-                        type="checkbox"
-                        checked={props.block.data.useDefaultPadding !== false}
-                        onChange={(e,) => {
-                            handleUpdate({
-                                ...props.block.data,
-                                useDefaultPadding: e.currentTarget.checked,
-                            },);
-                        }}
-                    />
-                    <span>Use default block padding</span>
-                </label>
+                <Toggle
+                    checked={props.block.data.useDefaultPadding !== false}
+                    onChange={(next,) => {
+                        handleUpdate({
+                            ...props.block.data,
+                            useDefaultPadding: next,
+                        },);
+                    }}
+                    label="Use default block padding"
+                />
             </div>
 
             <div class="bec-divider" />

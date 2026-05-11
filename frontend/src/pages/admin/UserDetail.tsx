@@ -1,6 +1,7 @@
 import { Title, } from '@solidjs/meta';
 import { A, useNavigate, useParams, } from '@solidjs/router';
 import { Component, createEffect, createResource, createSignal, Show, } from 'solid-js';
+import Toggle from '../../components/admin/common/Toggle';
 import { api, } from '../../services/api';
 import { getRoleBadgeClass, } from '../../utils/badges';
 import './UserDetail.scss';
@@ -243,14 +244,11 @@ const AdminUserDetail: Component = () => {
                             </div>
                             <div class="settings-field">
                                 <label class="settings-field__label">Active</label>
-                                <label class="checkbox-label">
-                                    <input
-                                        type="checkbox"
-                                        checked={isActive()}
-                                        onChange={(e,) => setIsActive(e.currentTarget.checked,)}
-                                    />
-                                    <span>{isActive() ? 'Enabled' : 'Disabled'}</span>
-                                </label>
+                                <Toggle
+                                    checked={isActive()}
+                                    onChange={setIsActive}
+                                    label={isActive() ? 'Enabled' : 'Disabled'}
+                                />
                             </div>
                             <div class="settings-field">
                                 <label class="settings-field__label" />

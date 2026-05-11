@@ -1,6 +1,7 @@
 import { Component, createSignal, Show, } from 'solid-js';
 import VideoPlayer from '../../../blocks/media/VideoPlayer';
 import MediaPickerModal, { MediaItem, } from '../../media/MediaPickerModal';
+import Toggle from '../../common/Toggle';
 
 interface VideoBlockProps {
     data: Record<string, any>;
@@ -153,25 +154,18 @@ const VideoBlock: Component<VideoBlockProps> = (props,) => {
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={props.data.autoplay || false}
-                                onChange={(e,) =>
-                                    props.onUpdate({ ...props.data, autoplay: e.currentTarget.checked, },)}
-                            />
-                            Autoplay
-                        </label>
+                        <Toggle
+                            checked={props.data.autoplay || false}
+                            onChange={(next,) => props.onUpdate({ ...props.data, autoplay: next, },)}
+                            label="Autoplay"
+                        />
                     </div>
                     <div class="form-group">
-                        <label class="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={props.data.loop || false}
-                                onChange={(e,) => props.onUpdate({ ...props.data, loop: e.currentTarget.checked, },)}
-                            />
-                            Loop
-                        </label>
+                        <Toggle
+                            checked={props.data.loop || false}
+                            onChange={(next,) => props.onUpdate({ ...props.data, loop: next, },)}
+                            label="Loop"
+                        />
                     </div>
                 </div>
                 <Show when={showPicker()}>

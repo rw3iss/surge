@@ -18,6 +18,7 @@ import { Component, createSignal, For, Show, } from 'solid-js';
 import MediaSelectModal from '../../media/MediaSelectModal';
 import MediaUploadModal from '../../media/MediaUploadModal';
 import { FormField, FormSection, } from '../../forms';
+import Toggle from '../../common/Toggle';
 
 export interface ImageItem {
     id: string;
@@ -249,10 +250,10 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                                 />
                             </FormField>
                             <FormField label="Allow maximize" inline>
-                                <input
-                                    type="checkbox"
+                                <Toggle
                                     checked={item().allowMaximize === true}
-                                    onChange={(e,) => updateSelected({ allowMaximize: e.currentTarget.checked, },)}
+                                    onChange={(next,) => updateSelected({ allowMaximize: next, },)}
+                                    ariaLabel="Allow maximize"
                                 />
                             </FormField>
                         </FormSection>
