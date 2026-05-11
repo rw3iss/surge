@@ -1,0 +1,96 @@
+@use 'sass:color';
+@use '../../../styles/variables' as *;
+
+.feature-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--admin-border, #{$border-color});
+
+    &:last-child { border-bottom: 0; }
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__label {
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--admin-text, $text-color);
+    }
+
+    &__desc {
+        color: var(--admin-text-muted, #{$text-light});
+        display: block;
+        margin-top: 0.15rem;
+    }
+
+    &__info-icon {
+        cursor: help;
+        color: var(--admin-text-muted, #{$text-light});
+        font-size: 0.9em;
+        line-height: 1;
+    }
+
+    &__switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        border-radius: 12px;
+        background: var(--admin-border, #{$border-color});
+        border: none;
+        cursor: pointer;
+        transition: background 120ms ease;
+        flex-shrink: 0;
+
+        &.is-on { background: var(--site-primary, #{$primary-color}); }
+        &.is-blocked {
+            opacity: 0.55;
+            // Stays clickable — click opens the cascade modal.
+            cursor: pointer;
+        }
+    }
+
+    &__knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        transition: left 120ms ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    &__switch.is-on &__knob { left: 22px; }
+}
+
+.feature-dep-modal {
+    max-width: 480px;
+    background: #fff;
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px;
+
+    h3 { margin: 0 0 0.5rem; }
+    p { margin: 0.25rem 0; color: var(--admin-text, $text-color); }
+
+    ul {
+        padding-left: 1.5rem;
+        margin: 0.5rem 0 1rem;
+
+        li { padding: 0.15rem 0; }
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+}

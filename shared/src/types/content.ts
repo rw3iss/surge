@@ -243,6 +243,14 @@ export interface SiteFeatures {
      * only gates user-facing registration UI.
      */
     users: { enabled: boolean; };
+    /**
+     * Mailing Lists feature module. When enabled, the admin sidebar
+     * exposes the Mailing Lists area, the public subscribe endpoint
+     * accepts new subscribers, and the SMTP provider abstraction
+     * routes outbound transactional mail through the same pipeline
+     * the mailing-list sends use. Requires `users`.
+     */
+    mailing_lists: { enabled: boolean; };
 }
 
 /** The keys that correspond to a `<x>_enabled` row in `site_settings`. */

@@ -14,6 +14,8 @@ import { fetchSwatchUsages, generateUniqueSwatchId, isValidSwatchId, loadSwatche
 import type { SiteSwatch, } from '@rw/shared';
 import { reloadAdminAppearance, } from '../../stores/adminAppearance';
 import { reloadSiteSettings, } from '../../stores/siteSettings';
+import FeatureToggleRow from '../../components/admin/features/FeatureToggleRow';
+import { FEATURES, } from '../../config/features';
 
 // HeroContentEditor is now used via the 'carousel' block type, not in Settings.
 const SiteHeaderEditor = lazy(() => import('../../components/admin/editors/SiteHeaderEditor'));
@@ -50,31 +52,9 @@ const PROVIDERS = [
 // lives directly in-line rather than behind a tooltip — it's short
 // enough that hiding it would add friction without saving space.
 
-interface FeatureToggleRowProps {
-    label: string;
-    description: string;
-    checked: boolean;
-    onChange: (next: boolean,) => void;
-}
-
-const FeatureToggleRow: Component<FeatureToggleRowProps> = (props,) => {
-    return (
-        <label class="feature-toggle">
-            <span class="feature-toggle__text">
-                <span class="feature-toggle__label">{props.label}</span>
-                <span class="feature-toggle__description">{props.description}</span>
-            </span>
-            <input
-                type="checkbox"
-                class="feature-toggle__switch"
-                checked={props.checked}
-                onChange={(e,) => props.onChange(e.currentTarget.checked,)}
-                role="switch"
-                aria-label={`Enable ${props.label}`}
-            />
-        </label>
-    );
-};
+// (Legacy inline FeatureToggleRow removed — Features panel now renders
+// via the dependency-aware FeatureToggleRow imported from
+// `components/admin/features/`.)
 
 function ConnectionsPanel() {
     const [searchParams, setSearchParams,] = useSearchParams();  // eslint-disable-line
@@ -1531,17 +1511,14 @@ const AdminSettings: Component = () => {
         setSaving(true,);
         setSuccess(false,);
 
+        // Feature toggles are now handled inline by FeatureToggleRow's
+        // onChange (which calls PUT /settings with a single-feature
+        // payload + the dependency planner). The General-tab submit
+        // only persists non-feature fields.
         const data: Record<string, any> = {
             siteName: siteName(),
             siteDescription: siteDescription(),
             contactEmail: contactEmail() || undefined,
-            features: {
-                posts: postsEnabled(),
-                campaigns: campaignsEnabled(),
-                forms: formsEnabled(),
-                messages: messagesEnabled(),
-                users: usersEnabled(),
-            },
         };
         if (analyticsId()) {
             data.analytics = { googleAnalyticsId: analyticsId(), };
@@ -1652,36 +1629,27 @@ const AdminSettings: Component = () => {
                                     Enable or disable site modules. Disabling a module hides its admin sidebar
                                     link and stops surfacing related public links. Existing data is preserved.
                                 </p>
-                                <FeatureToggleRow
-                                    label="Posts"
-                                    description="Enables the posts/blog module. Adds a Posts link to the admin sidebar."
-                                    checked={postsEnabled()}
-                                    onChange={setPostsEnabled}
-                                />
-                                <FeatureToggleRow
-                                    label="Campaigns"
-                                    description="Enables the campaigns module for tracking fundraising campaigns and donations."
-                                    checked={campaignsEnabled()}
-                                    onChange={setCampaignsEnabled}
-                                />
-                                <FeatureToggleRow
-                                    label="Forms"
-                                    description="Enables the form builder for surveys, polls, and questionnaires."
-                                    checked={formsEnabled()}
-                                    onChange={setFormsEnabled}
-                                />
-                                <FeatureToggleRow
-                                    label="Messages"
-                                    description="Enables the contact-message inbox. Disable if you only use email handoffs."
-                                    checked={messagesEnabled()}
-                                    onChange={setMessagesEnabled}
-                                />
-                                <FeatureToggleRow
-                                    label="Users"
-                                    description="Enables custom user registration. The login page shows the form expanded by default with a Register link, the /join page accepts new sign-ups, and the Users admin sidebar item appears. Admins can always sign in regardless of this flag."
-                                    checked={usersEnabled()}
-                                    onChange={setUsersEnabled}
-                                />
+                                <For each={FEATURES.filter((f,) => f.key !== 'patreon',)}>
+                                    {(f,) => (
+                                        <FeatureToggleRow
+                                            featureKey={f.key}
+                                            onChange={async (next, opts,) => {
+                                                const payload: Record<string, unknown> = {
+                                                    features: { [f.key]: next, },
+                                                };
+                                                if (opts?.enableDependencies) payload.enableDependencies = true;
+                                                if (opts?.disableDependents) payload.disableDependents = true;
+                                                const res = await api.put('/settings', payload,);
+                                                if (!res.success) {
+                                                    alert(typeof res.error === 'string' ? res.error : `Could not toggle ${f.label}.`,);
+                                                    return;
+                                                }
+                                                await reloadSiteSettings();
+                                                refetch();
+                                            }}
+                                        />
+                                    )}
+                                </For>
                             </section>
 
                             <section class="settings-card">

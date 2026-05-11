@@ -3,11 +3,15 @@ import { Router, } from 'express';
 import { z, } from 'zod';
 import { config, } from '../config';
 import { query, } from '../db';
+import { getPool, } from '../db/client';
 import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
 import { ValidationError, } from '../middleware/error';
 import { logAudit, } from '../services/audit';
 import { cache, } from '../services/cache';
 import { handleRouteError, sendSuccess, } from '../utils/response';
+import { FEATURE_REGISTRY, FeatureKey, featureSettingKey, } from '../features/registry';
+import { validateEnable, } from '../features/validator';
+import { applyFeatureMigrations, } from '../features/migrations';
 
 const router = Router();
 
@@ -30,30 +34,21 @@ const settingsSchema = z.object({
     /**
      * Feature toggles. The admin Features panel sends this object;
      * each key writes a `<feature>_enabled` row in `site_settings`.
-     * Adding a new feature: extend this shape and the seeder
-     * defaults — `computePublicFeatures` will pick it up.
+     * Dependency-aware: keys must exist in `FEATURE_REGISTRY`.
      */
-    features: z.object({
-        patreon: z.boolean().optional(),
-        posts: z.boolean().optional(),
-        campaigns: z.boolean().optional(),
-        forms: z.boolean().optional(),
-        messages: z.boolean().optional(),
-        users: z.boolean().optional(),
-    },).optional(),
+    features: z.record(z.string(), z.boolean(),).optional(),
+    /**
+     * When toggling a feature on, also enable any prerequisites that
+     * aren't already enabled. Set by the frontend's FeatureDependencyModal
+     * after the operator confirms the cascade.
+     */
+    enableDependencies: z.boolean().optional(),
+    /**
+     * Symmetric: when toggling a feature off, also disable any enabled
+     * features that declare it as a prerequisite.
+     */
+    disableDependents: z.boolean().optional(),
 },);
-
-/** Map from `features.<key>` payload field to the underlying
- * `site_settings.<row>` key. Centralized so the toggle list stays
- * consistent with `computePublicFeatures`. */
-const FEATURE_TO_SETTING_KEY: Record<string, string> = {
-    patreon: 'patreon_enabled',
-    posts: 'posts_enabled',
-    campaigns: 'campaigns_enabled',
-    forms: 'forms_enabled',
-    messages: 'messages_enabled',
-    users: 'users_enabled',
-};
 
 // Get public settings (public)
 router.get('/public', async (_req, res,) => {
@@ -146,6 +141,10 @@ router.put('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
     try {
         const data = settingsSchema.parse(req.body,);
 
+        // Non-feature fields write straight through. Feature toggles
+        // (if present) go through the dependency planner + lazy-install
+        // migration applier afterward, since they require transactional
+        // coordination with `applyFeatureMigrations`.
         const settingsMap: Record<string, unknown> = {
             site_name: data.siteName,
             site_description: data.siteDescription,
@@ -156,18 +155,6 @@ router.put('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
             analytics: data.analytics,
             theme: data.theme,
         };
-
-        // Feature toggles flatten into individual `<feature>_enabled`
-        // rows. Treating them as separate keys (rather than a single
-        // JSON blob) means partial updates are easy and the rows are
-        // queryable for ad-hoc checks.
-        if (data.features) {
-            for (const [featureKey, value,] of Object.entries(data.features,)) {
-                if (value === undefined) continue;
-                const settingKey = FEATURE_TO_SETTING_KEY[featureKey];
-                if (settingKey) settingsMap[settingKey] = value;
-            }
-        }
 
         for (const [key, value,] of Object.entries(settingsMap,)) {
             if (value !== undefined) {
@@ -183,13 +170,92 @@ router.put('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, 
             }
         }
 
+        if (data.features) {
+            // Read current state of every known feature from
+            // site_settings, defaulting to registry-declared defaults
+            // where the row is absent.
+            const currentRows = await query<{ key: string; value: unknown; }>(
+                `SELECT key, value FROM site_settings WHERE key LIKE '%_enabled'`,
+            );
+            const current: Record<FeatureKey, boolean> = {} as Record<FeatureKey, boolean>;
+            for (const k of Object.keys(FEATURE_REGISTRY,) as FeatureKey[]) {
+                current[k] = FEATURE_REGISTRY[k].defaultEnabled;
+            }
+            for (const row of currentRows.rows) {
+                const key = String(row.key,).replace(/_enabled$/, '',) as FeatureKey;
+                if (FEATURE_REGISTRY[key]) {
+                    const v = row.value;
+                    current[key] = v === true
+                        || v === 'true'
+                        || (typeof v === 'object' && v !== null && (v as { value?: unknown; }).value === true);
+                }
+            }
+
+            const target: Partial<Record<FeatureKey, boolean>> = {};
+            for (const [k, v,] of Object.entries(data.features,)) {
+                if (v === undefined) continue;
+                if (!FEATURE_REGISTRY[k as FeatureKey]) {
+                    throw new ValidationError(`Unknown feature: ${k}`,);
+                }
+                target[k as FeatureKey] = v;
+            }
+
+            const result = validateEnable(target, current, {
+                enableDependencies: data.enableDependencies,
+                disableDependents: data.disableDependents,
+            },);
+
+            if (!result.ok) {
+                return res.status(409,).json({ success: false, error: result, },);
+            }
+
+            const pool = getPool();
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN',);
+                for (const step of result.plan) {
+                    if (step.enabled) {
+                        // Run any outstanding feature migrations *before*
+                        // flipping the bit. If any fail, the whole plan
+                        // rolls back and the toggle stays off.
+                        await applyFeatureMigrations(step.key, client,);
+                    }
+                    await client.query(
+                        `INSERT INTO site_settings (key, value, updated_by)
+                         VALUES ($1, $2, $3)
+                         ON CONFLICT (key) DO UPDATE SET
+                             value = EXCLUDED.value,
+                             updated_by = EXCLUDED.updated_by,
+                             updated_at = NOW()`,
+                        [featureSettingKey(step.key,), JSON.stringify(step.enabled,), req.userId,],
+                    );
+                }
+                await client.query('COMMIT',);
+            } catch (err) {
+                await client.query('ROLLBACK',);
+                throw err;
+            } finally {
+                client.release();
+            }
+
+            await logAudit({
+                userId: req.userId!,
+                action: 'update',
+                entityType: 'settings',
+                entityId: 'features',
+                newValues: { plan: result.plan, },
+                ipAddress: req.ip,
+                userAgent: req.get('user-agent',),
+            },);
+        }
+
         await cache.invalidateSettingsCache();
 
         await logAudit({
             userId: req.userId!,
             action: 'update',
             entityType: 'settings',
-            newValues: data,
+            newValues: { ...data, features: undefined, },
             ipAddress: req.ip,
             userAgent: req.get('user-agent',),
         },);
@@ -838,6 +904,10 @@ async function computePublicFeatures(
         // `users` is opt-in (admin-only by default). Public registration
         // / "join" flows and the admin Users sidebar key off this flag.
         users: { enabled: settings.users_enabled === true, },
+        // Mailing Lists is opt-in. Requires `users`; the toggle endpoint
+        // enforces the prerequisite — once on, the row will be `true`
+        // (and `users_enabled` will be too).
+        mailing_lists: { enabled: settings.mailing_lists_enabled === true, },
     };
 }
 

@@ -10,6 +10,12 @@ import { getInstallationState, } from './services/installation';
 import { initScheduledPublisher, } from './services/scheduledPublisher';
 import { initSocialCrons, } from './services/socialCrons';
 import { logger, } from './utils/logger';
+import { assertNoCycles, } from './features/registry';
+
+// Fail-fast if the FEATURE_REGISTRY has a dependency cycle. This is a
+// boot-time sanity check; the registry is a static config, so any
+// cycle is a developer mistake that should never reach production.
+assertNoCycles();
 
 /**
  * Tolerant boot. The previous version exited on missing env vars and

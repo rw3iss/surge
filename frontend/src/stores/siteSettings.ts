@@ -1,6 +1,7 @@
 import type { SiteSettings, } from '@rw/shared';
 import { createSignal, } from 'solid-js';
 import { fetchSettings, } from '../services/api';
+import { FEATURES, FeatureConfig, FeatureKey, getDependents as registryDependents, getFeature, } from '../config/features';
 
 /**
  * Global site settings singleton.
@@ -113,6 +114,25 @@ export function isFeatureEnabled(key: string,): boolean {
     const f = (features as unknown as Record<string, { enabled: boolean; }>)[key];
     return Boolean(f?.enabled,);
 }
+
+// ─── Feature dependency helpers ─────────────────────────────────────
+
+export function getFeatureConfig(key: FeatureKey,): FeatureConfig {
+    return getFeature(key,);
+}
+
+/** Prerequisites declared by `key` that aren't currently enabled. */
+export function getMissingPrerequisites(key: FeatureKey,): FeatureKey[] {
+    const cfg = getFeature(key,);
+    return (cfg.requires ?? []).filter((r,) => !isFeatureEnabled(r,),);
+}
+
+/** Currently-enabled features that declare `key` as a prerequisite. */
+export function getEnabledDependents(key: FeatureKey,): FeatureKey[] {
+    return registryDependents(key,).filter((d,) => isFeatureEnabled(d,),);
+}
+
+export function allFeatures(): typeof FEATURES { return FEATURES; }
 
 /**
  * Format a page title as "{Site Name} - {Page Title}".
