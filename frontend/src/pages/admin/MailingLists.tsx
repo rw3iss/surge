@@ -147,7 +147,7 @@ const MailingLists: Component = () => {
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Subject</th>
+                                        <th>Template</th>
                                         <th>List</th>
                                         <th>Status</th>
                                         <th>Progress</th>
@@ -159,7 +159,15 @@ const MailingLists: Component = () => {
                                     <For each={jobs() ?? []}>
                                         {(j,) => (
                                             <tr>
-                                                <td><A href={`/admin/mail/jobs/${j.id}`}>{j.subject}</A></td>
+                                                <td>
+                                                    <A href={`/admin/mail/jobs/${j.id}`} class="job-row__template">
+                                                        {j.templateName ?? 'Custom (no template)'}
+                                                        <Show when={j.templateName && j.templateWasModified}>
+                                                            {' '}<span class="job-row__custom-tag">(custom)</span>
+                                                        </Show>
+                                                    </A>
+                                                    <div class="job-row__subject">{j.subject}</div>
+                                                </td>
                                                 <td>{j.listName ?? <em class="form-help-muted">(deleted)</em>}</td>
                                                 <td><span class={`badge ${statusBadge(j.status,)}`}>{j.status}</span></td>
                                                 <td>{j.sentCount + j.failedCount}/{j.totalRecipients}</td>

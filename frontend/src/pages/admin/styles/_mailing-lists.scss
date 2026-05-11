@@ -228,6 +228,34 @@
     }
 }
 
+// ─── Jobs (Sent) table row ──────────────────────────────────────────
+
+.job-row {
+    &__template {
+        font-weight: 500;
+    }
+
+    &__custom-tag {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: #fff3cd;
+        color: #856404;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: lowercase;
+        vertical-align: middle;
+    }
+
+    &__subject {
+        font-size: 0.825rem;
+        color: var(--admin-text-muted, #{$text-light});
+        margin-top: 0.15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
 .job-summary {
     background: var(--admin-bg-subtle, #f7fafc);
     border: 1px solid var(--admin-border, #{$border-color});
