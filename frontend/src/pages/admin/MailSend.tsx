@@ -220,14 +220,6 @@ const MailSend: Component = () => {
                     </Show>
 
                     <div class="send-confirm-preview">
-                        <Show when={showPreview()}>
-                            <MailPreviewModal
-                                blocks={editorToBackend(draft.blocks,)}
-                                subject={draft.subject}
-                                preheader={draft.preheader || undefined}
-                                onClose={() => setShowPreview(false,)}
-                            />
-                        </Show>
                         <button type="button" class="btn btn--secondary" onClick={() => setShowPreview(true,)}>
                             Open preview…
                         </button>
@@ -242,6 +234,17 @@ const MailSend: Component = () => {
                         </button>
                     </div>
                 </section>
+            </Show>
+
+            {/* Preview modal mount lives at the top level so the
+                Preview button on either step opens it. */}
+            <Show when={showPreview()}>
+                <MailPreviewModal
+                    blocks={editorToBackend(draft.blocks,)}
+                    subject={draft.subject}
+                    preheader={draft.preheader || undefined}
+                    onClose={() => setShowPreview(false,)}
+                />
             </Show>
         </div>
     );
