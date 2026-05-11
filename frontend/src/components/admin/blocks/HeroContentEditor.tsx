@@ -121,7 +121,7 @@ const HeroContentEditor: Component<HeroContentEditorProps> = (props,) => {
         if (props.initialData) {
             const data = props.initialData;
             if (data.items?.length) {
-                setItems(data.items.sort((a, b,) => a.order - b.order),);
+                setItems(data.items.toSorted((a, b,) => a.order - b.order),);
             }
             if (data.options) {
                 setOptions({ ...DEFAULT_OPTIONS, ...data.options, },);
@@ -134,7 +134,7 @@ const HeroContentEditor: Component<HeroContentEditorProps> = (props,) => {
             if (res.success && res.data) {
                 const data = res.data as HeroCarouselSettings;
                 if (data.items?.length) {
-                    setItems(data.items.sort((a, b,) => a.order - b.order),);
+                    setItems(data.items.toSorted((a, b,) => a.order - b.order),);
                 }
                 if (data.options) {
                     setOptions({ ...DEFAULT_OPTIONS, ...data.options, },);

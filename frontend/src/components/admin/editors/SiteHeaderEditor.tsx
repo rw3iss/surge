@@ -152,7 +152,7 @@ const SiteHeaderEditor: Component = () => {
             if (res.success && res.data) {
                 const data = res.data as any;
                 if (data.items?.length) {
-                    setItems(data.items.sort((a: SiteHeaderItem, b: SiteHeaderItem,) => a.order - b.order),);
+                    setItems(data.items.toSorted((a: SiteHeaderItem, b: SiteHeaderItem,) => a.order - b.order),);
                 }
                 if (data.backgroundColor) setBgColor(data.backgroundColor,);
                 if (data.textColor) setTextColor(data.textColor,);

@@ -166,7 +166,7 @@ function FooterColumnRenderer(props: { column: SiteFooterColumn; },) {
         return s;
     };
 
-    const items = () => [...c().items,].sort((a, b,) => (a.order ?? 0) - (b.order ?? 0));
+    const items = () => [...c().items,].toSorted((a, b,) => (a.order ?? 0) - (b.order ?? 0));
 
     return (
         <div class="footer__column" style={style()}>

@@ -843,7 +843,7 @@ function EditableColumn(props: {
         return s;
     };
 
-    const items = () => [...c().items,].sort((a, b,) => (a.order ?? 0) - (b.order ?? 0));
+    const items = () => [...c().items,].toSorted((a, b,) => (a.order ?? 0) - (b.order ?? 0));
 
     return (
         <div

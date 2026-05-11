@@ -51,7 +51,7 @@ function stableStringify(value: unknown,): string {
     if (Array.isArray(value,)) {
         return '[' + value.map(stableStringify,).join(',',) + ']';
     }
-    const keys = Object.keys(value as Record<string, unknown>,).sort();
+    const keys = Object.keys(value as Record<string, unknown>,).toSorted();
     const parts: string[] = [];
     for (const k of keys) {
         const v = (value as Record<string, unknown>)[k];

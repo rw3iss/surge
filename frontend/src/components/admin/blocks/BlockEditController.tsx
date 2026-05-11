@@ -260,7 +260,7 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
                     >
                         <option value="none">None (inherit global)</option>
                         <option value="custom">Custom...</option>
-                        <For each={blockStyles().sort((a, b,) => (a.name || '').localeCompare(b.name || '',))}>
+                        <For each={blockStyles().toSorted((a, b,) => (a.name || '').localeCompare(b.name || '',))}>
                             {(s,) => (
                                 <option value={s.id}>
                                     {s.name || 'Unnamed'}{s.isDefault ? ' (default)' : ''}

@@ -54,7 +54,7 @@ const FormSubmissions: Component = () => {
 
             if (q.type === 'number') {
                 const nums = answers.map(Number,).filter((n: number,) => !isNaN(n,),);
-                const sorted = [...nums,].sort((a, b,) => a - b);
+                const sorted = [...nums,].toSorted((a, b,) => a - b);
                 return {
                     question: q.question,
                     type: 'number' as const,

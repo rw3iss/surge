@@ -505,6 +505,6 @@ export async function syncPatreonMembership(userId: string,): Promise<Record<str
         return result.rows[0] || null;
     } catch (error) {
         logger.error('Error syncing Patreon membership', { error, },);
-        throw new Error('Failed to sync Patreon membership',);
+        throw new Error('Failed to sync Patreon membership', { cause: error },);
     }
 }
