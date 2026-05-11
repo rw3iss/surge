@@ -131,31 +131,71 @@ const MailJob: Component = () => {
                     <>
                         <section class="admin-section">
                             <div class="job-summary">
-                                <div>
-                                    <strong>List:</strong> {j().listName ?? <em class="form-help-muted">(deleted)</em>}
+                                {/* Row 1 — list + total recipients */}
+                                <div class="job-summary__row job-summary__row--header">
+                                    <div class="job-summary__field">
+                                        <span class="job-summary__label">List</span>
+                                        <span class="job-summary__value job-summary__value--strong">
+                                            {j().listName ?? <em class="form-help-muted">(deleted)</em>}
+                                        </span>
+                                    </div>
+                                    <div class="job-summary__field job-summary__field--end">
+                                        <span class="job-summary__label">Recipients</span>
+                                        <span class="job-summary__value job-summary__value--strong">{j().totalRecipients}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <strong>Template:</strong>{' '}
-                                    <Show
-                                        when={j().templateName}
-                                        fallback={<em class="form-help-muted">Custom (no template)</em>}
-                                    >
-                                        {j().templateName}
-                                        <Show when={j().templateWasModified}>
-                                            {' '}<span class="job-summary__custom-tag">(custom)</span>
+
+                                {/* Row 2 — template + subject sub-label */}
+                                <div class="job-summary__row job-summary__row--template">
+                                    <div class="job-summary__template">
+                                        <Show
+                                            when={j().templateName}
+                                            fallback={<em class="form-help-muted">Custom (no template)</em>}
+                                        >
+                                            {j().templateName}
+                                            <Show when={j().templateWasModified}>
+                                                {' '}<span class="job-summary__custom-tag">(custom)</span>
+                                            </Show>
                                         </Show>
-                                    </Show>
+                                    </div>
+                                    <div class="job-summary__subject">{j().subject}</div>
                                 </div>
-                                <div><strong>Subject:</strong> {j().subject}</div>
-                                <div><strong>Status:</strong> <span class={`badge ${statusBadge()}`}>{j().status}</span></div>
-                                <div><strong>Recipients:</strong> {j().totalRecipients}</div>
-                                <div><strong>Sent:</strong> {j().sentCount} · <strong>Failed:</strong> {j().failedCount}</div>
-                                <Show when={j().startedAt}>
-                                    <div><strong>Started:</strong> {new Date(j().startedAt!,).toLocaleString()}</div>
-                                </Show>
-                                <Show when={j().completedAt}>
-                                    <div><strong>Completed:</strong> {new Date(j().completedAt!,).toLocaleString()}</div>
-                                </Show>
+
+                                {/* Row 3 — counts (left) + timestamps (right) */}
+                                <div class="job-summary__row job-summary__row--stats">
+                                    <dl class="job-summary__stats">
+                                        <div>
+                                            <dt>Status</dt>
+                                            <dd><span class={`badge ${statusBadge()}`}>{j().status}</span></dd>
+                                        </div>
+                                        <div>
+                                            <dt>Sent</dt>
+                                            <dd>{j().sentCount}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Failed</dt>
+                                            <dd>{j().failedCount}</dd>
+                                        </div>
+                                    </dl>
+                                    <dl class="job-summary__stats">
+                                        <div>
+                                            <dt>Started</dt>
+                                            <dd>
+                                                <Show when={j().startedAt} fallback={<em class="form-help-muted">—</em>}>
+                                                    {new Date(j().startedAt!,).toLocaleString()}
+                                                </Show>
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt>Completed</dt>
+                                            <dd>
+                                                <Show when={j().completedAt} fallback={<em class="form-help-muted">—</em>}>
+                                                    {new Date(j().completedAt!,).toLocaleString()}
+                                                </Show>
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </div>
                             </div>
 
                             <div class="progress-bar" aria-label="Send progress">

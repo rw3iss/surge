@@ -256,26 +256,164 @@
     }
 }
 
+// ─── Job summary card ───────────────────────────────────────────────
+//
+// Three-row layout on wide screens:
+//   1. List name (left) | Recipients (right)
+//   2. Template name + subject sub-label
+//   3. Status / Sent / Failed (left)  |  Started / Completed (right)
+//
+// On narrow screens (≤ $breakpoint-md) every row collapses to a
+// single column so each label/value lives on its own line.
 .job-summary {
     background: var(--admin-bg-subtle, #f7fafc);
     border: 1px solid var(--admin-border, #{$border-color});
-    border-radius: 6px;
-    padding: 1rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0.5rem 1.5rem;
+    border-radius: 8px;
+    padding: 1.25rem;
     margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+
+    &__row {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+
+        &--header {
+            align-items: baseline;
+            justify-content: space-between;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--admin-border, #{$border-color});
+        }
+
+        &--template {
+            flex-direction: column;
+            gap: 0.2rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--admin-border, #{$border-color});
+        }
+
+        &--stats {
+            justify-content: space-between;
+            gap: 2.5rem;
+        }
+    }
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 0;
+
+        &--end { align-items: flex-end; text-align: right; }
+    }
+
+    &__label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--admin-text-muted, #{$text-light});
+    }
+
+    &__value {
+        color: var(--admin-text, #{$text-color});
+        word-break: break-word;
+
+        &--strong {
+            font-size: 1.05rem;
+            font-weight: 500;
+        }
+    }
+
+    &__template {
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: var(--admin-text, #{$text-color});
+        word-break: break-word;
+    }
+
+    &__subject {
+        font-size: 0.875rem;
+        color: var(--admin-text-muted, #{$text-light});
+        word-break: break-word;
+    }
+
+    // Two-column key/value lists for the stats row. Each <dl> stacks
+    // its rows; on narrow screens the two <dl>s themselves stack too.
+    &__stats {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+
+        > div {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        dt {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--admin-text-muted, #{$text-light});
+            margin: 0;
+        }
+
+        dd {
+            margin: 0;
+            font-size: 0.875rem;
+            color: var(--admin-text, #{$text-color});
+            text-align: right;
+            word-break: break-word;
+        }
+    }
 
     &__custom-tag {
         display: inline-block;
-        margin-left: 0.15rem;
-        padding: 1px 6px;
+        margin-left: 0.25rem;
+        padding: 2px 8px;
         border-radius: 999px;
         background: #fff3cd;
         color: #856404;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 500;
         text-transform: lowercase;
+        vertical-align: middle;
+    }
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+        padding: 1rem;
+        gap: 1rem;
+
+        &__row {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        &__row--header {
+            align-items: stretch;
+        }
+
+        &__field--end {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        &__stats > div {
+            // On narrow screens, label sits above value for breathing room.
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.1rem;
+        }
+
+        &__stats dd { text-align: left; }
     }
 }
 
