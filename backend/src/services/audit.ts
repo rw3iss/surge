@@ -5,6 +5,12 @@ interface AuditLogEntry {
     userId: string;
     action: string; // 'create' | 'update' | 'delete' | 'ban' | 'unban' etc.
     entityType: string; // 'page' | 'post' | 'campaign' | 'form' | 'user' | 'media' | 'settings'
+    /**
+     * Entity primary key (UUID), OR a settings-row key like
+     * 'site_branding' / 'features'. Non-UUID strings are stored in
+     * `new_values.entityKey` rather than the `entity_id` column,
+     * since `audit_log.entity_id` is UUID-typed.
+     */
     entityId?: string;
     oldValues?: Record<string, unknown>;
     newValues?: Record<string, unknown>;
@@ -12,8 +18,20 @@ interface AuditLogEntry {
     userAgent?: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function logAudit(entry: AuditLogEntry,): Promise<void> {
     try {
+        // audit_log.entity_id is UUID-typed. Non-UUID entityIds (the
+        // settings keys like 'features', 'site_branding') get null'd
+        // out for the column and folded into newValues so the
+        // information is preserved.
+        const isUuidId = entry.entityId && UUID_RE.test(entry.entityId,);
+        const entityIdForDb = isUuidId ? entry.entityId! : null;
+        const newValues = !isUuidId && entry.entityId
+            ? { ...(entry.newValues ?? {}), entityKey: entry.entityId, }
+            : entry.newValues;
+
         await query(
             `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -21,9 +39,9 @@ export async function logAudit(entry: AuditLogEntry,): Promise<void> {
                 entry.userId,
                 entry.action,
                 entry.entityType,
-                entry.entityId || null,
+                entityIdForDb,
                 entry.oldValues ? JSON.stringify(entry.oldValues,) : null,
-                entry.newValues ? JSON.stringify(entry.newValues,) : null,
+                newValues ? JSON.stringify(newValues,) : null,
                 entry.ipAddress || null,
                 entry.userAgent || null,
             ],

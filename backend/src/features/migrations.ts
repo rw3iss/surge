@@ -26,12 +26,30 @@ export async function applyFeatureMigrations(
     key: FeatureKey,
     client: PoolClient,
 ): Promise<string[]> {
-    const lockKey = `feature:${key}`;
-    await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [lockKey,],);
-
     const cfg = FEATURE_REGISTRY[key];
     const filenames = cfg.migrations ?? [];
     if (filenames.length === 0) return [];
+
+    // Self-bootstrap the migrations table — installs created before
+    // the @feature tagging shipped don't have the column, and
+    // `runMigrations` only runs at boot via the CLI / setup wizard,
+    // not every server start. CREATE TABLE IF NOT EXISTS + ALTER
+    // ADD COLUMN IF NOT EXISTS are both idempotent and safe inside
+    // an existing transaction.
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            id SERIAL PRIMARY KEY,
+            filename VARCHAR(255) NOT NULL UNIQUE,
+            applied_at TIMESTAMPTZ DEFAULT NOW(),
+            feature VARCHAR(64) NULL
+        );
+    `,);
+    await client.query(
+        `ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS feature VARCHAR(64) NULL`,
+    );
+
+    const lockKey = `feature:${key}`;
+    await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [lockKey,],);
 
     const appliedRes = await client.query<{ filename: string; }>(
         `SELECT filename FROM schema_migrations WHERE filename = ANY($1::text[])`,
