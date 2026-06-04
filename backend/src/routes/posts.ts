@@ -1,5 +1,6 @@
 import { z, } from 'zod';
 import { defineRoute, reply, } from '../api/defineRoute';
+import { isAdminRole, } from '../api/roles';
 import { NotFoundError, } from '../core/errors';
 import * as posts from '../services/posts';
 
@@ -49,8 +50,6 @@ const listQuery = z.object({
     status: z.string().optional(),
     sort: z.string().optional(),
 },);
-
-const isAdminRole = (role?: string,) => role === 'admin' || role === 'sysadmin';
 
 // ─── Routes ───────────────────────────────────────────────────────
 // Order matters: literal paths (/search, /slug/:slug, /bulk) must be
@@ -120,7 +119,7 @@ export const postsRoutes = [
         summary: 'Fetch a post by slug. Gated content yields CONTENT_LOCKED with a preview in error.details.',
         input: {
             params: z.object({ slug: z.string(), },),
-            query: z.object({ preview: z.string().optional(), },).passthrough(),
+            query: z.object({ preview: z.string().optional(), },),
         },
         handler: ({ params, query, user, },) => {
             const adminPreview = query.preview === 'admin' && isAdminRole(user?.role,);
