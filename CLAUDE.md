@@ -27,7 +27,7 @@ The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are histor
 - **Social connections** — pull-based sync (YouTube, Instagram, X, Facebook, TikTok, Patreon).
 - **Header & footer editors** — drag-and-drop rows + columns, fully styled.
 - **Appearance** — shared color swatches (`swatch:{id}` references), custom fonts (`@font-face` injection), reusable block-style templates.
-- **Backend SDK** — `cms.*` typed surface for routes / scripts / future plugins. `cms.pages.reorderBlocks(pageId, parentBlockId, blockIds, ctx)` is per-parent.
+- **Backend SDK** — `cms.*` typed surface for routes / scripts / future plugins. `cms.pages.reorderBlocks(pageId, parentBlockId, blockIds, ctx)` is per-parent. Capability modules are migrating to `services/<module>.ts` as part of the headless-API work; `sdk/` files re-export from `services/` during the transition.
 - **Block IDs** — admin generates real UUIDs (`crypto.randomUUID`) so a child block can reference its parent before either has saved. Backend `createBlock` accepts a client-supplied `id`.
 - **First-run setup wizard** — `/setup` walks env, migrations, seed, admin creation.
 - **PWA + CDN-ready** — static frontend bundle, app shell.
@@ -68,6 +68,7 @@ rw-cms/
 ### Architecture (SOLID Principles)
 ```
 backend/src/
+├── api/             # Route framework: defineRoute(), registry (mount + manifest), auth tiers, role helpers
 ├── repositories/    # Data access layer (SQL queries, row mapping)
 │   ├── base.repo.ts       # Shared pagination, findById, updateById, deleteById
 │   ├── pages.repo.ts      # Pages & blocks queries
@@ -142,6 +143,8 @@ backend/src/
 - Multer for file uploads, sharp for image thumbnails, nanoid for filenames
 - Custom error classes (AppError, NotFoundError, ValidationError, etc.)
 - PostgreSQL triggers for: updated_at, campaign totals, form submission counts, search vectors
+- **Route manifest framework** — new/converted modules declare endpoints with `defineRoute({ method, path, auth, summary, input(zod), handler })` in `routes/<module>.ts` and mount via `registerModule()` (`backend/src/api/`). Auth tiers: `public | optional | user | admin | apiKey` (shared `AuthTier`; `apiKey` is admin-equivalent until the API-key phase lands). Handlers return data (or `reply(data, {meta,status})`); errors throw and funnel to `middleware/error.ts`. Business logic lives in `services/<module>.ts` (the old `sdk/` modules are shims; the `cms.*` aggregate still works). `manifest()` emits the machine-readable route list for docs/SDK generation. Converted so far: posts. CSRF is skipped for Bearer-authenticated requests.
+- Posts listing is unified: `GET /posts` (optional auth) serves the public gate by default; admins sending `status`/`sort` get the all-statuses admin view. `/posts/public` is gone. Gated posts return `error.code 'CONTENT_LOCKED'` with preview payload in `error.details` (shared `ContentLockedDetails`).
 
 ## Frontend
 
@@ -215,6 +218,7 @@ npm run dev:backend      # Backend only (port 3001)
 npm run build            # Build all workspaces
 npm run db:migrate       # Run database migrations
 npm run db:seed          # Seed initial data
+npm test -w backend      # Run backend unit tests (vitest)
 ```
 
 ## External Services

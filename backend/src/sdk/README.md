@@ -1,5 +1,11 @@
 # CMS SDK
 
+> **Note (2026-06):** capability modules are migrating to
+> `backend/src/services/<module>.ts` as part of the headless API work
+> (see `docs/superpowers/specs/2026-06-04-headless-api-design.md`).
+> The `cms.*` aggregate and these docs remain valid — files under
+> `sdk/` re-export from `services/` during the transition.
+
 Single import surface for every capability in the CMS. Routes, scripts, tests, and plugins all import the same `cms` object — business logic, cache invalidation, and audit logging live in one place.
 
 ```ts
