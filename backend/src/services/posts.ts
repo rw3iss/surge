@@ -221,7 +221,12 @@ export async function update(
     // Snapshot existing state BEFORE update for revision history.
     try {
         const existing = await repo.findPostById(id,);
-        await revisionsRepo.createRevision('post', id, existing as never, ctx.userId || null,);
+        await revisionsRepo.createRevision(
+            'post',
+            id,
+            existing as unknown as Record<string, unknown>,
+            ctx.userId || null,
+        );
         await revisionsRepo.pruneRevisions('post', id, 50,);
     } catch {
         // Don't fail the save if the revision snapshot fails.
@@ -294,7 +299,14 @@ export async function getRevision(postId: string, version: number,) {
     return revisionsRepo.getRevision('post', postId, version,);
 }
 
-/** Restore a revision, snapshotting current state first. */
+/**
+ * Restore a revision, snapshotting current state first.
+ *
+ * Unlike `update`, the pre-restore snapshot here is intentionally NOT
+ * wrapped in a swallow-errors try/catch: a snapshot failure aborts the
+ * restore, and `getRevision` throws `NotFoundError` for an unknown
+ * version.
+ */
 export async function restoreRevision(
     postId: string,
     version: number,
@@ -306,7 +318,7 @@ export async function restoreRevision(
     await revisionsRepo.createRevision(
         'post',
         postId,
-        current as never,
+        current as unknown as Record<string, unknown>,
         ctx.userId || null,
         `Pre-restore snapshot (restoring v${version})`,
     );
