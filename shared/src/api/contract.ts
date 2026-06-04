@@ -82,7 +82,7 @@ export type ErrorCode = (typeof ERROR_CODES)[number];
 /** @deprecated use ErrorCode */
 export type ApiErrorCode = ErrorCode;
 
-export interface ValidationError {
+export interface FieldValidationError {
     field: string;
     message: string;
     code: string;

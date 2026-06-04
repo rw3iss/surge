@@ -4,6 +4,8 @@
  * `backend/src/routes/posts.ts`.
  */
 
+import type { ContentAccessLevel, } from '../../types/content';
+
 /** Query accepted by GET /posts. */
 export interface PostListQuery {
     page?: number;
@@ -28,7 +30,7 @@ export interface PostListQuery {
 /** details payload on a CONTENT_LOCKED error from GET /posts/slug/:slug */
 export interface ContentLockedDetails {
     locked: true;
-    accessLevel: string;
+    accessLevel: ContentAccessLevel;
     preview: {
         title: string;
         description: string | null;
