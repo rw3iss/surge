@@ -1,17 +1,9 @@
-import { Router, } from 'express';
 import { z, } from 'zod';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import { checkContentAccess, ContentAccessLevel, } from '../middleware/content-access';
-import { ValidationError, } from '../middleware/error';
-import * as postsRepo from '../repositories/posts.repo';
-import * as revisionsRepo from '../repositories/revisions.repo';
-import { auditFromRequest, cms, } from '../sdk';
-import { logAudit, } from '../services/audit';
-import { cache, } from '../services/cache';
-import { handleBulkAction, } from '../utils/bulkActions';
-import { handleRouteError, sendCreated, sendPaginated, sendSuccess, } from '../utils/response';
+import { defineRoute, reply, } from '../api/defineRoute';
+import { NotFoundError, } from '../core/errors';
+import * as posts from '../services/posts';
 
-const router = Router();
+// ─── Schemas ──────────────────────────────────────────────────────
 
 const contentBlockSchema = z.object({
     id: z.string().optional(),
@@ -42,312 +34,175 @@ const postSchema = z.object({
     contentBlocks: z.array(contentBlockSchema,).optional(),
 },);
 
-// ─── Public Routes ───
+const idParams = z.object({ id: z.string(), },);
 
-router.get('/public', authenticate(false,), async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { page = 1, limit = 10, tag, category, search, before, after, ids, withBlocks, } = req.query;
-        const pagination = { page: Number(page,), limit: Number(limit,), };
-
-        // `ids` arrives as a comma-separated string from the client.
-        // Empty / whitespace-only entries are dropped; we don't attempt
-        // UUID validation here — Postgres rejects bad casts, which the
-        // route's error handler turns into a 400.
-        const idList = typeof ids === 'string' && ids.trim()
-            ? ids.split(',',).map(s => s.trim(),).filter(Boolean,)
-            : undefined;
-
-        const wantBlocks = withBlocks === '1' || withBlocks === 'true';
-        // Admins requesting an ID-restricted feed (e.g. the post-list
-        // block in admin preview) get to see drafts they've pinned —
-        // the picker happily lets them pin drafts, so the preview must
-        // surface them or the operator has no way to verify their
-        // selections. Non-admins never see drafts; date/search
-        // branches still honor the public gate even for admins.
-        const isAdmin = req.user?.role === 'admin' || req.user?.role === 'sysadmin';
-
-        const cacheKey = `posts:public:${page}:${limit}:${tag || ''}:${category || ''}:${search || ''}:${
-            before || ''}:${after || ''}:${idList ? idList.join('|',) : ''}:${wantBlocks ? 'b' : ''}`;
-
-        if (!req.user) {
-            const cached = await cache.get(cacheKey,);
-            if (cached) return res.json({ success: true, ...cached, },);
-        }
-
-        const result = await postsRepo.findPublicPosts(
-            {
-                tag: tag as string,
-                category: category as string,
-                search: search as string,
-                publishedBefore: before as string,
-                publishedAfter: after as string,
-                ids: idList,
-                withContentBlocks: wantBlocks,
-                includeNonPublishedForIds: isAdmin,
-            },
-            pagination,
-        );
-
-        const response = {
-            data: result.data,
-            meta: {
-                page: pagination.page,
-                limit: pagination.limit,
-                total: result.total,
-                totalPages: Math.ceil(result.total / pagination.limit,),
-            },
-        };
-
-        if (!req.user) {
-            await cache.set(cacheKey, response, 300,);
-        }
-
-        res.json({ success: true, ...response, },);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch posts',);
-    }
+const listQuery = z.object({
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(10,),
+    tag: z.string().optional(),
+    category: z.string().optional(),
+    search: z.string().optional(),
+    before: z.string().optional(),
+    after: z.string().optional(),
+    ids: z.string().optional(),
+    withBlocks: z.string().optional(),
+    status: z.string().optional(),
+    sort: z.string().optional(),
 },);
 
-router.get('/slug/:slug', authenticate(false,), async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { slug, } = req.params;
-        const cacheKey = `post:slug:${slug}`;
-        const isAdminPreview = req.query.preview === 'admin' && req.user?.role === 'admin';
+const isAdminRole = (role?: string,) => role === 'admin' || role === 'sysadmin';
 
-        if (!req.user) {
-            const cached = await cache.get(cacheKey,);
-            if (cached) return sendSuccess(res, cached,);
-        }
+// ─── Routes ───────────────────────────────────────────────────────
+// Order matters: literal paths (/search, /slug/:slug, /bulk) must be
+// declared before the /:id catch-all.
 
-        const post = isAdminPreview ?
-            await postsRepo.findPostBySlugAnyStatus(slug,) :
-            await postsRepo.findPostBySlug(slug,);
-        if (!post) {
-            return res.status(404,).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Post not found', },
-            },);
-        }
+export const postsRoutes = [
 
-        if (post.isPrivate && !req.user) {
-            return res.status(401,).json({
-                success: false,
-                error: { code: 'UNAUTHORIZED', message: 'Authentication required', },
-            },);
-        }
+    defineRoute({
+        method: 'get', path: '/', auth: 'optional',
+        summary: 'List posts. Public gate by default; admins passing status/sort get the all-statuses listing.',
+        input: { query: listQuery, },
+        handler: async ({ user, query, },) => {
+            const isAdmin = isAdminRole(user?.role,);
 
-        // Content access level check
-        const accessLevel = (post.accessLevel || 'public') as ContentAccessLevel;
-        if (accessLevel !== 'public') {
-            const accessCheck = await checkContentAccess(accessLevel, req.user,);
-            if (!accessCheck.allowed) {
-                return res.status(403,).json({
-                    success: false,
-                    locked: true,
-                    accessLevel,
-                    preview: {
-                        title: post.title,
-                        description: post.excerpt || post.metaDescription || null,
-                        featuredImage: post.featuredImage || null,
-                    },
-                    error: { code: 'CONTENT_LOCKED', message: accessCheck.reason || 'Access denied', },
-                },);
+            // Admin view is explicit: only when an admin sends status or
+            // sort. An admin browsing the public site sends neither and
+            // gets the public gate like everyone else.
+            if (isAdmin && (query.status !== undefined || query.sort !== undefined)) {
+                const status = query.status && query.status !== 'all' ? query.status : undefined;
+                const result = await posts.list(
+                    { status, search: query.search, sort: query.sort, },
+                    { page: query.page, limit: query.limit, },
+                );
+                return reply(result.data, { meta: result.meta, },);
             }
-        }
 
-        if (!post.isPrivate && accessLevel === 'public') {
-            await cache.set(cacheKey, post, 300,);
-        }
+            const idList = query.ids?.trim() ?
+                query.ids.split(',',).map((s,) => s.trim(),).filter(Boolean,) :
+                undefined;
 
-        sendSuccess(res, post,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch post',);
-    }
-},);
-
-router.get('/search', authenticate(false,), async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { q, page = 1, limit = 10, } = req.query;
-        if (!q || typeof q !== 'string') {
-            throw new ValidationError('Search query is required',);
-        }
-
-        const pagination = { page: Number(page,), limit: Number(limit,), };
-        const result = await postsRepo.searchPosts(q, pagination,);
-        sendPaginated(res, result.data, pagination.page, pagination.limit, result.total,);
-    } catch (error) {
-        handleRouteError(res, error, 'search posts',);
-    }
-},);
-
-// ─── Admin Routes ───
-
-router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { status, search, sort, page = 1, limit = 20, } = req.query;
-        const pagination = { page: Number(page,), limit: Number(limit,), };
-
-        const result = await postsRepo.findAllPosts(
-            { status: status as string, search: search as string, sort: sort as string, },
-            pagination,
-        );
-
-        sendPaginated(res, result.data, pagination.page, pagination.limit, result.total,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch posts',);
-    }
-},);
-
-router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const post = await postsRepo.findPostById(req.params.id,);
-        sendSuccess(res, post,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch post',);
-    }
-},);
-
-router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        // Migrated to the SDK — domain logic, cache invalidation,
-        // and audit logging now live in `cms.posts.create`. The
-        // route is left with HTTP shaping only.
-        const data = postSchema.parse(req.body,);
-        const post = await cms.posts.create(data, auditFromRequest(req,),);
-        sendCreated(res, post,);
-    } catch (error) {
-        handleRouteError(res, error, 'create post',);
-    }
-},);
-
-router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = postSchema.partial().parse(req.body,);
-        // Snapshot existing state BEFORE update for revision history
-        try {
-            const existing = await postsRepo.findPostById(req.params.id,);
-            await revisionsRepo.createRevision('post', req.params.id, existing as any, req.userId || null,);
-            await revisionsRepo.pruneRevisions('post', req.params.id, 50,);
-        } catch {
-            // Don't fail the save if revision snapshot fails
-        }
-        const post = await postsRepo.updatePost(req.params.id, data,);
-        await cache.invalidatePostCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'post',
-            entityId: req.params.id,
-            newValues: data,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, post,);
-    } catch (error) {
-        handleRouteError(res, error, 'update post',);
-    }
-},);
-
-router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await postsRepo.deletePost(req.params.id,);
-        await cache.invalidatePostCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'delete',
-            entityType: 'post',
-            entityId: req.params.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { message: 'Post deleted', },);
-    } catch (error) {
-        handleRouteError(res, error, 'delete post',);
-    }
-},);
-
-// ─── Revisions ───
-
-router.get('/:id/revisions', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const revisions = await revisionsRepo.listRevisions('post', req.params.id,);
-        sendSuccess(res, revisions,);
-    } catch (error) {
-        handleRouteError(res, error, 'list post revisions',);
-    }
-},);
-
-router.get('/:id/revisions/:version', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const version = parseInt(req.params.version, 10,);
-        const revision = await revisionsRepo.getRevision('post', req.params.id, version,);
-        sendSuccess(res, revision,);
-    } catch (error) {
-        handleRouteError(res, error, 'get post revision',);
-    }
-},);
-
-router.post(
-    '/:id/revisions/:version/restore',
-    authenticate(),
-    requireAdmin,
-    async (req: AuthenticatedRequest, res,) => {
-        try {
-            const version = parseInt(req.params.version, 10,);
-            const revision = await revisionsRepo.getRevision('post', req.params.id, version,);
-            const snap = revision.snapshot as any;
-            // Snapshot current state before restore
-            const current = await postsRepo.findPostById(req.params.id,);
-            await revisionsRepo.createRevision(
-                'post',
-                req.params.id,
-                current as any,
-                req.userId || null,
-                `Pre-restore snapshot (restoring v${version})`,
-            );
-            const restored = await postsRepo.updatePost(req.params.id, {
-                title: snap.title,
-                slug: snap.slug,
-                excerpt: snap.excerpt,
-                content: snap.content,
-                status: snap.status,
-                accessLevel: snap.accessLevel,
-                tags: snap.tags,
-                contentBlocks: snap.contentBlocks,
-                publishAt: snap.publishAt,
+            const result = await posts.listPublicCached({
+                filters: {
+                    tag: query.tag,
+                    category: query.category,
+                    search: query.search,
+                    publishedBefore: query.before,
+                    publishedAfter: query.after,
+                    ids: idList,
+                    withContentBlocks: query.withBlocks === '1' || query.withBlocks === 'true',
+                },
+                pagination: { page: query.page, limit: query.limit, },
+                anonymous: !user,
+                isAdmin,
             },);
-            await cache.invalidatePostCache(req.params.id,);
-            sendSuccess(res, restored,);
-        } catch (error) {
-            handleRouteError(res, error, 'restore post revision',);
-        }
-    },
-);
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-// ─── Bulk Actions ───
+    defineRoute({
+        method: 'get', path: '/search', auth: 'public',
+        summary: 'Full-text search over published posts.',
+        input: {
+            query: z.object({
+                q: z.string().min(1,),
+                page: z.coerce.number().int().min(1,).default(1,),
+                limit: z.coerce.number().int().min(1,).max(100,).default(10,),
+            },),
+        },
+        handler: async ({ query, },) => {
+            const result = await posts.search(query.q, { page: query.page, limit: query.limit, },);
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-router.post('/bulk', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    await handleBulkAction(res, req.body, {
-        table: 'posts',
-        allowedStatuses: ['draft', 'published', 'scheduled', 'archived', 'deleted',],
-        softDelete: true,
-        onInvalidate: () => cache.invalidatePostCache(),
-    },);
-},);
+    defineRoute({
+        method: 'get', path: '/slug/:slug', auth: 'optional',
+        summary: 'Fetch a post by slug. Gated content yields CONTENT_LOCKED with a preview in error.details.',
+        input: {
+            params: z.object({ slug: z.string(), },),
+            query: z.object({ preview: z.string().optional(), },).passthrough(),
+        },
+        handler: ({ params, query, user, },) => {
+            const adminPreview = query.preview === 'admin' && isAdminRole(user?.role,);
+            return posts.getPublicBySlug(params.slug, user, adminPreview,);
+        },
+    },),
 
-// ─── Content Block Reorder (9.4 from TODO) ───
+    defineRoute({
+        method: 'post', path: '/bulk', auth: 'admin',
+        summary: 'Bulk status change / soft-delete by id list.',
+        handler: ({ body, },) => posts.bulk(body,),
+    },),
 
-router.put('/:postId/blocks/reorder', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { blockIds, } = req.body;
-        if (!Array.isArray(blockIds,)) throw new ValidationError('blockIds must be an array',);
+    defineRoute({
+        method: 'get', path: '/:id', auth: 'admin',
+        summary: 'Fetch a post by id (any status).',
+        input: { params: idParams, },
+        handler: async ({ params, },) => {
+            const post = await posts.getById(params.id,);
+            if (!post) throw new NotFoundError('Post',);
+            return post;
+        },
+    },),
 
-        await postsRepo.reorderContentBlocks(req.params.postId, blockIds,);
-        await cache.invalidatePostCache(req.params.postId,);
-        sendSuccess(res, { message: 'Blocks reordered', },);
-    } catch (error) {
-        handleRouteError(res, error, 'reorder blocks',);
-    }
-},);
+    defineRoute({
+        method: 'post', path: '/', auth: 'admin',
+        summary: 'Create a post.',
+        input: { body: postSchema, },
+        handler: async ({ body, audit, },) => {
+            const post = await posts.create(body, audit(),);
+            return reply(post, { status: 201, },);
+        },
+    },),
 
-export default router;
+    defineRoute({
+        method: 'put', path: '/:id', auth: 'admin',
+        summary: 'Update a post. Snapshots a revision first.',
+        input: { params: idParams, body: postSchema.partial(), },
+        handler: ({ params, body, audit, },) => posts.update(params.id, body, audit(),),
+    },),
+
+    defineRoute({
+        method: 'delete', path: '/:id', auth: 'admin',
+        summary: 'Delete a post.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await posts.remove(params.id, audit(),);
+            return { message: 'Post deleted', };
+        },
+    },),
+
+    defineRoute({
+        method: 'get', path: '/:id/revisions', auth: 'admin',
+        summary: 'List a post\'s saved revisions.',
+        input: { params: idParams, },
+        handler: ({ params, },) => posts.listRevisions(params.id,),
+    },),
+
+    defineRoute({
+        method: 'get', path: '/:id/revisions/:version', auth: 'admin',
+        summary: 'Fetch one revision snapshot.',
+        input: { params: z.object({ id: z.string(), version: z.coerce.number().int(), },), },
+        handler: ({ params, },) => posts.getRevision(params.id, params.version,),
+    },),
+
+    defineRoute({
+        method: 'post', path: '/:id/revisions/:version/restore', auth: 'admin',
+        summary: 'Restore a revision (snapshots current state first).',
+        input: { params: z.object({ id: z.string(), version: z.coerce.number().int(), },), },
+        handler: ({ params, audit, },) => posts.restoreRevision(params.id, params.version, audit(),),
+    },),
+
+    defineRoute({
+        method: 'put', path: '/:id/blocks/reorder', auth: 'admin',
+        summary: 'Reorder a post\'s content blocks.',
+        input: {
+            params: idParams,
+            body: z.object({ blockIds: z.array(z.string(),), },),
+        },
+        handler: async ({ params, body, },) => {
+            await posts.reorderContentBlocks(params.id, body.blockIds,);
+            return { message: 'Blocks reordered', };
+        },
+    },),
+];
