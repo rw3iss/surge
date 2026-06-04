@@ -56,7 +56,9 @@ export interface RouteDef {
     input?: RouteInput;
     /** raw handlers write to `res` themselves (streams, redirects,
      *  XML, webhooks). The wrapper skips response shaping but still
-     *  catches errors and registers the route in the manifest. */
+     *  catches errors and registers the route in the manifest. A raw
+     *  handler MUST end the response itself (res.json / res.end /
+     *  redirect) or the request will hang. */
     raw?: boolean;
     handler: (ctx: HandlerCtx<never, never, never>,) => Promise<unknown> | unknown;
 }

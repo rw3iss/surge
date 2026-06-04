@@ -27,6 +27,9 @@ export function defineRoute<
     raw?: boolean;
     handler: (ctx: HandlerCtx<z.infer<P>, z.infer<Q>, z.infer<B>>,) => Promise<unknown> | unknown;
 },): RouteDef {
+    // Safe: the inline parameter type already structurally constrains the
+    // input. This double cast only erases the generic-to-`never` variance
+    // so the value can be stored in the non-generic RouteDef.
     return def as unknown as RouteDef;
 }
 

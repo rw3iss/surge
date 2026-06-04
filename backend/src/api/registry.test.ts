@@ -81,4 +81,62 @@ describe('route framework', () => {
             method: 'GET', path: '/x', auth: 'public', summary: 'example',
         },);
     },);
+
+    it('lets a raw handler own the response without re-shaping', async () => {
+        const app = appFor([defineRoute({
+            method: 'get', path: '/raw', auth: 'public', summary: 't', raw: true,
+            handler: ({ res, },) => { res.status(204,).end(); },
+        },),],);
+        const res = await request(app,).get('/raw',);
+        expect(res.status,).toBe(204,);
+        expect(res.text,).toBe('',);
+        expect(res.body,).toEqual({},);
+    },);
+
+    it('defensively skips re-shaping when a non-raw handler already responded', async () => {
+        const app = appFor([defineRoute({
+            method: 'get', path: '/early', auth: 'public', summary: 't',
+            handler: ({ res, },) => {
+                res.status(202,).json({ ok: true, },);
+                return { ignored: true, };
+            },
+        },),],);
+        const res = await request(app,).get('/early',);
+        expect(res.status,).toBe(202,);
+        expect(res.body,).toEqual({ ok: true, },);
+    },);
+
+    it('parses and coerces path params through the schema', async () => {
+        const app = appFor([defineRoute({
+            method: 'get', path: '/items/:id', auth: 'public', summary: 't',
+            input: { params: z.object({ id: z.coerce.number().int(), },), },
+            handler: ({ params, },) => ({ id: params.id, },),
+        },),],);
+        const res = await request(app,).get('/items/42',);
+        expect(res.body.data.id,).toBe(42,);
+    },);
+
+    it('funnels async rejections into the shared envelope', async () => {
+        const app = appFor([defineRoute({
+            method: 'get', path: '/async-missing', auth: 'public', summary: 't',
+            handler: async () => { throw new NotFoundError('Thing',); },
+        },),],);
+        const res = await request(app,).get('/async-missing',);
+        expect(res.status,).toBe(404,);
+        expect(res.body,).toEqual({
+            success: false,
+            error: { code: 'NOT_FOUND', message: 'Thing not found', },
+        },);
+    },);
+
+    it('treats a non-raw undefined return as a 500 INTERNAL_ERROR', async () => {
+        const app = appFor([defineRoute({
+            method: 'get', path: '/forgot-raw', auth: 'public', summary: 't',
+            handler: () => { /* writes nothing, returns undefined */ },
+        },),],);
+        const res = await request(app,).get('/forgot-raw',);
+        expect(res.status,).toBe(500,);
+        expect(res.body.success,).toBe(false,);
+        expect(res.body.error.code,).toBe('INTERNAL_ERROR',);
+    },);
 },);

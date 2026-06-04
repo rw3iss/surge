@@ -39,7 +39,17 @@ function wrap(def: RouteDef,): RequestHandler {
                 audit: () => auditFromRequest(req,),
             };
             const result = await def.handler(ctx as never,);
+            // Two escape hatches. `def.raw` is the declared opt-out: the
+            // handler owns the response (streams, redirects, XML, webhooks)
+            // and we never shape it. `res.headersSent` is the defensive
+            // catch for a non-raw handler that wrote to res anyway — bail
+            // rather than crash with ERR_HTTP_HEADERS_SENT.
             if (def.raw || res.headersSent) return;
+            if (result === undefined) {
+                return next(new Error(
+                    `Handler for ${def.method.toUpperCase()} ${def.path} returned undefined; raw handlers must set raw: true`,
+                ),);
+            }
             if (isReply(result,)) {
                 const payload: Record<string, unknown> = { success: true, data: result.data, };
                 if (result.meta) payload.meta = result.meta;
@@ -72,7 +82,10 @@ export function registerModule(module: string, defs: RouteDef[],): Router {
 }
 
 /** Machine-readable manifest — consumed by the docs generator (Phase 4)
- *  and the client SDK generator (follow-up project). */
+ *  and the client SDK generator (follow-up project). Input schemas are
+ *  intentionally omitted from the emitted shape for now, but the registry
+ *  retains the full RouteDefs (including live zod schemas), so those
+ *  generators can read them later without rework. */
 export function manifest() {
     return registry.map((entry,) => ({
         module: entry.module,
