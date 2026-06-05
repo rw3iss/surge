@@ -13,7 +13,7 @@ import { formsRoutes, } from './forms';
 import { healthRoutes, } from './health';
 import mailingListsRoutes, { publicMailingListsRouter, } from './mailingLists';
 import mailSendRoutes from './mailSend';
-import mailTemplatesRoutes from './mailTemplates';
+import { mailTemplatesRoutes, } from './mailTemplates';
 import mediaRoutes from './media';
 import { messagesRoutes, } from './messages';
 import { pagesRoutes, } from './pages';
@@ -52,7 +52,7 @@ router.use('/dashboard', registerModule('dashboard', dashboardRoutes, { mountPat
 router.use('/dev', registerModule('dev', devRoutes, { mountPath: '/api/v1/dev', },),);
 router.use('/fonts', registerModule('fonts', fontsRoutes, { mountPath: '/api/v1/fonts', },),);
 router.use('/mailing-lists', mailingListsRoutes,);
-router.use('/mail-templates', mailTemplatesRoutes,);
+router.use('/mail-templates', registerModule('mail-templates', mailTemplatesRoutes, { mountPath: '/api/v1/mail-templates', },),);
 router.use('/mail', mailSendRoutes,);
 router.use('/lists', publicMailingListsRouter,);
 
