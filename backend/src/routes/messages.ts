@@ -1,15 +1,9 @@
-import { Router, } from 'express';
 import { z, } from 'zod';
-import { config, } from '../config';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import * as messagesRepo from '../repositories/messages.repo';
-import { sendEmail, } from '../services/email';
-import { handleBulkAction, } from '../utils/bulkActions';
-import { logger, } from '../utils/logger';
-import { handleRouteError, sendCreated, sendSuccess, } from '../utils/response';
-import { sanitize, } from '../utils/sanitize';
+import { defineRoute, reply, } from '../api/defineRoute';
+import { NotFoundError, } from '../core/errors';
+import * as messages from '../services/messages';
 
-const router = Router();
+// ─── Schemas ──────────────────────────────────────────────────────
 
 const messageSchema = z.object({
     name: z.string().min(1,).max(255,),
@@ -22,137 +16,118 @@ const updateStatusSchema = z.object({
     status: z.enum(['unread', 'read', 'replied', 'archived', 'spam',],),
 },);
 
-// Submit contact message (public)
-router.post('/', authenticate(false,), async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = messageSchema.parse(req.body,);
+const listQuery = z.object({
+    status: z.string().optional(),
+    search: z.string().optional(),
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(50,),
+},);
 
-        // Sanitize user-submitted content
-        data.name = sanitize(data.name,);
-        data.message = sanitize(data.message,);
-        if (data.subject) data.subject = sanitize(data.subject,);
+const idParams = z.object({ id: z.string(), },);
 
-        const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',',)[0] || req.ip;
-        const userAgent = req.headers['user-agent'];
+// ─── Routes ───────────────────────────────────────────────────────
+// Literal paths (/bulk, /bulk-status, /bulk-delete) before /:id.
 
-        await messagesRepo.createMessage(data, req.userId || null, ipAddress!, userAgent,);
+export const messagesRoutes = [
 
-        // Send email notification to admin
-        try {
-            await sendEmail({
-                to: config.adminEmails[0] || config.email.from || 'admin@example.com',
-                subject: `New Contact Message: ${data.subject || 'No Subject'}`,
-                html: `
-          <h2>New Contact Message</h2>
-          <p><strong>From:</strong> ${data.name} (${data.email})</p>
-          <p><strong>Subject:</strong> ${data.subject || 'No Subject'}</p>
-          <p><strong>Message:</strong></p>
-          <p>${data.message.replace(/\n/g, '<br>',)}</p>
-          <hr>
-          <p><small>IP: ${ipAddress}</small></p>
-        `,
+    // Submit contact message (public)
+    defineRoute({
+        method: 'post', path: '/', auth: 'optional',
+        summary: 'Submit a contact message. Sanitizes input and notifies admins by email.',
+        input: { body: messageSchema, },
+        handler: async ({ body, req, userId, },) => {
+            const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',',)[0] || req.ip!;
+            await messages.submit({
+                name: body.name,
+                email: body.email,
+                subject: body.subject,
+                message: body.message,
+                userId: userId || null,
+                ipAddress,
+                userAgent: req.headers['user-agent'],
             },);
-        } catch (emailError) {
-            logger.warn('Failed to send email notification', { error: emailError, },);
-        }
+            return reply({ message: 'Message sent successfully', }, { status: 201, },);
+        },
+    },),
 
-        sendCreated(res, { message: 'Message sent successfully', },);
-    } catch (error) {
-        handleRouteError(res, error, 'submit contact message',);
-    }
-},);
+    // List messages (admin)
+    defineRoute({
+        method: 'get', path: '/', auth: 'admin',
+        summary: 'List contact messages with optional status/search filters.',
+        input: { query: listQuery, },
+        handler: async ({ query, },) => {
+            const result = await messages.list(
+                { status: query.status, search: query.search, },
+                { page: query.page, limit: query.limit, },
+            );
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-// Get all messages (admin)
-router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { status, search, page = 1, limit = 50, } = req.query;
-        const pagination = { page: Number(page,), limit: Number(limit,), };
+    // Unified bulk endpoint ({ ids, action, value })
+    defineRoute({
+        method: 'post', path: '/bulk', auth: 'admin',
+        summary: 'Bulk status change / delete by id list.',
+        handler: ({ body, },) => messages.bulk(body,),
+    },),
 
-        const result = await messagesRepo.findMessages(
-            { status: status as string, search: search as string, },
-            pagination,
-        );
+    // Bulk update status (admin)
+    defineRoute({
+        method: 'post', path: '/bulk-status', auth: 'admin',
+        summary: 'Bulk update message status.',
+        input: {
+            body: z.object({
+                messageIds: z.array(z.string().uuid(),),
+                status: z.enum(['unread', 'read', 'replied', 'archived', 'spam',],),
+            },),
+        },
+        handler: async ({ body, audit, },) => {
+            await messages.bulkUpdateStatus(body.messageIds, body.status, audit(),);
+            return { message: `${body.messageIds.length} messages updated`, };
+        },
+    },),
 
-        sendSuccess(res, result.data, {
-            page: pagination.page,
-            limit: pagination.limit,
-            total: result.total,
-            totalPages: Math.ceil(result.total / pagination.limit,),
-        },);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch messages',);
-    }
-},);
+    // Bulk delete (admin)
+    defineRoute({
+        method: 'post', path: '/bulk-delete', auth: 'admin',
+        summary: 'Bulk delete messages by id list.',
+        input: {
+            body: z.object({ messageIds: z.array(z.string().uuid(),), },),
+        },
+        handler: async ({ body, audit, },) => {
+            await messages.bulkRemove(body.messageIds, audit(),);
+            return { message: `${body.messageIds.length} messages deleted`, };
+        },
+    },),
 
-// Get message by ID (admin)
-router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const message = await messagesRepo.findMessageById(req.params.id,);
-        sendSuccess(res, message,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch message',);
-    }
-},);
+    // Get message by ID (admin)
+    defineRoute({
+        method: 'get', path: '/:id', auth: 'admin',
+        summary: 'Fetch a message by id (marks unread → read).',
+        input: { params: idParams, },
+        handler: async ({ params, },) => {
+            const message = await messages.getById(params.id,);
+            if (!message) throw new NotFoundError('Message',);
+            return message;
+        },
+    },),
 
-// Update message status (admin)
-router.put('/:id/status', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { status, } = updateStatusSchema.parse(req.body,);
-        const message = await messagesRepo.updateMessageStatus(req.params.id, status, req.userId,);
-        sendSuccess(res, message,);
-    } catch (error) {
-        handleRouteError(res, error, 'update message status',);
-    }
-},);
+    // Update message status (admin)
+    defineRoute({
+        method: 'put', path: '/:id/status', auth: 'admin',
+        summary: 'Update a message\'s status.',
+        input: { params: idParams, body: updateStatusSchema, },
+        handler: ({ params, body, audit, },) => messages.updateStatus(params.id, body.status, audit(),),
+    },),
 
-// Delete message (admin)
-router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await messagesRepo.deleteMessage(req.params.id,);
-        sendSuccess(res, { message: 'Message deleted', },);
-    } catch (error) {
-        handleRouteError(res, error, 'delete message',);
-    }
-},);
-
-// Unified bulk endpoint (matches /:entity/bulk pattern used by other admin lists)
-router.post('/bulk', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    await handleBulkAction(res, req.body, {
-        table: 'contact_messages',
-        allowedStatuses: ['unread', 'read', 'replied', 'archived', 'spam',],
-        softDelete: false,
-    },);
-},);
-
-// Bulk update status (admin)
-router.post('/bulk-status', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { messageIds, status, } = z.object({
-            messageIds: z.array(z.string().uuid(),),
-            status: z.enum(['unread', 'read', 'replied', 'archived', 'spam',],),
-        },).parse(req.body,);
-
-        await messagesRepo.bulkUpdateStatus(messageIds, status,);
-
-        sendSuccess(res, { message: `${messageIds.length} messages updated`, },);
-    } catch (error) {
-        handleRouteError(res, error, 'bulk update messages',);
-    }
-},);
-
-// Bulk delete (admin)
-router.post('/bulk-delete', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { messageIds, } = z.object({
-            messageIds: z.array(z.string().uuid(),),
-        },).parse(req.body,);
-
-        await messagesRepo.bulkDelete(messageIds,);
-
-        sendSuccess(res, { message: `${messageIds.length} messages deleted`, },);
-    } catch (error) {
-        handleRouteError(res, error, 'bulk delete messages',);
-    }
-},);
-
-export default router;
+    // Delete message (admin)
+    defineRoute({
+        method: 'delete', path: '/:id', auth: 'admin',
+        summary: 'Delete a message.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await messages.remove(params.id, audit(),);
+            return { message: 'Message deleted', };
+        },
+    },),
+];
