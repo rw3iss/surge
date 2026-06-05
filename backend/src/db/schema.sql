@@ -485,6 +485,28 @@ CREATE INDEX idx_audit_log_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX idx_audit_log_created_at ON audit_log(created_at DESC);
 
 -- =====================================================
+-- API KEYS
+-- =====================================================
+
+-- Headless/server-to-server authentication.
+-- Plaintext keys are NEVER stored: only sha256(key) lands in key_hash.
+-- key_prefix holds the first chars (e.g. 'ssk_a1b2c3d4') for display.
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    key_hash CHAR(64) NOT NULL UNIQUE,
+    key_prefix VARCHAR(16) NOT NULL,
+    scopes TEXT[] NOT NULL DEFAULT '{read}',
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    last_used_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys (key_hash) WHERE revoked_at IS NULL;
+
+-- =====================================================
 -- TRIGGERS FOR UPDATED_AT
 -- =====================================================
 
