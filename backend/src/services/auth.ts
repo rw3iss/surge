@@ -334,6 +334,54 @@ export function generateState(): string {
     return nanoid(32,);
 }
 
+/** Extract the client IP from common proxy headers, falling back to the
+ *  socket IP. Mirrors the inline extraction the auth routes used before
+ *  the orchestration moved here. */
+export function clientIp(
+    headers: Record<string, unknown>,
+    fallbackIp?: string,
+): string | undefined {
+    const forwarded = headers['x-forwarded-for'] as string | undefined;
+    return forwarded?.split(',',)[0]?.trim() || fallbackIp;
+}
+
+/** Localhost IPs accepted by the dev autologin gate. */
+const LOCALHOST_IPS = ['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost',];
+
+export function isLocalhostIp(ip: string,): boolean {
+    return LOCALHOST_IPS.includes(ip,);
+}
+
+/**
+ * Dev-only autologin: mint a full session for the highest-privilege
+ * admin (sysadmin preferred). The dev/localhost gate is enforced by the
+ * route before this is ever called; this only does the DB work.
+ *
+ * Returns the user row plus freshly-issued tokens so the route can set
+ * cookies and echo them in the body, exactly as before.
+ */
+export async function autologinAdmin(
+    ipAddress: string,
+    userAgent?: string,
+): Promise<{ user: User; accessToken: string; refreshToken: string; } | null> {
+    const result = await query(
+        `SELECT id, email, display_name, avatar_url, role, auth_provider,
+                patreon_id, patreon_tier, is_active, is_banned,
+                last_login_at, created_at, updated_at
+         FROM users WHERE role IN ('sysadmin', 'admin') ORDER BY CASE role WHEN 'sysadmin' THEN 0 ELSE 1 END LIMIT 1`,
+    );
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    const user = mapRow<User>(result.rows[0],);
+    const { accessToken, refreshToken, expiresAt, } = generateTokens(user.id, user.role,);
+    await createSession(user.id, accessToken, refreshToken, expiresAt, ipAddress, userAgent,);
+
+    return { user, accessToken, refreshToken, };
+}
+
 /**
  * Upsert Patreon membership data for a user based on the Patreon API response.
  */

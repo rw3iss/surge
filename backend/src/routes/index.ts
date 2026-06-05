@@ -2,7 +2,7 @@ import { Router, } from 'express';
 import { registerModule, } from '../api/registry';
 import { apiKeysRoutes, } from './apiKeys';
 import { auditRoutes, } from './audit';
-import authRoutes from './auth';
+import { authRoutes, } from './auth';
 import { blockStylesRoutes, } from './blockStyles';
 import { campaignsRoutes, } from './campaigns';
 import connectionsRoutes from './connections';
@@ -27,7 +27,7 @@ import { usersRoutes, } from './users';
 
 const router = Router();
 
-router.use('/auth', authRoutes,);
+router.use('/auth', registerModule('auth', authRoutes,),);
 router.use('/block-styles', registerModule('block-styles', blockStylesRoutes,),);
 router.use('/pages', registerModule('pages', pagesRoutes,),);
 router.use('/posts', registerModule('posts', postsRoutes,),);
