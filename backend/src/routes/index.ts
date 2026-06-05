@@ -1,7 +1,7 @@
 import { Router, } from 'express';
 import { registerModule, } from '../api/registry';
 import { apiKeysRoutes, } from './apiKeys';
-import auditRoutes from './audit';
+import { auditRoutes, } from './audit';
 import authRoutes from './auth';
 import blockStylesRoutes from './blockStyles';
 import campaignsRoutes from './campaigns';
@@ -44,7 +44,7 @@ router.use('/search', searchRoutes,);
 router.use('/health', registerModule('health', healthRoutes,),);
 router.use('/sitemap', sitemapRoutes,);
 router.use('/api-keys', registerModule('api-keys', apiKeysRoutes,),);
-router.use('/audit', auditRoutes,);
+router.use('/audit', registerModule('audit', auditRoutes,),);
 router.use('/dashboard', registerModule('dashboard', dashboardRoutes,),);
 router.use('/dev', registerModule('dev', devRoutes,),);
 router.use('/fonts', fontsRoutes,);
