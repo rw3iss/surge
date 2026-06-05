@@ -21,6 +21,7 @@ import { FEATURES, } from '../../config/features';
 // HeroContentEditor is now used via the 'carousel' block type, not in Settings.
 const SiteHeaderEditor = lazy(() => import('../../components/admin/editors/SiteHeaderEditor'));
 const SiteFooterEditor = lazy(() => import('../../components/admin/editors/SiteFooterEditor'));
+const ApiKeysPanel = lazy(() => import('../../components/admin/settings/ApiKeysPanel'));
 
 // ─── Tabs ───
 
@@ -30,6 +31,7 @@ const TABS = [
     { id: 'site-header', label: 'Site Header', },
     { id: 'site-footer', label: 'Site Footer', },
     { id: 'connections', label: 'Connections', },
+    { id: 'api-keys', label: 'API Keys', },
     { id: 'admin', label: 'Admin', },
 ] as const;
 
@@ -1689,6 +1691,11 @@ const AdminSettings: Component = () => {
                         Connect your social media accounts to display posts on the homepage and embed in articles.
                     </p>
                     <ConnectionsPanel />
+                </Show>
+
+                {/* ─── API Keys Tab ─── */}
+                <Show when={activeTab() === 'api-keys'}>
+                    <ApiKeysPanel />
                 </Show>
 
                 {/* ─── Admin Tab ─── */}
