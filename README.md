@@ -350,8 +350,80 @@ npm run dev:backend       # backend only (port 3001)
 npm run build             # build all workspaces
 npm run db:migrate        # run pending migrations
 npm run db:seed           # seed defaults (--demo for sample content)
+npm run docs:api          # regenerate docs/API.md + docs/api-manifest.json
 ```
 </details>
+
+---
+
+## Headless Mode
+
+SiteSurge is API-first. The same REST surface that powers the bundled SPA is
+available to external clients — other servers, scripts, mobile apps, or a
+typed SDK. Every endpoint lives under `/api/v1` and responds in a single
+envelope:
+
+```json
+{ "success": true, "data": <payload>, "meta": { } }
+{ "success": false, "error": { "code": "NOT_FOUND", "message": "…" } }
+```
+
+`error.code` is one of a fixed `ErrorCode` set (exported from `@rw/shared`);
+clients switch on it. The full machine-readable route list lives in
+[`docs/api-manifest.json`](docs/api-manifest.json) and the human reference in
+[`docs/API.md`](docs/API.md) — both regenerated from the live route manifest
+with `npm run docs:api`.
+
+### Authentication
+
+There are two auth modes.
+
+**1. User JWT** — for end users and interactive clients.
+
+`POST /api/v1/auth/login` returns an `AuthResponse` with `accessToken`
+(15 min) and `refreshToken` (7 d) in the body, and also sets httpOnly cookies
+for browsers. Send the access token as `Authorization: Bearer <accessToken>`.
+When it expires, call `POST /api/v1/auth/refresh` for a new pair.
+
+CSRF: Bearer- and API-key-authenticated requests bypass CSRF entirely. Only
+cookie-mode state-changing requests need it — a cookie-session client issues
+one `GET` to receive the `csrf-token` cookie, then echoes it back in the
+`x-csrf-token` header on subsequent writes. Headless clients should use Bearer
+or API-key auth and skip CSRF altogether.
+
+**2. API keys** — for machine clients and integrations.
+
+Create a key in the admin UI under **Settings → API Keys** and send it as
+`Authorization: Bearer ssk_…`. Keys carry a scope: `read < write < admin`. A
+`GET` needs `read` or higher; any mutation (`POST`/`PUT`/`PATCH`/`DELETE`)
+needs `write` or higher. Keys cannot manage other keys — key administration
+requires a full admin session.
+
+Set `CORS_ORIGINS` (comma-separated) so browser clients on other origins are
+allowed through CORS.
+
+### Examples
+
+```bash
+# 1. Log in (user JWT)
+curl -s -X POST https://yoursite.com/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@yoursite.com","password":"…"}'
+# → { "success": true, "data": { "user": {…}, "accessToken": "…", "refreshToken": "…" } }
+
+# 2. List posts including drafts (Bearer JWT, admin view)
+curl -s 'https://yoursite.com/api/v1/posts?status=all' \
+  -H 'Authorization: Bearer <accessToken>'
+
+# 3. Create a post with an API key (scope: write or admin)
+curl -s -X POST https://yoursite.com/api/v1/posts \
+  -H 'Authorization: Bearer ssk_…' \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Hello","slug":"hello","status":"draft"}'
+
+# 4. Public list — no auth (published posts only)
+curl -s 'https://yoursite.com/api/v1/posts'
+```
 
 ---
 
