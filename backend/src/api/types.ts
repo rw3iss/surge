@@ -2,6 +2,7 @@ import type { AuthTier, ApiMeta, User, } from '@rw/shared';
 import type { Request, Response, } from 'express';
 import type { ZodType, } from 'zod';
 import type { AuditContext, } from '../services/types';
+import type { ApiKeyRow, } from '../services/apiKeys';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
@@ -25,6 +26,8 @@ export interface HandlerCtx<P = Record<string, string>, Q = Record<string, unkno
     query: Q;
     body: B;
     audit: () => AuditContext;
+    /** Present when the request authenticated via API key instead of a user. */
+    apiKey?: ApiKeyRow;
 }
 
 const REPLY = Symbol('apiReply',);

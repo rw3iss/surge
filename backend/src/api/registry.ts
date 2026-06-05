@@ -1,8 +1,10 @@
 import { Router, } from 'express';
 import type { NextFunction, RequestHandler, Response, } from 'express';
 import type { AuthTier, } from '@rw/shared';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
+import { authenticate, AuthenticatedRequest, } from '../middleware/auth';
 import { auditFromRequest, } from '../services/types';
+import { adminOrApiKey, } from './apiKeyAuth';
+import type { ApiKeyRequest, } from './apiKeyAuth';
 import { isReply, } from './types';
 import type { RouteDef, } from './types';
 
@@ -13,15 +15,17 @@ interface ModuleEntry {
 
 const registry: ModuleEntry[] = [];
 
-/** Middlewares enforcing each auth tier. `apiKey` is admin-equivalent
- *  until Phase 2 lands real API-key verification. */
+/** Middlewares enforcing each auth tier. The `admin` and `apiKey` tiers
+ *  both accept either an admin user JWT (cookie or Bearer) or a scoped
+ *  `ssk_` API key via `adminOrApiKey()`; `apiKey` remains a semantic
+ *  marker in the manifest for routes designed for machine clients. */
 export function authMiddlewaresFor(tier: AuthTier,): RequestHandler[] {
     switch (tier) {
         case 'public': return [];
         case 'optional': return [authenticate(false,),];
         case 'user': return [authenticate(),];
-        case 'admin': return [authenticate(), requireAdmin,];
-        case 'apiKey': return [authenticate(), requireAdmin,];
+        case 'admin': return adminOrApiKey();
+        case 'apiKey': return adminOrApiKey();
     }
 }
 
@@ -37,6 +41,7 @@ function wrap(def: RouteDef,): RequestHandler {
                 query: def.input?.query ? def.input.query.parse(req.query,) : req.query,
                 body: def.input?.body ? def.input.body.parse(req.body,) : req.body,
                 audit: () => auditFromRequest(req,),
+                apiKey: (req as ApiKeyRequest).apiKey,
             };
             const result = await def.handler(ctx as never,);
             // Two escape hatches. `def.raw` is the declared opt-out: the
