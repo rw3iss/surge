@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams, } from '@solidjs/router';
-import { buildBlockTree, type ContentAccessLevel, type Page, } from '@rw/shared';
+import { buildBlockTree, type ContentAccessLevel, type ContentLockedDetails, type Page, } from '@rw/shared';
 import { Component, createResource, createSignal, For, lazy, Show, } from 'solid-js';
 import { BlockRenderer, } from '../components/blocks/BlockRenderer';
 import ContentGate from '../components/auth/ContentGate';
@@ -42,12 +42,15 @@ const DynamicPage: Component = () => {
             const preview = (isPreviewMode() && (auth.user?.role === 'admin' || auth.user?.role === 'sysadmin')) ? 'admin' : undefined;
             const response = await fetchPage(slug, preview,);
             if (!response.success) {
-                // Check if this is a locked content response
+                // Locked content now arrives as a CONTENT_LOCKED error
+                // envelope with the preview in error.details (same shape
+                // as the post detail route).
                 const raw = response as any;
-                if (raw.locked) {
+                if (raw.error?.code === 'CONTENT_LOCKED' && raw.error.details) {
+                    const d = raw.error.details as ContentLockedDetails;
                     setLockedContent({
-                        accessLevel: raw.accessLevel,
-                        preview: raw.preview || {},
+                        accessLevel: d.accessLevel,
+                        preview: (d.preview ?? {}) as LockedContent['preview'],
                     },);
                     return null;
                 }

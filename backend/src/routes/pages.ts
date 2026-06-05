@@ -1,18 +1,10 @@
-import type { Page, } from '@rw/shared';
-import { Router, } from 'express';
 import { z, } from 'zod';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import { checkContentAccess, ContentAccessLevel, } from '../middleware/content-access';
-import { ValidationError, } from '../middleware/error';
-import * as pagesRepo from '../repositories/pages.repo';
-import * as revisionsRepo from '../repositories/revisions.repo';
-import { auditFromRequest, cms, } from '../sdk';
-import { logAudit, } from '../services/audit';
-import { cache, } from '../services/cache';
-import { handleBulkAction, } from '../utils/bulkActions';
-import { handleRouteError, sendCreated, sendPaginated, sendSuccess, } from '../utils/response';
+import { defineRoute, reply, } from '../api/defineRoute';
+import { isAdminRole, } from '../api/roles';
+import { NotFoundError, } from '../core/errors';
+import * as pages from '../services/pages';
 
-const router = Router();
+// ─── Schemas ──────────────────────────────────────────────────────
 
 const pageSchema = z.object({
     slug: z.string().min(1,).max(255,).regex(/^[a-z0-9-]+$/,),
@@ -54,317 +46,182 @@ const blockSchema = z.object({
     style: z.record(z.unknown(),).nullable().optional(),
 },);
 
-// ─── Public Routes ───
-
-router.get('/navigation', async (_req, res,) => {
-    try {
-        const cacheKey = 'navigation:main';
-        const cached = await cache.get(cacheKey,);
-        if (cached) return sendSuccess(res, cached,);
-
-        const navigation = await pagesRepo.getNavigation();
-        await cache.set(cacheKey, navigation, 600,);
-        sendSuccess(res, navigation,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch navigation',);
-    }
+const listQuery = z.object({
+    status: z.string().optional(),
+    search: z.string().optional(),
+    sort: z.string().optional(),
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(20,),
 },);
 
-/**
- * The page currently flagged as homepage. Returns 404 when no page is
- * marked. The frontend Home component uses this to drive `/` —
- * separately from any specific slug.
- */
-router.get('/homepage', async (_req, res,) => {
-    try {
-        const cacheKey = 'page:homepage';
-        const cached = await cache.get<Page>(cacheKey,);
-        if (cached) return sendSuccess(res, cached,);
+const idParams = z.object({ id: z.string(), },);
+const versionParams = z.object({ id: z.string(), version: z.coerce.number().int(), },);
 
-        const page = await pagesRepo.findHomepage();
-        if (!page) {
-            return res.status(404,).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'No homepage configured', },
-            },);
-        }
-        page.blocks = await pagesRepo.findBlocksByPageIdWithStyles(page.id, true,);
-        await cache.set(cacheKey, page, 300,);
-        sendSuccess(res, page,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch homepage',);
-    }
-},);
+// ─── Routes ───────────────────────────────────────────────────────
+// Literal paths (/navigation, /homepage, /slug/:slug, /bulk) and the
+// /:id/* + /:pageId/blocks/* groups declared before the /:id catch-all.
 
-router.get('/slug/:slug', authenticate(false,), async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { slug, } = req.params;
-        const cacheKey = `page:slug:${slug}`;
-        const isAdminPreview = req.query.preview === 'admin' && req.user?.role === 'admin';
+export const pagesRoutes = [
 
-        if (!req.user) {
-            const cached = await cache.get<Page>(cacheKey,);
-            if (cached && !cached.isPrivate) return sendSuccess(res, cached,);
-        }
+    // Navigation (public, cached).
+    defineRoute({
+        method: 'get', path: '/navigation', auth: 'public',
+        summary: 'Main navigation tree.',
+        handler: () => pages.getNavigationCached(),
+    },),
 
-        // Admin preview mode: allow viewing draft/archived pages
-        const page = isAdminPreview ?
-            await pagesRepo.findPageBySlugAnyStatus(slug,) :
-            await pagesRepo.findPageBySlug(slug,);
-        if (!page) {
-            return res.status(404,).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Page not found', },
-            },);
-        }
+    // Homepage (public, cached).
+    defineRoute({
+        method: 'get', path: '/homepage', auth: 'public',
+        summary: 'The page flagged as homepage (with blocks).',
+        handler: async () => {
+            const page = await pages.getHomepageCached();
+            if (!page) throw new NotFoundError('No homepage configured',);
+            return page;
+        },
+    },),
 
-        // Access control - legacy private check
-        if (page.isPrivate && !req.user) {
-            return res.status(401,).json({
-                success: false,
-                error: { code: 'UNAUTHORIZED', message: 'Authentication required', },
-            },);
-        }
+    // Public slug fetch (optional auth, access-gated).
+    defineRoute({
+        method: 'get', path: '/slug/:slug', auth: 'optional',
+        summary: 'Fetch a page by slug. Gated content yields CONTENT_LOCKED with a preview in error.details.',
+        input: {
+            params: z.object({ slug: z.string(), },),
+            query: z.object({ preview: z.string().optional(), },),
+        },
+        handler: ({ params, query, user, },) => {
+            const adminPreview = query.preview === 'admin' && isAdminRole(user?.role,);
+            return pages.getPublicBySlug(params.slug, user, adminPreview,);
+        },
+    },),
 
-        // Content access level check
-        const accessLevel = (page.accessLevel || 'public') as ContentAccessLevel;
-        if (accessLevel !== 'public') {
-            const accessCheck = await checkContentAccess(accessLevel, req.user,);
-            if (!accessCheck.allowed) {
-                return res.status(403,).json({
-                    success: false,
-                    locked: true,
-                    accessLevel,
-                    preview: {
-                        title: page.title,
-                        description: page.description || page.metaDescription || null,
-                        featuredImage: page.ogImage || null,
-                    },
-                    error: { code: 'CONTENT_LOCKED', message: accessCheck.reason || 'Access denied', },
-                },);
-            }
-        }
+    // Admin list.
+    defineRoute({
+        method: 'get', path: '/', auth: 'admin',
+        summary: 'List pages (any status) with filters.',
+        input: { query: listQuery, },
+        handler: async ({ query, },) => {
+            const result = await pages.list(
+                { status: query.status, search: query.search, sort: query.sort, },
+                { page: query.page, limit: query.limit, },
+            );
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-        page.blocks = await pagesRepo.findBlocksByPageIdWithStyles(page.id, true,);
+    // Bulk actions (admin).
+    defineRoute({
+        method: 'post', path: '/bulk', auth: 'admin',
+        summary: 'Bulk status change / soft-delete by id list.',
+        handler: ({ body, },) => pages.bulk(body,),
+    },),
 
-        if (!page.isPrivate && accessLevel === 'public') {
-            await cache.set(cacheKey, page, 300,);
-        }
+    // Revisions (admin).
+    defineRoute({
+        method: 'get', path: '/:id/revisions', auth: 'admin',
+        summary: 'List a page\'s saved revisions.',
+        input: { params: idParams, },
+        handler: ({ params, },) => pages.listRevisions(params.id,),
+    },),
 
-        sendSuccess(res, page,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch page',);
-    }
-},);
+    defineRoute({
+        method: 'get', path: '/:id/revisions/:version', auth: 'admin',
+        summary: 'Fetch one revision snapshot.',
+        input: { params: versionParams, },
+        handler: ({ params, },) => pages.getRevision(params.id, params.version,),
+    },),
 
-// ─── Admin Routes ───
+    defineRoute({
+        method: 'post', path: '/:id/revisions/:version/restore', auth: 'admin',
+        summary: 'Restore a revision (snapshots current state first).',
+        input: { params: versionParams, },
+        handler: ({ params, audit, },) => pages.restoreRevision(params.id, params.version, audit(),),
+    },),
 
-router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { status, search, sort, page = 1, limit = 20, } = req.query;
-        const pagination = { page: Number(page,), limit: Number(limit,), };
+    // Block routes (admin). Declared before /:id so the more specific
+    // /:pageId/blocks paths match first.
+    defineRoute({
+        method: 'post', path: '/:pageId/blocks', auth: 'admin',
+        summary: 'Create a page block.',
+        input: { params: z.object({ pageId: z.string(), },), body: blockSchema, },
+        handler: async ({ params, body, audit, },) => {
+            const block = await pages.createBlock(params.pageId, body, audit(),);
+            return reply(block, { status: 201, },);
+        },
+    },),
 
-        const result = await pagesRepo.findPages(
-            { status: status as string, search: search as string, sort: sort as string, },
-            pagination,
-        );
+    defineRoute({
+        method: 'put', path: '/:pageId/blocks/reorder', auth: 'admin',
+        summary: 'Reorder a page\'s blocks within one parent.',
+        input: {
+            params: z.object({ pageId: z.string(), },),
+            body: z.object({
+                blockIds: z.array(z.string(),),
+                parentBlockId: z.string().nullable().optional(),
+            },),
+        },
+        handler: async ({ params, body, audit, },) => {
+            await pages.reorderBlocks(params.pageId, body.parentBlockId ?? null, body.blockIds, audit(),);
+            return { message: 'Blocks reordered', };
+        },
+    },),
 
-        sendPaginated(res, result.data, pagination.page, pagination.limit, result.total,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch pages',);
-    }
-},);
+    defineRoute({
+        method: 'put', path: '/:pageId/blocks/:blockId', auth: 'admin',
+        summary: 'Update a page block.',
+        input: { params: z.object({ pageId: z.string(), blockId: z.string(), },), body: blockSchema.partial(), },
+        handler: ({ params, body, audit, },) => pages.updateBlock(params.pageId, params.blockId, body, audit(),),
+    },),
 
-router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const page = await pagesRepo.findPageById(req.params.id,);
-        page.blocks = await pagesRepo.findBlocksByPageIdWithStyles(page.id,);
-        sendSuccess(res, page,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch page',);
-    }
-},);
+    defineRoute({
+        method: 'delete', path: '/:pageId/blocks/:blockId', auth: 'admin',
+        summary: 'Delete a page block.',
+        input: { params: z.object({ pageId: z.string(), blockId: z.string(), },), },
+        handler: async ({ params, audit, },) => {
+            await pages.removeBlock(params.pageId, params.blockId, audit(),);
+            return { message: 'Block deleted', };
+        },
+    },),
 
-router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        // Demo of the route → SDK layering. The SDK module owns the
-        // repo call, cache invalidation, and audit logging in a
-        // single place — the route just shapes HTTP I/O.
-        const data = pageSchema.parse(req.body,);
-        const page = await cms.pages.create(data, auditFromRequest(req,),);
-        sendCreated(res, page,);
-    } catch (error) {
-        handleRouteError(res, error, 'create page',);
-    }
-},);
+    // Admin fetch by id (with blocks).
+    defineRoute({
+        method: 'get', path: '/:id', auth: 'admin',
+        summary: 'Fetch a page by id (any status, with blocks).',
+        input: { params: idParams, },
+        handler: async ({ params, },) => {
+            const page = await pages.getByIdWithBlocks(params.id,);
+            if (!page) throw new NotFoundError('Page',);
+            return page;
+        },
+    },),
 
-router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = pageSchema.partial().parse(req.body,);
-        try {
-            const existing = await pagesRepo.findPageById(req.params.id,);
-            if (existing) {
-                await revisionsRepo.createRevision(
-                    'page',
-                    req.params.id,
-                    existing as any,
-                    req.userId || null,
-                );
-                await revisionsRepo.pruneRevisions('page', req.params.id, 50,);
-            }
-        } catch {
-            /* non-fatal */
-        }
-        const page = await pagesRepo.updatePage(req.params.id, data,);
-        await cache.invalidatePageCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'page',
-            entityId: req.params.id,
-            newValues: data,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, page,);
-    } catch (error) {
-        handleRouteError(res, error, 'update page',);
-    }
-},);
+    // Create (admin).
+    defineRoute({
+        method: 'post', path: '/', auth: 'admin',
+        summary: 'Create a page.',
+        input: { body: pageSchema, },
+        handler: async ({ body, audit, },) => {
+            const page = await pages.create(body, audit(),);
+            return reply(page, { status: 201, },);
+        },
+    },),
 
-router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await pagesRepo.deletePage(req.params.id,);
-        await cache.invalidatePageCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'delete',
-            entityType: 'page',
-            entityId: req.params.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { message: 'Page deleted', },);
-    } catch (error) {
-        handleRouteError(res, error, 'delete page',);
-    }
-},);
+    // Update (admin). Snapshots a revision first.
+    defineRoute({
+        method: 'put', path: '/:id', auth: 'admin',
+        summary: 'Update a page. Snapshots a revision first.',
+        input: { params: idParams, body: pageSchema.partial(), },
+        handler: ({ params, body, audit, },) => pages.update(params.id, body, audit(),),
+    },),
 
-// ─── Revisions ───
-
-router.get('/:id/revisions', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const revisions = await revisionsRepo.listRevisions('page', req.params.id,);
-        sendSuccess(res, revisions,);
-    } catch (error) {
-        handleRouteError(res, error, 'list page revisions',);
-    }
-},);
-
-router.get('/:id/revisions/:version', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const version = parseInt(req.params.version, 10,);
-        const revision = await revisionsRepo.getRevision('page', req.params.id, version,);
-        sendSuccess(res, revision,);
-    } catch (error) {
-        handleRouteError(res, error, 'get page revision',);
-    }
-},);
-
-router.post(
-    '/:id/revisions/:version/restore',
-    authenticate(),
-    requireAdmin,
-    async (req: AuthenticatedRequest, res,) => {
-        try {
-            const version = parseInt(req.params.version, 10,);
-            const revision = await revisionsRepo.getRevision('page', req.params.id, version,);
-            const snap = revision.snapshot as any;
-            const current = await pagesRepo.findPageById(req.params.id,);
-            if (current) {
-                await revisionsRepo.createRevision(
-                    'page',
-                    req.params.id,
-                    current as any,
-                    req.userId || null,
-                    `Pre-restore snapshot (restoring v${version})`,
-                );
-            }
-            const restored = await pagesRepo.updatePage(req.params.id, {
-                title: snap.title,
-                slug: snap.slug,
-                description: snap.description,
-                status: snap.status,
-                accessLevel: snap.accessLevel,
-                publishAt: snap.publishAt,
-            },);
-            await cache.invalidatePageCache(req.params.id,);
-            sendSuccess(res, restored,);
-        } catch (error) {
-            handleRouteError(res, error, 'restore page revision',);
-        }
-    },
-);
-
-// ─── Bulk Actions ───
-
-router.post('/bulk', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    await handleBulkAction(res, req.body, {
-        table: 'pages',
-        allowedStatuses: ['draft', 'published', 'scheduled', 'archived', 'deleted',],
-        softDelete: true,
-        onInvalidate: () => cache.invalidatePageCache(),
-    },);
-},);
-
-// ─── Block Routes ───
-
-router.post('/:pageId/blocks', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = blockSchema.parse(req.body,);
-        const block = await pagesRepo.createBlock(req.params.pageId, data,);
-        await cache.invalidatePageCache(req.params.pageId,);
-        sendCreated(res, block,);
-    } catch (error) {
-        handleRouteError(res, error, 'create block',);
-    }
-},);
-
-router.put('/:pageId/blocks/:blockId', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = blockSchema.partial().parse(req.body,);
-        const block = await pagesRepo.updateBlock(req.params.pageId, req.params.blockId, data,);
-        await cache.invalidatePageCache(req.params.pageId,);
-        sendSuccess(res, block,);
-    } catch (error) {
-        handleRouteError(res, error, 'update block',);
-    }
-},);
-
-router.delete('/:pageId/blocks/:blockId', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await pagesRepo.deleteBlock(req.params.pageId, req.params.blockId,);
-        await cache.invalidatePageCache(req.params.pageId,);
-        sendSuccess(res, { message: 'Block deleted', },);
-    } catch (error) {
-        handleRouteError(res, error, 'delete block',);
-    }
-},);
-
-router.put('/:pageId/blocks/reorder', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { blockIds, parentBlockId, } = req.body;
-        if (!Array.isArray(blockIds,)) throw new ValidationError('blockIds must be an array',);
-
-        // parentBlockId is optional; null/missing means the top-level list.
-        const parentId = (parentBlockId as string | null | undefined) ?? null;
-
-        await pagesRepo.reorderBlocks(req.params.pageId, parentId, blockIds,);
-        await cache.invalidatePageCache(req.params.pageId,);
-        sendSuccess(res, { message: 'Blocks reordered', },);
-    } catch (error) {
-        handleRouteError(res, error, 'reorder blocks',);
-    }
-},);
-
-export default router;
+    // Delete (admin).
+    defineRoute({
+        method: 'delete', path: '/:id', auth: 'admin',
+        summary: 'Delete a page.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await pages.remove(params.id, audit(),);
+            return { message: 'Page deleted', };
+        },
+    },),
+];

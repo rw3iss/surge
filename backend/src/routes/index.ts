@@ -16,7 +16,7 @@ import mailSendRoutes from './mailSend';
 import mailTemplatesRoutes from './mailTemplates';
 import mediaRoutes from './media';
 import { messagesRoutes, } from './messages';
-import pagesRoutes from './pages';
+import { pagesRoutes, } from './pages';
 import paymentsRoutes from './payments';
 import { postsRoutes, } from './posts';
 import { searchRoutes, } from './search';
@@ -29,7 +29,7 @@ const router = Router();
 
 router.use('/auth', authRoutes,);
 router.use('/block-styles', registerModule('block-styles', blockStylesRoutes,),);
-router.use('/pages', pagesRoutes,);
+router.use('/pages', registerModule('pages', pagesRoutes,),);
 router.use('/posts', registerModule('posts', postsRoutes,),);
 router.use('/campaigns', registerModule('campaigns', campaignsRoutes,),);
 router.use('/connections', connectionsRoutes,);
