@@ -14,7 +14,7 @@ import { registerModule, } from './api/registry';
 import routes from './routes';
 import { setupRoutes, } from './routes/setup';
 import sitemapRoutes from './routes/sitemap';
-import feedRoutes from './routes/feed';
+import { feedRoutes, } from './routes/feed';
 import unsubscribeRoutes from './routes/unsubscribe';
 import { logger, } from './utils/logger';
 
@@ -120,8 +120,13 @@ export function createApp(mode: AppMode = 'running',): Express {
 
         app.use(sitemapRoutes,);
         app.use(`/api/${config.apiVersion}`, sitemapRoutes,);
-        app.use(feedRoutes,);
-        app.use(`/api/${config.apiVersion}`, feedRoutes,);
+        // The feed router has one '/' route; mounting it at '/feed.xml'
+        // (and the /api/v1 alias) preserves the canonical external URLs.
+        // registerModule once records the canonical mountPath in the
+        // manifest; the returned router mounts at both external paths.
+        const feedRouter = registerModule('feed', feedRoutes, { mountPath: '/feed.xml', },);
+        app.use('/feed.xml', feedRouter,);
+        app.use(`/api/${config.apiVersion}/feed.xml`, feedRouter,);
         // Token-based unsubscribe + double-opt-in confirmation live at
         // the public root (not under /api/v1) so URLs like
         // /u/<token> and /lists/<slug>/confirm/<token> stay short.
