@@ -3,7 +3,7 @@ import { registerModule, } from '../api/registry';
 import { apiKeysRoutes, } from './apiKeys';
 import { auditRoutes, } from './audit';
 import authRoutes from './auth';
-import blockStylesRoutes from './blockStyles';
+import { blockStylesRoutes, } from './blockStyles';
 import campaignsRoutes from './campaigns';
 import connectionsRoutes from './connections';
 import { dashboardRoutes, } from './dashboard';
@@ -28,7 +28,7 @@ import usersRoutes from './users';
 const router = Router();
 
 router.use('/auth', authRoutes,);
-router.use('/block-styles', blockStylesRoutes,);
+router.use('/block-styles', registerModule('block-styles', blockStylesRoutes,),);
 router.use('/pages', pagesRoutes,);
 router.use('/posts', registerModule('posts', postsRoutes,),);
 router.use('/campaigns', campaignsRoutes,);

@@ -1,14 +1,6 @@
-import type { BlockStyle, } from '@rw/shared';
-import { Router, } from 'express';
 import { z, } from 'zod';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import * as blockStylesRepo from '../repositories/blockStyles.repo';
-import { logAudit, } from '../services/audit';
-import { cache, } from '../services/cache';
-import { handleRouteError, sendCreated, sendSuccess, } from '../utils/response';
-
-const router = Router();
-const CACHE_KEY = 'block_styles:all';
+import { defineRoute, reply, } from '../api/defineRoute';
+import * as blockStyles from '../services/blockStyles';
 
 const blockStyleSchema = z.object({
     name: z.string().min(1,).max(255,),
@@ -27,100 +19,47 @@ const blockStyleSchema = z.object({
     overflowY: z.string().nullable().optional(),
 },);
 
-/** Convert null values to undefined so they match Partial<BlockStyle>. */
-function nullsToUndefined(obj: Record<string, unknown>,): Partial<BlockStyle> {
-    const result: Record<string, unknown> = {};
-    for (const [key, value,] of Object.entries(obj,)) {
-        result[key] = value === null ? undefined : value;
-    }
-    return result as Partial<BlockStyle>;
-}
+const idParams = z.object({ id: z.string(), },);
 
-// GET / - List all block styles (admin, cached)
-router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const cached = await cache.get(CACHE_KEY,);
-        if (cached) return sendSuccess(res, cached,);
+export const blockStylesRoutes = [
 
-        const styles = await blockStylesRepo.findAll();
-        await cache.set(CACHE_KEY, styles, 600,);
-        sendSuccess(res, styles,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch block styles',);
-    }
-},);
+    defineRoute({
+        method: 'get', path: '/', auth: 'admin',
+        summary: 'List all block-style templates (admin, cached).',
+        handler: () => blockStyles.listAllCached(),
+    },),
 
-// GET /:id - Get single block style
-router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const style = await blockStylesRepo.findById(req.params.id,);
-        sendSuccess(res, style,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch block style',);
-    }
-},);
+    defineRoute({
+        method: 'get', path: '/:id', auth: 'admin',
+        summary: 'Fetch a single block-style template.',
+        input: { params: idParams, },
+        handler: ({ params, },) => blockStyles.getById(params.id,),
+    },),
 
-// POST / - Create block style
-router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = blockStyleSchema.parse(req.body,);
-        const style = await blockStylesRepo.create(nullsToUndefined(data,),);
-        await cache.del(CACHE_KEY,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'create',
-            entityType: 'block_style',
-            entityId: style.id,
-            newValues: data,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendCreated(res, style,);
-    } catch (error) {
-        handleRouteError(res, error, 'create block style',);
-    }
-},);
+    defineRoute({
+        method: 'post', path: '/', auth: 'admin',
+        summary: 'Create a block-style template.',
+        input: { body: blockStyleSchema, },
+        handler: async ({ body, audit, },) => {
+            const style = await blockStyles.create(body, audit(),);
+            return reply(style, { status: 201, },);
+        },
+    },),
 
-// PUT /:id - Update block style
-router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = blockStyleSchema.partial().parse(req.body,);
-        // Don't strip nulls on update — null means "clear this field".
-        // buildUpdateSet skips undefined but passes null through to SET col = NULL.
-        const style = await blockStylesRepo.update(req.params.id, data as Partial<BlockStyle>,);
-        await cache.del(CACHE_KEY,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'block_style',
-            entityId: req.params.id,
-            newValues: data,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, style,);
-    } catch (error) {
-        handleRouteError(res, error, 'update block style',);
-    }
-},);
+    defineRoute({
+        method: 'put', path: '/:id', auth: 'admin',
+        summary: 'Update a block-style template.',
+        input: { params: idParams, body: blockStyleSchema.partial(), },
+        handler: ({ params, body, audit, },) => blockStyles.update(params.id, body, audit(),),
+    },),
 
-// DELETE /:id - Delete block style
-router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await blockStylesRepo.remove(req.params.id,);
-        await cache.del(CACHE_KEY,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'delete',
-            entityType: 'block_style',
-            entityId: req.params.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { message: 'Block style deleted', },);
-    } catch (error) {
-        handleRouteError(res, error, 'delete block style',);
-    }
-},);
-
-export default router;
+    defineRoute({
+        method: 'delete', path: '/:id', auth: 'admin',
+        summary: 'Delete a block-style template.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await blockStyles.remove(params.id, audit(),);
+            return { message: 'Block style deleted', };
+        },
+    },),
+];
