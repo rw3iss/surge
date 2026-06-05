@@ -15,7 +15,7 @@ import routes from './routes';
 import { setupRoutes, } from './routes/setup';
 import { sitemapRoutes, } from './routes/sitemap';
 import { feedRoutes, } from './routes/feed';
-import unsubscribeRoutes from './routes/unsubscribe';
+import { unsubscribeRoutes, } from './routes/unsubscribe';
 import { logger, } from './utils/logger';
 
 /**
@@ -136,8 +136,10 @@ export function createApp(mode: AppMode = 'running',): Express {
         app.use(`/api/${config.apiVersion}/feed.xml`, feedRouter,);
         // Token-based unsubscribe + double-opt-in confirmation live at
         // the public root (not under /api/v1) so URLs like
-        // /u/<token> and /lists/<slug>/confirm/<token> stay short.
-        app.use(unsubscribeRoutes,);
+        // /u/<token> and /lists/<slug>/confirm/<token> stay short. Each
+        // route carries its full literal path, so mountPath '' keeps the
+        // manifest absolutePaths equal to those literals.
+        app.use(registerModule('unsubscribe', unsubscribeRoutes, { mountPath: '', },),);
         app.use(`/api/${config.apiVersion}`, routes,);
     }
 
