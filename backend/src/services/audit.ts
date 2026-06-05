@@ -32,16 +32,25 @@ export async function logAudit(entry: AuditLogEntry,): Promise<void> {
             ? { ...(entry.newValues ?? {}), entityKey: entry.entityId, }
             : entry.newValues;
 
+        // user_id is a UUID FK. Synthetic actors ('system',
+        // 'api-key:<name>') get NULL in the column and are preserved
+        // in new_values.actor — same pattern as non-UUID entityIds.
+        const isUuidUser = UUID_RE.test(entry.userId,);
+        const userIdForDb = isUuidUser ? entry.userId : null;
+        const valuesWithActor = !isUuidUser
+            ? { ...(newValues ?? {}), actor: entry.userId, }
+            : newValues;
+
         await query(
             `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
-                entry.userId,
+                userIdForDb,
                 entry.action,
                 entry.entityType,
                 entityIdForDb,
                 entry.oldValues ? JSON.stringify(entry.oldValues,) : null,
-                newValues ? JSON.stringify(newValues,) : null,
+                valuesWithActor ? JSON.stringify(valuesWithActor,) : null,
                 entry.ipAddress || null,
                 entry.userAgent || null,
             ],

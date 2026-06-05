@@ -26,11 +26,16 @@ export async function createRevision(
     );
     const nextVersion = versionResult.rows[0].next_version as number;
 
+    // author_id is a UUID FK; synthetic actors (api-key:<name>, system) become NULL.
+    const authorForDb = authorId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authorId,) ?
+        authorId :
+        null;
+
     const result = await query(
         `INSERT INTO revisions (entity_type, entity_id, version, snapshot, author_id, summary)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [entityType, entityId, nextVersion, JSON.stringify(snapshot,), authorId, summary || null,],
+        [entityType, entityId, nextVersion, JSON.stringify(snapshot,), authorForDb, summary || null,],
     );
     return mapRow<Revision>(result.rows[0],);
 }
