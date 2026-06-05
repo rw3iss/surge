@@ -1,299 +1,135 @@
-import type { SocialPlatform, SocialPost, } from '@rw/shared';
-import { Router, } from 'express';
+import type { SocialPlatform, } from '@rw/shared';
 import { z, } from 'zod';
-import { query, } from '../db';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import { cache, } from '../services/cache';
-import { getLiveFeed, getLiveFeeds, getSocialPosts, syncAllPlatforms, syncSocialPosts, } from '../services/social';
-import { mapRows, } from '../utils/mapRow';
-import { handleRouteError, sendSuccess, } from '../utils/response';
+import { defineRoute, reply, } from '../api/defineRoute';
+import { AppError, NotFoundError, } from '../core/errors';
+import * as social from '../services/socialFeed';
 
-const router = Router();
+// ─── Schemas ──────────────────────────────────────────────────────
 
-// Get social posts (public - for homepage and widgets)
-router.get('/posts', async (req, res,) => {
-    try {
-        const { platform, page = 1, limit = 20, } = req.query;
-        const pageNum = Number(page,);
-        const limitNum = Number(limit,);
-        const offset = (pageNum - 1) * limitNum;
-
-        const cacheKey = `social:posts:${platform || 'all'}:${pageNum}:${limitNum}`;
-
-        const cached = await cache.get(cacheKey,);
-        if (cached) {
-            // Cached shape is { data, meta } — send directly
-            return res.json({ success: true, ...(cached as object), },);
-        }
-
-        const posts = await getSocialPosts(
-            platform as SocialPlatform | undefined,
-            limitNum,
-            offset,
-        );
-
-        let whereClause = '';
-        const params: unknown[] = [];
-        if (platform) {
-            params.push(platform,);
-            whereClause = `WHERE platform = $${params.length}`;
-        }
-
-        const countResult = await query(`SELECT COUNT(*) FROM social_posts ${whereClause}`, params,);
-        const total = parseInt(countResult.rows[0].count, 10,);
-        const meta = { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum,), };
-
-        await cache.set(cacheKey, { data: posts, meta, }, 600,);
-        sendSuccess(res, posts, meta,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch social posts',);
-    }
+const postsQuery = z.object({
+    platform: z.string().optional(),
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(20,),
 },);
 
-// Get specific platform posts (public)
-// Supports: ?page=1&limit=10&search=term&sort=date&sortDir=desc
-router.get('/posts/:platform', async (req, res,) => {
-    try {
-        const { platform, } = req.params;
-        const {
-            page = 1,
-            limit = 10,
-            search,
-            sort = 'date',
-            sortDir = 'desc',
-        } = req.query;
-        const pageNum = Number(page,);
-        const limitNum = Math.min(Number(limit,), 50,);
-        const offset = (pageNum - 1) * limitNum;
-
-        const validPlatforms: SocialPlatform[] = ['patreon', 'youtube', 'instagram', 'facebook', 'twitter', 'tiktok',];
-
-        if (!validPlatforms.includes(platform as SocialPlatform,)) {
-            return res.status(400,).json({
-                success: false,
-                error: { code: 'BAD_REQUEST', message: 'Invalid platform', },
-            },);
-        }
-
-        // Build query with optional search
-        const conditions: string[] = ['platform = $1'];
-        const params: unknown[] = [platform,];
-
-        if (search && typeof search === 'string' && search.trim()) {
-            params.push(`%${search.trim()}%`,);
-            conditions.push(`(content ILIKE $${params.length} OR author_name ILIKE $${params.length})`,);
-        }
-
-        const where = `WHERE ${conditions.join(' AND ')}`;
-
-        // Sort
-        const dir = String(sortDir,).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-        let orderBy: string;
-        switch (String(sort,)) {
-            case 'likes':
-                orderBy = `likes ${dir} NULLS LAST`;
-                break;
-            case 'comments':
-                orderBy = `comments ${dir} NULLS LAST`;
-                break;
-            case 'date':
-            default:
-                orderBy = `published_at ${dir} NULLS LAST`;
-                break;
-        }
-
-        // Skip Redis cache when search is active (results are user-specific)
-        const cacheKey = search ? null : `social:${platform}:${pageNum}:${limitNum}:${sort}:${sortDir}`;
-        if (cacheKey) {
-            const cached = await cache.get(cacheKey,);
-            if (cached) return res.json({ success: true, ...(cached as object), },);
-        }
-
-        const countResult = await query(`SELECT COUNT(*) FROM social_posts ${where}`, params,);
-        const total = parseInt(countResult.rows[0].count, 10,);
-
-        params.push(limitNum, offset,);
-        const result = await query(
-            `SELECT * FROM social_posts ${where} ORDER BY ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`,
-            params,
-        );
-
-        const posts = mapRows(result.rows,);
-
-        const meta = {
-            page: pageNum,
-            limit: limitNum,
-            total,
-            totalPages: Math.ceil(total / limitNum,),
-        };
-
-        if (cacheKey) {
-            await cache.set(cacheKey, { data: posts, meta, }, 600,);
-        }
-
-        sendSuccess(res, posts, meta,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch platform posts',);
-    }
+const platformPostsQuery = z.object({
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).default(10,),
+    search: z.string().optional(),
+    sort: z.string().optional(),
+    sortDir: z.string().optional(),
 },);
 
-// Sync social posts (admin)
-router.post('/sync', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { platform, } = req.body;
-
-        let results;
-
-        if (platform) {
-            // Manual admin sync always forces regardless of auto_publish setting
-            const count = await syncSocialPosts(platform as SocialPlatform, true,);
-            results = { [platform]: count, };
-        } else {
-            results = await syncAllPlatforms(true,);
-        }
-
-        // Invalidate cache
-        await cache.delPattern('social:*',);
-
-        sendSuccess(res, {
-            message: 'Sync completed',
-            results,
-        },);
-    } catch (error) {
-        handleRouteError(res, error, 'sync social posts',);
-    }
+const feedQuery = z.object({
+    limit: z.coerce.number().int().optional(),
 },);
 
-// ─── Live Feed (cached API fetch, no DB) ───
+const platformParams = z.object({ platform: z.string(), },);
 
-// Get live feed from all connected providers (public - for homepage)
-router.get('/feed', async (req, res,) => {
-    try {
-        const limit = Math.min(Number(req.query.limit,) || 10, 50,);
-        const posts = await getLiveFeeds(limit,);
-        sendSuccess(res, posts,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch live social feeds',);
+function assertPlatform(p: string,): SocialPlatform {
+    if (!social.VALID_PLATFORMS.includes(p as SocialPlatform,)) {
+        throw new AppError(400, 'BAD_REQUEST', 'Invalid platform',);
     }
-},);
+    return p as SocialPlatform;
+}
 
-// Get live feed from a specific platform (public + admin picker)
-router.get('/feed/:platform', async (req, res,) => {
-    try {
-        const { platform, } = req.params;
-        const validPlatforms: SocialPlatform[] = ['patreon', 'youtube', 'instagram', 'facebook', 'twitter', 'tiktok',];
+// ─── Routes ───────────────────────────────────────────────────────
+// Literal /posts, /feed, /homepage before parameterized variants.
 
-        if (!validPlatforms.includes(platform as SocialPlatform,)) {
-            return res.status(400,).json({
-                success: false,
-                error: { code: 'BAD_REQUEST', message: 'Invalid platform', },
-            },);
-        }
+export const socialRoutes = [
 
-        const limit = Math.min(Number(req.query.limit,) || 10, 50,);
-        const posts = await getLiveFeed(platform as SocialPlatform, limit,);
-        sendSuccess(res, posts,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch live social feed',);
-    }
-},);
-
-// Get selected posts for homepage (admin can configure)
-router.get('/homepage', async (_req, res,) => {
-    try {
-        const cacheKey = 'social:homepage';
-
-        const cached = await cache.get(cacheKey,);
-        if (cached) return sendSuccess(res, cached,);
-
-        // Get homepage block settings to see which posts are selected
-        const settingsResult = await query(
-            `SELECT value FROM site_settings WHERE key = 'homepage_social_posts'`,
-        );
-
-        let selectedPosts: SocialPost[] = [];
-
-        if (settingsResult.rows.length > 0) {
-            const settings = settingsResult.rows[0].value;
-            const postIds = settings.postIds || [];
-
-            if (postIds.length > 0) {
-                const postsResult = await query(
-                    `SELECT * FROM social_posts WHERE id = ANY($1) ORDER BY published_at DESC`,
-                    [postIds,],
-                );
-
-                selectedPosts = mapRows<SocialPost>(postsResult.rows,);
-            }
-        }
-
-        // If no selected posts, get latest from each platform
-        if (selectedPosts.length === 0) {
-            const latestResult = await query(
-                `SELECT DISTINCT ON (platform) * FROM social_posts
-         ORDER BY platform, published_at DESC
-         LIMIT 6`,
+    // Stored posts across platforms (public).
+    defineRoute({
+        method: 'get', path: '/posts', auth: 'public',
+        summary: 'List stored social posts (optionally filtered by platform).',
+        input: { query: postsQuery, },
+        handler: async ({ query, },) => {
+            const result = await social.listPosts(
+                query.platform as SocialPlatform | undefined,
+                query.page,
+                query.limit,
             );
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-            selectedPosts = mapRows<SocialPost>(latestResult.rows,);
-        }
+    // Live feed from all connected providers (public).
+    defineRoute({
+        method: 'get', path: '/feed', auth: 'public',
+        summary: 'Live feed across connected providers (API-cached, no DB).',
+        input: { query: feedQuery, },
+        handler: ({ query, },) => social.liveFeeds(Math.min(query.limit || 10, 50,),),
+    },),
 
-        await cache.set(cacheKey, selectedPosts, 300,);
+    // Live feed for one platform (public + admin picker).
+    defineRoute({
+        method: 'get', path: '/feed/:platform', auth: 'public',
+        summary: 'Live feed for one platform.',
+        input: { params: platformParams, query: feedQuery, },
+        handler: ({ params, query, },) => {
+            const platform = assertPlatform(params.platform,);
+            return social.liveFeed(platform, Math.min(query.limit || 10, 50,),);
+        },
+    },),
 
-        sendSuccess(res, selectedPosts,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch homepage social posts',);
-    }
-},);
+    // Homepage selection (public read).
+    defineRoute({
+        method: 'get', path: '/homepage', auth: 'public',
+        summary: 'Posts selected for the homepage (falls back to latest per platform).',
+        handler: () => social.homepagePosts(),
+    },),
 
-// Update homepage social posts selection (admin)
-router.put('/homepage', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { postIds, } = z.object({
-            postIds: z.array(z.string().uuid(),),
-        },).parse(req.body,);
+    // Homepage selection (admin write).
+    defineRoute({
+        method: 'put', path: '/homepage', auth: 'admin',
+        summary: 'Set the homepage social post selection.',
+        input: { body: z.object({ postIds: z.array(z.string().uuid(),), },), },
+        handler: async ({ body, userId, },) => {
+            await social.setHomepagePosts(body.postIds, userId,);
+            return { message: 'Homepage posts updated', };
+        },
+    },),
 
-        await query(
-            `INSERT INTO site_settings (key, value, updated_by)
-       VALUES ('homepage_social_posts', $1, $2)
-       ON CONFLICT (key) DO UPDATE SET
-         value = EXCLUDED.value,
-         updated_by = EXCLUDED.updated_by,
-         updated_at = NOW()`,
-            [JSON.stringify({ postIds, },), req.userId,],
-        );
+    // Sync stored posts (admin).
+    defineRoute({
+        method: 'post', path: '/sync', auth: 'admin',
+        summary: 'Sync social posts from one or all platforms.',
+        input: { body: z.object({ platform: z.string().optional(), },).optional(), },
+        handler: async ({ body, },) => {
+            const platform = body?.platform as SocialPlatform | undefined;
+            const results = await social.sync(platform,);
+            return { message: 'Sync completed', results, };
+        },
+    },),
 
-        await cache.del('social:homepage',);
+    // Delete a stored post (admin). Distinct from GET /posts/:platform.
+    defineRoute({
+        method: 'delete', path: '/posts/:id', auth: 'admin',
+        summary: 'Delete a stored social post by id.',
+        input: { params: z.object({ id: z.string(), },), },
+        handler: async ({ params, },) => {
+            const deleted = await social.deletePost(params.id,);
+            if (!deleted) throw new NotFoundError('Social post',);
+            return { message: 'Post deleted', };
+        },
+    },),
 
-        sendSuccess(res, { message: 'Homepage posts updated', },);
-    } catch (error) {
-        handleRouteError(res, error, 'update homepage posts',);
-    }
-},);
-
-// Delete social post (admin)
-router.delete('/posts/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { id, } = req.params;
-
-        const result = await query(
-            'DELETE FROM social_posts WHERE id = $1 RETURNING id',
-            [id,],
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404,).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Social post not found', },
+    // Stored posts for one platform with search/sort (public).
+    defineRoute({
+        method: 'get', path: '/posts/:platform', auth: 'public',
+        summary: 'List stored posts for one platform with search/sort.',
+        input: { params: platformParams, query: platformPostsQuery, },
+        handler: async ({ params, query, },) => {
+            const platform = assertPlatform(params.platform,);
+            const result = await social.listPlatformPosts({
+                platform,
+                page: query.page,
+                limit: Math.min(query.limit, 50,),
+                search: query.search,
+                sort: query.sort,
+                sortDir: query.sortDir,
             },);
-        }
-
-        await cache.delPattern('social:*',);
-
-        sendSuccess(res, { message: 'Post deleted', },);
-    } catch (error) {
-        handleRouteError(res, error, 'delete social post',);
-    }
-},);
-
-export default router;
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
+];
