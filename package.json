@@ -22,6 +22,7 @@
 		"migrate:status": "npm run db:migrate:status --workspace=backend",
 		"db:seed": "npm run db:seed --workspace=backend",
 		"seed": "npm run db:seed --workspace=backend",
+		"docs:api": "npm run docs:api --workspace=backend",
 		"format": "npx dprint fmt",
 		"format:check": "npx dprint check",
 		"lint": "oxlint frontend/src backend/src shared/src",

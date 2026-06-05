@@ -12,6 +12,7 @@
     "db:reset": "tsx src/db/reset.ts",
     "seed:fonts": "tsx scripts/seed-fonts.ts",
     "sitemap": "tsx scripts/generate-sitemap.ts",
+    "docs:api": "tsx scripts/generate-api-docs.ts",
     "lint": "eslint src --ext .ts",
     "test": "vitest"
   },

@@ -1,0 +1,1547 @@
+{
+  "generatedAt": "2026-06-05T07:40:27.817Z",
+  "totalModules": 28,
+  "totalRoutes": 196,
+  "modules": [
+    {
+      "module": "api-keys",
+      "mountPath": "/api/v1/api-keys",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/api-keys",
+          "auth": "admin",
+          "summary": "List API keys (hashes never returned)."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/api-keys",
+          "auth": "admin",
+          "summary": "Create an API key. The plaintext key is returned ONCE in this response."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/api-keys/:id",
+          "auth": "admin",
+          "summary": "Revoke an API key (soft — sets revoked_at)."
+        }
+      ]
+    },
+    {
+      "module": "audit",
+      "mountPath": "/api/v1/audit",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/audit",
+          "auth": "admin",
+          "summary": "List audit-log entries with pagination and entity/action/user/date filters."
+        }
+      ]
+    },
+    {
+      "module": "auth",
+      "mountPath": "/api/v1/auth",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/patreon",
+          "absolutePath": "/api/v1/auth/patreon",
+          "auth": "public",
+          "summary": "Generate a Patreon OAuth authorization URL + state."
+        },
+        {
+          "method": "GET",
+          "path": "/patreon/callback",
+          "absolutePath": "/api/v1/auth/patreon/callback",
+          "auth": "public",
+          "summary": "Patreon OAuth callback. Sets auth cookies, redirects to the frontend."
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "absolutePath": "/api/v1/auth/login",
+          "auth": "public",
+          "summary": "Email/password login. Sets auth cookies, returns the auth response."
+        },
+        {
+          "method": "POST",
+          "path": "/refresh",
+          "absolutePath": "/api/v1/auth/refresh",
+          "auth": "public",
+          "summary": "Exchange a refresh token for fresh tokens. Sets new auth cookies."
+        },
+        {
+          "method": "POST",
+          "path": "/logout",
+          "absolutePath": "/api/v1/auth/logout",
+          "auth": "public",
+          "summary": "Invalidate the current session token and clear auth cookies."
+        },
+        {
+          "method": "POST",
+          "path": "/logout-all",
+          "absolutePath": "/api/v1/auth/logout-all",
+          "auth": "user",
+          "summary": "Invalidate every session for the current user and clear auth cookies."
+        },
+        {
+          "method": "GET",
+          "path": "/autologin",
+          "absolutePath": "/api/v1/auth/autologin",
+          "auth": "public",
+          "summary": "Dev-only: mint an admin session when AUTOLOGIN_ADMIN_LOCALHOST and the caller is localhost."
+        },
+        {
+          "method": "GET",
+          "path": "/me",
+          "absolutePath": "/api/v1/auth/me",
+          "auth": "user",
+          "summary": "Return the currently-authenticated user."
+        },
+        {
+          "method": "POST",
+          "path": "/patreon/sync",
+          "absolutePath": "/api/v1/auth/patreon/sync",
+          "auth": "user",
+          "summary": "Re-sync the current user's Patreon membership from the Patreon API."
+        }
+      ]
+    },
+    {
+      "module": "block-styles",
+      "mountPath": "/api/v1/block-styles",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/block-styles",
+          "auth": "admin",
+          "summary": "List all block-style templates (admin, cached)."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/block-styles/:id",
+          "auth": "admin",
+          "summary": "Fetch a single block-style template."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/block-styles",
+          "auth": "admin",
+          "summary": "Create a block-style template."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/block-styles/:id",
+          "auth": "admin",
+          "summary": "Update a block-style template."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/block-styles/:id",
+          "auth": "admin",
+          "summary": "Delete a block-style template."
+        }
+      ]
+    },
+    {
+      "module": "campaigns",
+      "mountPath": "/api/v1/campaigns",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/campaigns",
+          "auth": "optional",
+          "summary": "List campaigns. Public published-only by default; admins passing all=true/status get the paginated admin list."
+        },
+        {
+          "method": "GET",
+          "path": "/slug/:slug",
+          "absolutePath": "/api/v1/campaigns/slug/:slug",
+          "auth": "public",
+          "summary": "Fetch a published campaign by slug."
+        },
+        {
+          "method": "GET",
+          "path": "/donations/summary",
+          "absolutePath": "/api/v1/campaigns/donations/summary",
+          "auth": "admin",
+          "summary": "Dashboard donation summary."
+        },
+        {
+          "method": "GET",
+          "path": "/donations/all",
+          "absolutePath": "/api/v1/campaigns/donations/all",
+          "auth": "admin",
+          "summary": "List all donations with optional campaign/status filters."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/donations",
+          "absolutePath": "/api/v1/campaigns/:id/donations",
+          "auth": "public",
+          "summary": "List a campaign's donations."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk",
+          "absolutePath": "/api/v1/campaigns/bulk",
+          "auth": "admin",
+          "summary": "Bulk status change / delete by id list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/campaigns/:id",
+          "auth": "admin",
+          "summary": "Fetch a campaign by id (any status)."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/campaigns",
+          "auth": "admin",
+          "summary": "Create a campaign."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/campaigns/:id",
+          "auth": "admin",
+          "summary": "Update a campaign."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/campaigns/:id",
+          "auth": "admin",
+          "summary": "Delete a campaign."
+        }
+      ]
+    },
+    {
+      "module": "connections",
+      "mountPath": "/api/v1/connections",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/connections",
+          "auth": "admin",
+          "summary": "List all social connections (credentials masked)."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/connections",
+          "auth": "admin",
+          "summary": "Create/update a connection's app credentials + publish settings."
+        },
+        {
+          "method": "GET",
+          "path": "/:provider/oauth/authorize",
+          "absolutePath": "/api/v1/connections/:provider/oauth/authorize",
+          "auth": "admin",
+          "summary": "Generate an OAuth authorization URL + state for a provider."
+        },
+        {
+          "method": "GET",
+          "path": "/:provider/oauth/callback",
+          "absolutePath": "/api/v1/connections/:provider/oauth/callback",
+          "auth": "public",
+          "summary": "OAuth provider callback. Persists tokens, then redirects to admin settings."
+        },
+        {
+          "method": "GET",
+          "path": "/:provider",
+          "absolutePath": "/api/v1/connections/:provider",
+          "auth": "admin",
+          "summary": "Fetch one connection (credentials masked). null when not found."
+        },
+        {
+          "method": "PUT",
+          "path": "/:provider",
+          "absolutePath": "/api/v1/connections/:provider",
+          "auth": "admin",
+          "summary": "Update a connection (provider taken from the path)."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:provider",
+          "absolutePath": "/api/v1/connections/:provider",
+          "auth": "admin",
+          "summary": "Disconnect: clear tokens (keep app creds), stop cron, bust cache."
+        }
+      ]
+    },
+    {
+      "module": "dashboard",
+      "mountPath": "/api/v1/dashboard",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/summary",
+          "absolutePath": "/api/v1/dashboard/summary",
+          "auth": "admin",
+          "summary": "Admin dashboard stats (counts + recent activity + quick actions)."
+        }
+      ]
+    },
+    {
+      "module": "dev",
+      "mountPath": "/api/v1/dev",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/crons",
+          "absolutePath": "/api/v1/dev/crons",
+          "auth": "admin",
+          "summary": "List all registered cron jobs."
+        },
+        {
+          "method": "GET",
+          "path": "/crons/:name",
+          "absolutePath": "/api/v1/dev/crons/:name",
+          "auth": "admin",
+          "summary": "Fetch a single cron job by name (null when unknown)."
+        }
+      ]
+    },
+    {
+      "module": "feed",
+      "mountPath": "/feed.xml",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/feed.xml",
+          "auth": "public",
+          "summary": "RSS 2.0 feed (application/rss+xml) of recent published posts."
+        }
+      ]
+    },
+    {
+      "module": "fonts",
+      "mountPath": "/api/v1/fonts",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/fonts",
+          "auth": "public",
+          "summary": "List all uploaded fonts (with @font-face source URLs)."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/fonts",
+          "auth": "admin",
+          "summary": "Upload a font (multipart, field \"file\"). Optional customId / familyName."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/fonts/:id",
+          "auth": "admin",
+          "summary": "Delete a font (file + row)."
+        }
+      ]
+    },
+    {
+      "module": "forms",
+      "mountPath": "/api/v1/forms",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/forms",
+          "auth": "optional",
+          "summary": "List forms. Public published-only by default; admins passing all=true/status get the paginated admin list."
+        },
+        {
+          "method": "GET",
+          "path": "/slug/:slug",
+          "absolutePath": "/api/v1/forms/slug/:slug",
+          "auth": "optional",
+          "summary": "Fetch a published form by slug (with questions). Honors requiresAuth."
+        },
+        {
+          "method": "GET",
+          "path": "/slug/:slug/results",
+          "absolutePath": "/api/v1/forms/slug/:slug/results",
+          "auth": "public",
+          "summary": "Aggregated public results for a form (when showResults is enabled)."
+        },
+        {
+          "method": "POST",
+          "path": "/slug/:slug/submit",
+          "absolutePath": "/api/v1/forms/slug/:slug/submit",
+          "auth": "optional",
+          "summary": "Submit a form. Enforces requiresAuth, duplicate-submission, and required fields."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/submissions/export",
+          "absolutePath": "/api/v1/forms/:id/submissions/export",
+          "auth": "admin",
+          "summary": "Export a form's submissions as CSV."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk",
+          "absolutePath": "/api/v1/forms/bulk",
+          "auth": "admin",
+          "summary": "Bulk status change / delete by id list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/forms/:id",
+          "auth": "admin",
+          "summary": "Fetch a form by id (with questions)."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/submissions",
+          "absolutePath": "/api/v1/forms/:id/submissions",
+          "auth": "admin",
+          "summary": "List a form's submissions."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/forms",
+          "auth": "admin",
+          "summary": "Create a form (optionally with questions)."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/forms/:id",
+          "auth": "admin",
+          "summary": "Update a form."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/questions",
+          "absolutePath": "/api/v1/forms/:id/questions",
+          "auth": "admin",
+          "summary": "Add a question to a form."
+        },
+        {
+          "method": "PUT",
+          "path": "/:formId/questions/:questionId",
+          "absolutePath": "/api/v1/forms/:formId/questions/:questionId",
+          "auth": "admin",
+          "summary": "Update a form question."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:formId/questions/:questionId",
+          "absolutePath": "/api/v1/forms/:formId/questions/:questionId",
+          "auth": "admin",
+          "summary": "Delete a form question."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/forms/:id",
+          "auth": "admin",
+          "summary": "Delete a form."
+        }
+      ]
+    },
+    {
+      "module": "health",
+      "mountPath": "/api/v1/health",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/health",
+          "auth": "public",
+          "summary": "Basic health check."
+        },
+        {
+          "method": "GET",
+          "path": "/detailed",
+          "absolutePath": "/api/v1/health/detailed",
+          "auth": "public",
+          "summary": "Detailed health check (DB + Redis latency, uptime, memory)."
+        },
+        {
+          "method": "GET",
+          "path": "/ready",
+          "absolutePath": "/api/v1/health/ready",
+          "auth": "public",
+          "summary": "Readiness check (k8s)."
+        },
+        {
+          "method": "GET",
+          "path": "/live",
+          "absolutePath": "/api/v1/health/live",
+          "auth": "public",
+          "summary": "Liveness check (k8s)."
+        }
+      ]
+    },
+    {
+      "module": "lists",
+      "mountPath": "/api/v1/lists",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/:slug/subscribe",
+          "absolutePath": "/api/v1/lists/:slug/subscribe",
+          "auth": "optional",
+          "summary": "Public subscribe to a list by slug (double-opt-in aware)."
+        }
+      ]
+    },
+    {
+      "module": "mail",
+      "mountPath": "/api/v1/mail",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/send",
+          "absolutePath": "/api/v1/mail/send",
+          "auth": "admin",
+          "summary": "Create a send job + recipients and kick the worker (returns 202)."
+        },
+        {
+          "method": "GET",
+          "path": "/jobs",
+          "absolutePath": "/api/v1/mail/jobs",
+          "auth": "admin",
+          "summary": "List recent send jobs."
+        },
+        {
+          "method": "GET",
+          "path": "/jobs/:id",
+          "absolutePath": "/api/v1/mail/jobs/:id",
+          "auth": "admin",
+          "summary": "Fetch a send job status snapshot."
+        },
+        {
+          "method": "GET",
+          "path": "/jobs/:id/recipients",
+          "absolutePath": "/api/v1/mail/jobs/:id/recipients",
+          "auth": "admin",
+          "summary": "Paginated recipient list for a job (optional status filter)."
+        },
+        {
+          "method": "POST",
+          "path": "/jobs/:id/retry",
+          "absolutePath": "/api/v1/mail/jobs/:id/retry",
+          "auth": "admin",
+          "summary": "Reset failed recipients → pending and re-kick the worker."
+        },
+        {
+          "method": "PATCH",
+          "path": "/jobs/:id",
+          "absolutePath": "/api/v1/mail/jobs/:id",
+          "auth": "admin",
+          "summary": "Cancel a send job."
+        }
+      ]
+    },
+    {
+      "module": "mail-templates",
+      "mountPath": "/api/v1/mail-templates",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/variables",
+          "absolutePath": "/api/v1/mail-templates/variables",
+          "auth": "admin",
+          "summary": "Variable catalog for the template reference UI."
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/mail-templates",
+          "auth": "admin",
+          "summary": "List all mail templates."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/mail-templates",
+          "auth": "admin",
+          "summary": "Create a mail template."
+        },
+        {
+          "method": "POST",
+          "path": "/preview",
+          "absolutePath": "/api/v1/mail-templates/preview",
+          "auth": "admin",
+          "summary": "Render preview HTML for an in-progress block set with variables resolved."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/mail-templates/:id",
+          "auth": "admin",
+          "summary": "Fetch a template (meta + block tree)."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/mail-templates/:id",
+          "auth": "admin",
+          "summary": "Update template metadata."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/mail-templates/:id",
+          "auth": "admin",
+          "summary": "Delete a template."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id/blocks",
+          "absolutePath": "/api/v1/mail-templates/:id/blocks",
+          "auth": "admin",
+          "summary": "Replace a template's whole block tree (transactional)."
+        }
+      ]
+    },
+    {
+      "module": "mailing-lists",
+      "mountPath": "/api/v1/mailing-lists",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/mailing-lists",
+          "auth": "admin",
+          "summary": "List all mailing lists."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/mailing-lists",
+          "auth": "admin",
+          "summary": "Create a mailing list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/mailing-lists/:id",
+          "auth": "admin",
+          "summary": "Fetch a mailing list."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/mailing-lists/:id",
+          "auth": "admin",
+          "summary": "Update a mailing list."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/mailing-lists/:id",
+          "auth": "admin",
+          "summary": "Delete a mailing list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/subscribers",
+          "absolutePath": "/api/v1/mailing-lists/:id/subscribers",
+          "auth": "admin",
+          "summary": "Paginated subscriber list (optional search/status filters)."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/subscribers",
+          "absolutePath": "/api/v1/mailing-lists/:id/subscribers",
+          "auth": "admin",
+          "summary": "Add a subscriber (force confirmed). Idempotent: re-add reactivates."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id/subscribers/:subId",
+          "absolutePath": "/api/v1/mailing-lists/:id/subscribers/:subId",
+          "auth": "admin",
+          "summary": "Update a subscriber."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id/subscribers/:subId",
+          "absolutePath": "/api/v1/mailing-lists/:id/subscribers/:subId",
+          "auth": "admin",
+          "summary": "Remove a subscriber."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/subscribers/bulk-delete",
+          "absolutePath": "/api/v1/mailing-lists/:id/subscribers/bulk-delete",
+          "auth": "admin",
+          "summary": "Bulk-delete subscribers by id list."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/subscribers/:subId/force-confirm",
+          "absolutePath": "/api/v1/mailing-lists/:id/subscribers/:subId/force-confirm",
+          "auth": "admin",
+          "summary": "Flip a pending subscriber to subscribed."
+        }
+      ]
+    },
+    {
+      "module": "media",
+      "mountPath": "/api/v1/media",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/media",
+          "auth": "admin",
+          "summary": "Upload a single file (multipart, field \"file\"; optional alt/caption)."
+        },
+        {
+          "method": "POST",
+          "path": "/block-upload",
+          "absolutePath": "/api/v1/media/block-upload",
+          "auth": "admin",
+          "summary": "Upload a file for a content block (multipart, field \"file\"; postId/blockId)."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk",
+          "absolutePath": "/api/v1/media/bulk",
+          "auth": "admin",
+          "summary": "Upload multiple files (multipart, field \"files\", max 10)."
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/media",
+          "auth": "admin",
+          "summary": "Paginated media list (type/types/search/sort filters)."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/media/:id",
+          "auth": "admin",
+          "summary": "Fetch a media item by id."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/media/:id",
+          "auth": "admin",
+          "summary": "Update media metadata (title/alt/caption)."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/media/:id",
+          "auth": "admin",
+          "summary": "Delete a media item (removes files from storage)."
+        }
+      ]
+    },
+    {
+      "module": "messages",
+      "mountPath": "/api/v1/messages",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/messages",
+          "auth": "optional",
+          "summary": "Submit a contact message. Sanitizes input and notifies admins by email."
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/messages",
+          "auth": "admin",
+          "summary": "List contact messages with optional status/search filters."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk",
+          "absolutePath": "/api/v1/messages/bulk",
+          "auth": "admin",
+          "summary": "Bulk status change / delete by id list."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk-status",
+          "absolutePath": "/api/v1/messages/bulk-status",
+          "auth": "admin",
+          "summary": "Bulk update message status."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk-delete",
+          "absolutePath": "/api/v1/messages/bulk-delete",
+          "auth": "admin",
+          "summary": "Bulk delete messages by id list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/messages/:id",
+          "auth": "admin",
+          "summary": "Fetch a message by id (marks unread → read)."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id/status",
+          "absolutePath": "/api/v1/messages/:id/status",
+          "auth": "admin",
+          "summary": "Update a message's status."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/messages/:id",
+          "auth": "admin",
+          "summary": "Delete a message."
+        }
+      ]
+    },
+    {
+      "module": "pages",
+      "mountPath": "/api/v1/pages",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/navigation",
+          "absolutePath": "/api/v1/pages/navigation",
+          "auth": "public",
+          "summary": "Main navigation tree."
+        },
+        {
+          "method": "GET",
+          "path": "/homepage",
+          "absolutePath": "/api/v1/pages/homepage",
+          "auth": "public",
+          "summary": "The page flagged as homepage (with blocks)."
+        },
+        {
+          "method": "GET",
+          "path": "/slug/:slug",
+          "absolutePath": "/api/v1/pages/slug/:slug",
+          "auth": "optional",
+          "summary": "Fetch a page by slug. Gated content yields CONTENT_LOCKED with a preview in error.details."
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/pages",
+          "auth": "admin",
+          "summary": "List pages (any status) with filters."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk",
+          "absolutePath": "/api/v1/pages/bulk",
+          "auth": "admin",
+          "summary": "Bulk status change / soft-delete by id list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/revisions",
+          "absolutePath": "/api/v1/pages/:id/revisions",
+          "auth": "admin",
+          "summary": "List a page's saved revisions."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/revisions/:version",
+          "absolutePath": "/api/v1/pages/:id/revisions/:version",
+          "auth": "admin",
+          "summary": "Fetch one revision snapshot."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/revisions/:version/restore",
+          "absolutePath": "/api/v1/pages/:id/revisions/:version/restore",
+          "auth": "admin",
+          "summary": "Restore a revision (snapshots current state first)."
+        },
+        {
+          "method": "POST",
+          "path": "/:pageId/blocks",
+          "absolutePath": "/api/v1/pages/:pageId/blocks",
+          "auth": "admin",
+          "summary": "Create a page block."
+        },
+        {
+          "method": "PUT",
+          "path": "/:pageId/blocks/reorder",
+          "absolutePath": "/api/v1/pages/:pageId/blocks/reorder",
+          "auth": "admin",
+          "summary": "Reorder a page's blocks within one parent."
+        },
+        {
+          "method": "PUT",
+          "path": "/:pageId/blocks/:blockId",
+          "absolutePath": "/api/v1/pages/:pageId/blocks/:blockId",
+          "auth": "admin",
+          "summary": "Update a page block."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:pageId/blocks/:blockId",
+          "absolutePath": "/api/v1/pages/:pageId/blocks/:blockId",
+          "auth": "admin",
+          "summary": "Delete a page block."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/pages/:id",
+          "auth": "admin",
+          "summary": "Fetch a page by id (any status, with blocks)."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/pages",
+          "auth": "admin",
+          "summary": "Create a page."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/pages/:id",
+          "auth": "admin",
+          "summary": "Update a page. Snapshots a revision first."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/pages/:id",
+          "auth": "admin",
+          "summary": "Delete a page."
+        }
+      ]
+    },
+    {
+      "module": "payments",
+      "mountPath": "/api/v1/payments",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/create-customer",
+          "absolutePath": "/api/v1/payments/create-customer",
+          "auth": "user",
+          "summary": "Create or retrieve the logged-in user's Stripe customer."
+        },
+        {
+          "method": "POST",
+          "path": "/donate",
+          "absolutePath": "/api/v1/payments/donate",
+          "auth": "optional",
+          "summary": "Create a donation payment intent (anonymous donations allowed)."
+        },
+        {
+          "method": "POST",
+          "path": "/subscribe",
+          "absolutePath": "/api/v1/payments/subscribe",
+          "auth": "user",
+          "summary": "Start a subscription for the logged-in user."
+        },
+        {
+          "method": "POST",
+          "path": "/unsubscribe",
+          "absolutePath": "/api/v1/payments/unsubscribe",
+          "auth": "user",
+          "summary": "Cancel the user's active subscription at period end."
+        },
+        {
+          "method": "GET",
+          "path": "/subscriptions",
+          "absolutePath": "/api/v1/payments/subscriptions",
+          "auth": "user",
+          "summary": "List the logged-in user's subscriptions."
+        },
+        {
+          "method": "GET",
+          "path": "/transactions",
+          "absolutePath": "/api/v1/payments/transactions",
+          "auth": "user",
+          "summary": "List the logged-in user's transaction history."
+        },
+        {
+          "method": "POST",
+          "path": "/webhook",
+          "absolutePath": "/api/v1/payments/webhook",
+          "auth": "public",
+          "summary": "Stripe webhook (raw body, signature-verified). Always 200 unless bad signature (400)."
+        },
+        {
+          "method": "GET",
+          "path": "/admin/subscriptions",
+          "absolutePath": "/api/v1/payments/admin/subscriptions",
+          "auth": "admin",
+          "summary": "List all subscriptions (admin)."
+        },
+        {
+          "method": "GET",
+          "path": "/admin/transactions",
+          "absolutePath": "/api/v1/payments/admin/transactions",
+          "auth": "admin",
+          "summary": "List all transactions (admin; type/status filters)."
+        },
+        {
+          "method": "GET",
+          "path": "/admin/user/:userId/transactions",
+          "absolutePath": "/api/v1/payments/admin/user/:userId/transactions",
+          "auth": "admin",
+          "summary": "List a specific user's transactions (admin)."
+        },
+        {
+          "method": "GET",
+          "path": "/admin/plans",
+          "absolutePath": "/api/v1/payments/admin/plans",
+          "auth": "admin",
+          "summary": "List all subscription plans (admin)."
+        },
+        {
+          "method": "POST",
+          "path": "/admin/plans",
+          "absolutePath": "/api/v1/payments/admin/plans",
+          "auth": "admin",
+          "summary": "Create a subscription plan (creates a Stripe product + price)."
+        },
+        {
+          "method": "PUT",
+          "path": "/admin/plans/:id",
+          "absolutePath": "/api/v1/payments/admin/plans/:id",
+          "auth": "admin",
+          "summary": "Update a subscription plan (admin)."
+        },
+        {
+          "method": "GET",
+          "path": "/plans",
+          "absolutePath": "/api/v1/payments/plans",
+          "auth": "public",
+          "summary": "List active subscription plans (public subscribe page)."
+        }
+      ]
+    },
+    {
+      "module": "posts",
+      "mountPath": "/api/v1/posts",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/posts",
+          "auth": "optional",
+          "summary": "List posts. Public gate by default; admins passing status/sort get the all-statuses listing."
+        },
+        {
+          "method": "GET",
+          "path": "/search",
+          "absolutePath": "/api/v1/posts/search",
+          "auth": "public",
+          "summary": "Full-text search over published posts."
+        },
+        {
+          "method": "GET",
+          "path": "/slug/:slug",
+          "absolutePath": "/api/v1/posts/slug/:slug",
+          "auth": "optional",
+          "summary": "Fetch a post by slug. Gated content yields CONTENT_LOCKED with a preview in error.details."
+        },
+        {
+          "method": "POST",
+          "path": "/bulk",
+          "absolutePath": "/api/v1/posts/bulk",
+          "auth": "admin",
+          "summary": "Bulk status change / soft-delete by id list."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/posts/:id",
+          "auth": "admin",
+          "summary": "Fetch a post by id (any status)."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/posts",
+          "auth": "admin",
+          "summary": "Create a post."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/posts/:id",
+          "auth": "admin",
+          "summary": "Update a post. Snapshots a revision first."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:id",
+          "absolutePath": "/api/v1/posts/:id",
+          "auth": "admin",
+          "summary": "Delete a post."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/revisions",
+          "absolutePath": "/api/v1/posts/:id/revisions",
+          "auth": "admin",
+          "summary": "List a post's saved revisions."
+        },
+        {
+          "method": "GET",
+          "path": "/:id/revisions/:version",
+          "absolutePath": "/api/v1/posts/:id/revisions/:version",
+          "auth": "admin",
+          "summary": "Fetch one revision snapshot."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/revisions/:version/restore",
+          "absolutePath": "/api/v1/posts/:id/revisions/:version/restore",
+          "auth": "admin",
+          "summary": "Restore a revision (snapshots current state first)."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id/blocks/reorder",
+          "absolutePath": "/api/v1/posts/:id/blocks/reorder",
+          "auth": "admin",
+          "summary": "Reorder a post's content blocks."
+        }
+      ]
+    },
+    {
+      "module": "search",
+      "mountPath": "/api/v1/search",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/search",
+          "auth": "public",
+          "summary": "Global search over published, non-private content (posts, pages, campaigns)."
+        },
+        {
+          "method": "GET",
+          "path": "/admin",
+          "absolutePath": "/api/v1/search/admin",
+          "auth": "admin",
+          "summary": "Admin search across all content (posts, pages, users, campaigns, forms, messages), any status."
+        }
+      ]
+    },
+    {
+      "module": "settings",
+      "mountPath": "/api/v1/settings",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/public",
+          "absolutePath": "/api/v1/settings/public",
+          "auth": "public",
+          "summary": "Public site settings projection (cached 600s)."
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/settings",
+          "auth": "admin",
+          "summary": "All settings rows with last-editor metadata."
+        },
+        {
+          "method": "PUT",
+          "path": "/",
+          "absolutePath": "/api/v1/settings",
+          "auth": "admin",
+          "summary": "Update settings; feature toggles run the dependency cascade + lazy migrations."
+        },
+        {
+          "method": "GET",
+          "path": "/homepage-hero",
+          "absolutePath": "/api/v1/settings/homepage-hero",
+          "auth": "public",
+          "summary": "Homepage hero settings (cached 600s)."
+        },
+        {
+          "method": "PUT",
+          "path": "/homepage-hero",
+          "absolutePath": "/api/v1/settings/homepage-hero",
+          "auth": "admin",
+          "summary": "Update homepage hero settings."
+        },
+        {
+          "method": "GET",
+          "path": "/site-header",
+          "absolutePath": "/api/v1/settings/site-header",
+          "auth": "public",
+          "summary": "Site header settings (cached 600s)."
+        },
+        {
+          "method": "PUT",
+          "path": "/site-header",
+          "absolutePath": "/api/v1/settings/site-header",
+          "auth": "admin",
+          "summary": "Update site header settings."
+        },
+        {
+          "method": "GET",
+          "path": "/admin-appearance",
+          "absolutePath": "/api/v1/settings/admin-appearance",
+          "auth": "admin",
+          "summary": "Admin chrome appearance tokens (operator-only)."
+        },
+        {
+          "method": "PUT",
+          "path": "/admin-appearance",
+          "absolutePath": "/api/v1/settings/admin-appearance",
+          "auth": "admin",
+          "summary": "Update admin chrome appearance tokens."
+        },
+        {
+          "method": "GET",
+          "path": "/site-footer",
+          "absolutePath": "/api/v1/settings/site-footer",
+          "auth": "public",
+          "summary": "Site footer settings (cached 600s)."
+        },
+        {
+          "method": "PUT",
+          "path": "/site-footer",
+          "absolutePath": "/api/v1/settings/site-footer",
+          "auth": "admin",
+          "summary": "Update site footer settings."
+        },
+        {
+          "method": "GET",
+          "path": "/site-branding",
+          "absolutePath": "/api/v1/settings/site-branding",
+          "auth": "public",
+          "summary": "Site branding (logo / favicon) settings (cached 600s)."
+        },
+        {
+          "method": "PUT",
+          "path": "/site-branding",
+          "absolutePath": "/api/v1/settings/site-branding",
+          "auth": "admin",
+          "summary": "Update site branding settings."
+        },
+        {
+          "method": "GET",
+          "path": "/appearance",
+          "absolutePath": "/api/v1/settings/appearance",
+          "auth": "public",
+          "summary": "Public appearance settings (cached 600s)."
+        },
+        {
+          "method": "PUT",
+          "path": "/appearance",
+          "absolutePath": "/api/v1/settings/appearance",
+          "auth": "admin",
+          "summary": "Update appearance settings."
+        },
+        {
+          "method": "GET",
+          "path": "/site-colors",
+          "absolutePath": "/api/v1/settings/site-colors",
+          "auth": "public",
+          "summary": "Site color swatches (cached 600s; auto-migrates legacy shape)."
+        },
+        {
+          "method": "PUT",
+          "path": "/site-colors",
+          "absolutePath": "/api/v1/settings/site-colors",
+          "auth": "admin",
+          "summary": "Replace the site color swatch palette."
+        },
+        {
+          "method": "GET",
+          "path": "/site-colors/usages/:id",
+          "absolutePath": "/api/v1/settings/site-colors/usages/:id",
+          "auth": "admin",
+          "summary": "Count swatch:{id} references across the DB (delete-confirm UI)."
+        },
+        {
+          "method": "PUT",
+          "path": "/:key",
+          "absolutePath": "/api/v1/settings/:key",
+          "auth": "admin",
+          "summary": "Upsert an arbitrary settings row by key."
+        },
+        {
+          "method": "DELETE",
+          "path": "/:key",
+          "absolutePath": "/api/v1/settings/:key",
+          "auth": "admin",
+          "summary": "Delete an arbitrary settings row by key."
+        }
+      ]
+    },
+    {
+      "module": "setup",
+      "mountPath": "/api/v1/setup",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/status",
+          "absolutePath": "/api/v1/setup/status",
+          "auth": "public",
+          "summary": "Installation state (whether the instance still needs setup)."
+        },
+        {
+          "method": "POST",
+          "path": "/test-db",
+          "absolutePath": "/api/v1/setup/test-db",
+          "auth": "public",
+          "summary": "Test a PostgreSQL connection (setup-only)."
+        },
+        {
+          "method": "POST",
+          "path": "/test-redis",
+          "absolutePath": "/api/v1/setup/test-redis",
+          "auth": "public",
+          "summary": "Test a Redis connection (setup-only)."
+        },
+        {
+          "method": "POST",
+          "path": "/test-smtp",
+          "absolutePath": "/api/v1/setup/test-smtp",
+          "auth": "public",
+          "summary": "Test SMTP credentials (setup-only)."
+        },
+        {
+          "method": "POST",
+          "path": "/test-s3",
+          "absolutePath": "/api/v1/setup/test-s3",
+          "auth": "public",
+          "summary": "Test S3 credentials (setup-only)."
+        },
+        {
+          "method": "POST",
+          "path": "/generate-jwt",
+          "absolutePath": "/api/v1/setup/generate-jwt",
+          "auth": "public",
+          "summary": "Generate a random JWT secret (setup-only)."
+        },
+        {
+          "method": "POST",
+          "path": "/install",
+          "absolutePath": "/api/v1/setup/install",
+          "auth": "public",
+          "summary": "Run the installer, then restart into running mode (responds before restart)."
+        }
+      ]
+    },
+    {
+      "module": "sitemap",
+      "mountPath": "",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/sitemap.xml",
+          "absolutePath": "/sitemap.xml",
+          "auth": "public",
+          "summary": "sitemap.xml (application/xml) of published content."
+        },
+        {
+          "method": "POST",
+          "path": "/admin/sitemap/regenerate",
+          "absolutePath": "/admin/sitemap/regenerate",
+          "auth": "admin",
+          "summary": "Drop the cached sitemap, rebuild, and return the URL count."
+        }
+      ]
+    },
+    {
+      "module": "social",
+      "mountPath": "/api/v1/social",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/posts",
+          "absolutePath": "/api/v1/social/posts",
+          "auth": "public",
+          "summary": "List stored social posts (optionally filtered by platform)."
+        },
+        {
+          "method": "GET",
+          "path": "/feed",
+          "absolutePath": "/api/v1/social/feed",
+          "auth": "public",
+          "summary": "Live feed across connected providers (API-cached, no DB)."
+        },
+        {
+          "method": "GET",
+          "path": "/feed/:platform",
+          "absolutePath": "/api/v1/social/feed/:platform",
+          "auth": "public",
+          "summary": "Live feed for one platform."
+        },
+        {
+          "method": "GET",
+          "path": "/homepage",
+          "absolutePath": "/api/v1/social/homepage",
+          "auth": "public",
+          "summary": "Posts selected for the homepage (falls back to latest per platform)."
+        },
+        {
+          "method": "PUT",
+          "path": "/homepage",
+          "absolutePath": "/api/v1/social/homepage",
+          "auth": "admin",
+          "summary": "Set the homepage social post selection."
+        },
+        {
+          "method": "POST",
+          "path": "/sync",
+          "absolutePath": "/api/v1/social/sync",
+          "auth": "admin",
+          "summary": "Sync social posts from one or all platforms."
+        },
+        {
+          "method": "DELETE",
+          "path": "/posts/:id",
+          "absolutePath": "/api/v1/social/posts/:id",
+          "auth": "admin",
+          "summary": "Delete a stored social post by id."
+        },
+        {
+          "method": "GET",
+          "path": "/posts/:platform",
+          "absolutePath": "/api/v1/social/posts/:platform",
+          "auth": "public",
+          "summary": "List stored posts for one platform with search/sort."
+        }
+      ]
+    },
+    {
+      "module": "unsubscribe",
+      "mountPath": "",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/u/:token",
+          "absolutePath": "/u/:token",
+          "auth": "public",
+          "summary": "Unsubscribe from a mailing list (raw HTML page)."
+        },
+        {
+          "method": "GET",
+          "path": "/u/:token/resubscribe",
+          "absolutePath": "/u/:token/resubscribe",
+          "auth": "public",
+          "summary": "Resubscribe to a mailing list (raw HTML page)."
+        },
+        {
+          "method": "GET",
+          "path": "/lists/:slug/confirm/:token",
+          "absolutePath": "/lists/:slug/confirm/:token",
+          "auth": "public",
+          "summary": "Confirm a double-opt-in subscription (raw HTML page)."
+        }
+      ]
+    },
+    {
+      "module": "users",
+      "mountPath": "/api/v1/users",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/users",
+          "auth": "admin",
+          "summary": "List users with search/role/status filters and sorting."
+        },
+        {
+          "method": "GET",
+          "path": "/banned/list",
+          "absolutePath": "/api/v1/users/banned/list",
+          "auth": "admin",
+          "summary": "List active bans."
+        },
+        {
+          "method": "DELETE",
+          "path": "/banned/:banId",
+          "absolutePath": "/api/v1/users/banned/:banId",
+          "auth": "admin",
+          "summary": "Remove a ban by id."
+        },
+        {
+          "method": "POST",
+          "path": "/ban-ip",
+          "absolutePath": "/api/v1/users/ban-ip",
+          "auth": "admin",
+          "summary": "Ban an IP address."
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "absolutePath": "/api/v1/users/:id",
+          "auth": "admin",
+          "summary": "Fetch a user with Patreon membership."
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "absolutePath": "/api/v1/users",
+          "auth": "admin",
+          "summary": "Create a user (email/password credential)."
+        },
+        {
+          "method": "PUT",
+          "path": "/:id",
+          "absolutePath": "/api/v1/users/:id",
+          "auth": "admin",
+          "summary": "Update a user."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/avatar",
+          "absolutePath": "/api/v1/users/:id/avatar",
+          "auth": "admin",
+          "summary": "Upload a user avatar (resized to 256×256 webp)."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/password",
+          "absolutePath": "/api/v1/users/:id/password",
+          "auth": "admin",
+          "summary": "Set a user's password."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/ban",
+          "absolutePath": "/api/v1/users/:id/ban",
+          "auth": "admin",
+          "summary": "Ban a user."
+        },
+        {
+          "method": "POST",
+          "path": "/:id/unban",
+          "absolutePath": "/api/v1/users/:id/unban",
+          "auth": "admin",
+          "summary": "Unban a user."
+        }
+      ]
+    }
+  ]
+}
