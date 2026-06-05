@@ -10,6 +10,7 @@ import type { RouteDef, } from './types';
 
 interface ModuleEntry {
     module: string;
+    mountPath: string;
     defs: RouteDef[];
 }
 
@@ -80,9 +81,28 @@ export function buildRouter(defs: RouteDef[],): Router {
     return router;
 }
 
-/** Mount a module's routes and record them in the manifest. */
-export function registerModule(module: string, defs: RouteDef[],): Router {
-    registry.push({ module, defs, },);
+/** Mount a module's routes and record them in the manifest.
+ *
+ *  `mountPath` is the absolute prefix the returned router is mounted
+ *  under (e.g. '/api/v1/posts', or '/feed.xml' for the root-mounted
+ *  raw modules). It can't be inferred — `routes/index.ts` mounts each
+ *  router with its own `router.use(prefix, …)`, and app.ts mounts the
+ *  raw modules at the site root — so the caller passes it and the
+ *  manifest emits absolute paths from it.
+ *
+ *  Registration is idempotent by module name: re-registering a module
+ *  REPLACES its entry rather than appending a duplicate. createApp can
+ *  run more than once (tests, setup mode), and setup registers inside
+ *  createApp, so without the dedupe the manifest would grow phantom
+ *  duplicate entries. */
+export function registerModule(module: string, defs: RouteDef[], opts: { mountPath: string, },): Router {
+    const entry: ModuleEntry = { module, mountPath: opts.mountPath, defs, };
+    const existing = registry.findIndex((e,) => e.module === module,);
+    if (existing >= 0) {
+        registry[existing] = entry;
+    } else {
+        registry.push(entry,);
+    }
     return buildRouter(defs,);
 }
 
@@ -94,9 +114,16 @@ export function registerModule(module: string, defs: RouteDef[],): Router {
 export function manifest() {
     return registry.map((entry,) => ({
         module: entry.module,
+        mountPath: entry.mountPath,
         routes: entry.defs.map((d,) => ({
             method: d.method.toUpperCase(),
             path: d.path,
+            // Absolute path = mountPath + the route's own path. A route
+            // path of '/' contributes nothing (so a module mounted at
+            // '/api/v1/posts' with a '/' route yields '/api/v1/posts',
+            // not '/api/v1/posts/'); every other path appends verbatim
+            // ('/slug/:slug' → '/api/v1/posts/slug/:slug').
+            absolutePath: entry.mountPath + (d.path === '/' ? '' : d.path),
             auth: d.auth,
             summary: d.summary,
         })),

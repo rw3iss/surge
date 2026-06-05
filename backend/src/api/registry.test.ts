@@ -5,7 +5,7 @@ import { z, } from 'zod';
 import { NotFoundError, } from '../core/errors';
 import { errorHandler, } from '../middleware/error';
 import { defineRoute, reply, } from './defineRoute';
-import { buildRouter, manifest, registerModule, } from './registry';
+import { authMiddlewaresFor, buildRouter, manifest, registerModule, } from './registry';
 
 function appFor(defs: Parameters<typeof buildRouter>[0],) {
     const app = express();
@@ -71,15 +71,45 @@ describe('route framework', () => {
         expect(res.body.data.page,).toBe(3,);
     },);
 
-    it('registers modules in the manifest', () => {
-        registerModule('test-module', [defineRoute({
-            method: 'get', path: '/x', auth: 'public', summary: 'example',
-            handler: () => null,
-        },),],);
+    it('registers modules in the manifest with mountPath + absolutePath', () => {
+        registerModule('test-module', [
+            defineRoute({
+                method: 'get', path: '/', auth: 'public', summary: 'root',
+                handler: () => null,
+            },),
+            defineRoute({
+                method: 'get', path: '/x', auth: 'public', summary: 'example',
+                handler: () => null,
+            },),
+        ], { mountPath: '/api/v1/test-module', },);
         const entry = manifest().find((m,) => m.module === 'test-module',);
+        expect(entry?.mountPath,).toBe('/api/v1/test-module',);
+        // A '/' route contributes no trailing slash to the absolute path.
         expect(entry?.routes[0],).toEqual({
-            method: 'GET', path: '/x', auth: 'public', summary: 'example',
+            method: 'GET', path: '/', absolutePath: '/api/v1/test-module',
+            auth: 'public', summary: 'root',
         },);
+        // Non-root paths append verbatim.
+        expect(entry?.routes[1],).toEqual({
+            method: 'GET', path: '/x', absolutePath: '/api/v1/test-module/x',
+            auth: 'public', summary: 'example',
+        },);
+    },);
+
+    it('replaces a module entry on re-registration (idempotent)', () => {
+        registerModule('dupe-module', [defineRoute({
+            method: 'get', path: '/old', auth: 'public', summary: 'first',
+            handler: () => null,
+        },),], { mountPath: '/api/v1/dupe-module', },);
+        registerModule('dupe-module', [defineRoute({
+            method: 'get', path: '/new', auth: 'public', summary: 'second',
+            handler: () => null,
+        },),], { mountPath: '/api/v1/dupe-module', },);
+        const matches = manifest().filter((m,) => m.module === 'dupe-module',);
+        expect(matches,).toHaveLength(1,);
+        expect(matches[0].routes,).toHaveLength(1,);
+        expect(matches[0].routes[0].path,).toBe('/new',);
+        expect(matches[0].routes[0].summary,).toBe('second',);
     },);
 
     it('lets a raw handler own the response without re-shaping', async () => {
@@ -127,6 +157,30 @@ describe('route framework', () => {
             success: false,
             error: { code: 'NOT_FOUND', message: 'Thing not found', },
         },);
+    },);
+
+    it('stacks pre middlewares AFTER auth middlewares on an admin route', () => {
+        // Admin auth needs a DB-backed user/api-key, so a live request
+        // would reject before the handler — we can't observe ordering
+        // through a 200. Instead introspect the Express layer stack the
+        // router built: auth middlewares come first, then pre, then the
+        // wrapped handler. We assert the pre sits at exactly
+        // authMiddlewaresFor('admin').length (immediately after auth).
+        const preMw: import('express').RequestHandler = (_req, _res, next,) => next();
+        const router = buildRouter([defineRoute({
+            method: 'get', path: '/guarded', auth: 'admin', summary: 't',
+            pre: [preMw,],
+            handler: () => null,
+        },),],);
+        const layer = router.stack.find(
+            (l: any,) => l.route && l.route.path === '/guarded',
+        ) as any;
+        const handles = layer.route.stack.map((s: any,) => s.handle,);
+        const authCount = authMiddlewaresFor('admin',).length;
+        // pre is positioned right after the auth middlewares…
+        expect(handles[authCount],).toBe(preMw,);
+        // …and the wrapped handler is the very last entry.
+        expect(handles,).toHaveLength(authCount + 2,);
     },);
 
     it('runs pre middlewares before the handler', async () => {

@@ -132,7 +132,7 @@ export function createApp(mode: AppMode = 'running',): Express {
     // Setup routes are always mounted — in setup mode they're the only
     // thing that responds; in running mode they self-reject via
     // ensureSetupAllowed().
-    app.use(`/api/${config.apiVersion}/setup`, registerModule('setup', setupRoutes,),);
+    app.use(`/api/${config.apiVersion}/setup`, registerModule('setup', setupRoutes, { mountPath: `/api/${config.apiVersion}/setup`, },),);
 
     // SSR + frontend serving. Same in both modes; the SPA handles its
     // own redirect to /setup based on the status endpoint.
