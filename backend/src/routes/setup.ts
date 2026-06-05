@@ -1,12 +1,11 @@
-import crypto from 'crypto';
-import { Request, Response, Router, } from 'express';
-import { AlreadyInstalledError, AppError, ValidationError, } from '../core/errors';
+import { defineRoute, } from '../api/defineRoute';
 import { getInstallationState, } from '../services/installation';
-import { transitionToRunning, } from '../services/lifecycle';
 import {
+    ensureSetupAllowed,
+    generateJwtSecret,
+    install,
     postgresTester,
     redisTester,
-    runInstallation,
     s3Tester,
     smtpTester,
 } from '../services/setup';
@@ -16,101 +15,77 @@ import type {
     S3TesterInput,
     SmtpTesterInput,
 } from '../services/setup';
-import { logger, } from '../utils/logger';
 
 /**
- * Thin HTTP adapter for the setup pipeline. Each handler is one line of
- * "parse request → call service → format response"; all business logic
- * lives in `services/setup/`. When migrating to Fastify, this file is
- * the only one that needs to be re-written.
+ * Thin HTTP adapter for the setup pipeline. All business logic lives in
+ * `services/setup/`. Every endpoint rejects when the instance is already
+ * installed (via `ensureSetupAllowed`) — except GET /status, which
+ * always responds so the frontend can decide whether to redirect to
+ * /setup at all.
  *
- * All endpoints reject when the instance is already installed (except
- * GET /status, which always responds — the frontend uses it to decide
- * whether to redirect to /setup at all).
+ * Errors thrown here (AlreadyInstalledError, ValidationError, other
+ * AppErrors) funnel into the central error middleware, which produces
+ * the same status codes and envelope the legacy handlers built by hand.
  */
+export const setupRoutes = [
 
-const router = Router();
+    defineRoute({
+        method: 'get', path: '/status', auth: 'public',
+        summary: 'Installation state (whether the instance still needs setup).',
+        handler: () => getInstallationState(),
+    },),
 
-router.get('/status', async (_req, res,) => {
-    const state = await getInstallationState();
-    res.json({ success: true, data: state, },);
-},);
+    defineRoute({
+        method: 'post', path: '/test-db', auth: 'public',
+        summary: 'Test a PostgreSQL connection (setup-only).',
+        handler: async ({ body, },) => {
+            await ensureSetupAllowed();
+            return postgresTester.test(body as PostgresTesterInput,);
+        },
+    },),
 
-async function ensureSetupAllowed(): Promise<void> {
-    const state = await getInstallationState();
-    if (!state.needsSetup) throw new AlreadyInstalledError();
-}
+    defineRoute({
+        method: 'post', path: '/test-redis', auth: 'public',
+        summary: 'Test a Redis connection (setup-only).',
+        handler: async ({ body, },) => {
+            await ensureSetupAllowed();
+            return redisTester.test(body as RedisTesterInput,);
+        },
+    },),
 
-router.post('/test-db', async (req: Request, res: Response,) => {
-    await ensureSetupAllowed();
-    const input = req.body as PostgresTesterInput;
-    const result = await postgresTester.test(input,);
-    res.json({ success: true, data: result, },);
-},);
+    defineRoute({
+        method: 'post', path: '/test-smtp', auth: 'public',
+        summary: 'Test SMTP credentials (setup-only).',
+        handler: async ({ body, },) => {
+            await ensureSetupAllowed();
+            return smtpTester.test(body as SmtpTesterInput,);
+        },
+    },),
 
-router.post('/test-redis', async (req: Request, res: Response,) => {
-    await ensureSetupAllowed();
-    const input = req.body as RedisTesterInput;
-    const result = await redisTester.test(input,);
-    res.json({ success: true, data: result, },);
-},);
+    defineRoute({
+        method: 'post', path: '/test-s3', auth: 'public',
+        summary: 'Test S3 credentials (setup-only).',
+        handler: async ({ body, },) => {
+            await ensureSetupAllowed();
+            return s3Tester.test(body as S3TesterInput,);
+        },
+    },),
 
-router.post('/test-smtp', async (req: Request, res: Response,) => {
-    await ensureSetupAllowed();
-    const input = req.body as SmtpTesterInput;
-    const result = await smtpTester.test(input,);
-    res.json({ success: true, data: result, },);
-},);
+    defineRoute({
+        method: 'post', path: '/generate-jwt', auth: 'public',
+        summary: 'Generate a random JWT secret (setup-only).',
+        handler: async () => {
+            await ensureSetupAllowed();
+            return generateJwtSecret();
+        },
+    },),
 
-router.post('/test-s3', async (req: Request, res: Response,) => {
-    await ensureSetupAllowed();
-    const input = req.body as S3TesterInput;
-    const result = await s3Tester.test(input,);
-    res.json({ success: true, data: result, },);
-},);
-
-router.post('/generate-jwt', async (_req, res,) => {
-    await ensureSetupAllowed();
-    res.json({
-        success: true,
-        data: { secret: crypto.randomBytes(48,).toString('base64url',), },
-    },);
-},);
-
-router.post('/install', async (req: Request, res: Response,) => {
-    await ensureSetupAllowed();
-    try {
-        const result = await runInstallation(req.body,);
-        // Send the success response BEFORE triggering restart, otherwise
-        // the client never sees ok:true.
-        res.json({ success: true, data: result, },);
-        // Fire-and-forget: process exits after a short delay so the
-        // supervisor restarts us with the freshly-written .env.
-        setImmediate(() => {
-            transitionToRunning().catch((err,) => {
-                logger.error('transitionToRunning failed', { error: (err as Error).message, },);
-            },);
-        },);
-    } catch (error) {
-        if (error instanceof ValidationError) {
-            const details = (error.details as { errors: unknown[]; stage?: string; }) || {};
-            return res.status(400,).json({
-                success: false,
-                error: { code: 'VALIDATION_ERROR', message: error.message, details, },
-            },);
-        }
-        if (error instanceof AppError) {
-            return res.status(error.statusCode,).json({
-                success: false,
-                error: { code: error.code, message: error.message, details: error.details, },
-            },);
-        }
-        logger.error('Install error', { error: (error as Error).message, },);
-        res.status(500,).json({
-            success: false,
-            error: { code: 'INTERNAL_ERROR', message: 'Installation failed unexpectedly', },
-        },);
-    }
-},);
-
-export default router;
+    defineRoute({
+        method: 'post', path: '/install', auth: 'public',
+        summary: 'Run the installer, then restart into running mode (responds before restart).',
+        handler: async ({ body, },) => {
+            await ensureSetupAllowed();
+            return install(body,);
+        },
+    },),
+];

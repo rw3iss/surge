@@ -5,6 +5,7 @@
  */
 export { runInstallation, } from './installer';
 export type { InstallResult, InstallFailure, } from './installer';
+export { ensureSetupAllowed, generateJwtSecret, install, } from './orchestrator';
 export type {
     InstallInput,
     GeneralInput,

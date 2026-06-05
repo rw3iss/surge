@@ -10,8 +10,9 @@ import { csrfProtection, csrfToken, } from './middleware/csrf';
 import { errorHandler, notFoundHandler, } from './middleware/error';
 import { setupGate, } from './middleware/setupGate';
 import { createSsrMiddleware, } from './middleware/ssr';
+import { registerModule, } from './api/registry';
 import routes from './routes';
-import setupRoutes from './routes/setup';
+import { setupRoutes, } from './routes/setup';
 import sitemapRoutes from './routes/sitemap';
 import feedRoutes from './routes/feed';
 import unsubscribeRoutes from './routes/unsubscribe';
@@ -131,7 +132,7 @@ export function createApp(mode: AppMode = 'running',): Express {
     // Setup routes are always mounted — in setup mode they're the only
     // thing that responds; in running mode they self-reject via
     // ensureSetupAllowed().
-    app.use(`/api/${config.apiVersion}/setup`, setupRoutes,);
+    app.use(`/api/${config.apiVersion}/setup`, registerModule('setup', setupRoutes,),);
 
     // SSR + frontend serving. Same in both modes; the SPA handles its
     // own redirect to /setup based on the status endpoint.
