@@ -23,7 +23,7 @@ import { searchRoutes, } from './search';
 import settingsRoutes from './settings';
 import sitemapRoutes from './sitemap';
 import socialRoutes from './social';
-import usersRoutes from './users';
+import { usersRoutes, } from './users';
 
 const router = Router();
 
@@ -35,7 +35,7 @@ router.use('/campaigns', campaignsRoutes,);
 router.use('/connections', connectionsRoutes,);
 router.use('/payments', paymentsRoutes,);
 router.use('/forms', formsRoutes,);
-router.use('/users', usersRoutes,);
+router.use('/users', registerModule('users', usersRoutes,),);
 router.use('/messages', registerModule('messages', messagesRoutes,),);
 router.use('/media', mediaRoutes,);
 router.use('/social', socialRoutes,);

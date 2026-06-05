@@ -1,27 +1,18 @@
-import bcrypt from 'bcryptjs';
-import { Router, } from 'express';
 import fs from 'fs/promises';
 import multer from 'multer';
 import { nanoid, } from 'nanoid';
 import path from 'path';
-import sharp from 'sharp';
 import { z, } from 'zod';
-import { config, } from '../config';
-import { query, } from '../db';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import * as usersRepo from '../repositories/users.repo';
-import { logAudit, } from '../services/audit';
-import { cache, } from '../services/cache';
-import { handleRouteError, sendCreated, sendPaginated, sendSuccess, } from '../utils/response';
+import { defineRoute, reply, } from '../api/defineRoute';
+import { AppError, } from '../core/errors';
+import * as users from '../services/users';
 
-// Avatar upload config — stored under DATA_DIR/avatars
-const AVATAR_DIR = path.resolve(config.dataDir, 'avatars',);
-const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+// ─── Avatar upload (multer disk staging under DATA_DIR/avatars) ──────
 
 const avatarStorage = multer.diskStorage({
     destination: async (_req, _file, cb,) => {
-        await fs.mkdir(AVATAR_DIR, { recursive: true, },);
-        cb(null, AVATAR_DIR,);
+        await fs.mkdir(users.AVATAR_DIR, { recursive: true, },);
+        cb(null, users.AVATAR_DIR,);
     },
     filename: (_req, file, cb,) => {
         const ext = path.extname(file.originalname,).toLowerCase() || '.jpg';
@@ -31,14 +22,14 @@ const avatarStorage = multer.diskStorage({
 
 const avatarUpload = multer({
     storage: avatarStorage,
-    limits: { fileSize: AVATAR_MAX_SIZE, },
+    limits: { fileSize: users.AVATAR_MAX_SIZE, },
     fileFilter: (_req, file, cb,) => {
         if (file.mimetype.startsWith('image/',)) cb(null, true,);
         else cb(new Error('Only image files are allowed',),);
     },
 },);
 
-const router = Router();
+// ─── Schemas ──────────────────────────────────────────────────────
 
 const updateUserSchema = z.object({
     displayName: z.string().min(1,).max(255,).optional(),
@@ -61,231 +52,141 @@ const banUserSchema = z.object({
     expiresAt: z.string().datetime().optional(),
 },);
 
-// ─── Admin Routes ───
-
-router.get('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { search, role, status, page = 1, limit = 50, sortBy, sortOrder, } = req.query;
-        const pagination = { page: Number(page,), limit: Number(limit,), };
-        const result = await usersRepo.findUsers(
-            {
-                search: search as string,
-                role: role as string,
-                status: status as string,
-                sortBy: sortBy as string,
-                sortOrder: sortOrder as string,
-            },
-            pagination,
-        );
-        sendPaginated(res, result.data, pagination.page, pagination.limit, result.total,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch users',);
-    }
+const listQuery = z.object({
+    search: z.string().optional(),
+    role: z.string().optional(),
+    status: z.string().optional(),
+    sortBy: z.string().optional(),
+    sortOrder: z.string().optional(),
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(50,),
 },);
 
-router.get('/banned/list', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { page = 1, limit = 50, } = req.query;
-        const pagination = { page: Number(page,), limit: Number(limit,), };
-        const result = await usersRepo.findBans(pagination,);
-        sendPaginated(res, result.data, pagination.page, pagination.limit, result.total,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch banned list',);
-    }
+const bansQuery = z.object({
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(50,),
 },);
 
-router.get('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const result = await usersRepo.findUserWithMembership(req.params.id,);
-        sendSuccess(res, result,);
-    } catch (error) {
-        handleRouteError(res, error, 'fetch user',);
-    }
-},);
+const idParams = z.object({ id: z.string(), },);
 
-router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = createUserSchema.parse(req.body,);
-        const user = await usersRepo.createUser(data,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'create',
-            entityType: 'user',
-            entityId: user.id,
-            newValues: { email: data.email, displayName: data.displayName, role: data.role, },
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendCreated(res, user,);
-    } catch (error) {
-        handleRouteError(res, error, 'create user',);
-    }
-},);
+// ─── Routes ───────────────────────────────────────────────────────
+// Literal paths (/banned/list, /banned/:banId, /ban-ip) before /:id.
 
-router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = updateUserSchema.parse(req.body,);
-        const user = await usersRepo.updateUser(req.params.id, data,);
-        await cache.invalidateUserCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'user',
-            entityId: req.params.id,
-            newValues: data,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, user,);
-    } catch (error) {
-        handleRouteError(res, error, 'update user',);
-    }
-},);
+export const usersRoutes = [
 
-// Upload avatar
-router.post('/:id/avatar', authenticate(), requireAdmin, avatarUpload.single('avatar',), async (req: AuthenticatedRequest, res,) => {
-    try {
-        const file = req.file;
-        if (!file) {
-            return res.status(400,).json({
-                success: false,
-                error: { code: 'BAD_REQUEST', message: 'No file uploaded', },
-            },);
-        }
+    defineRoute({
+        method: 'get', path: '/', auth: 'admin',
+        summary: 'List users with search/role/status filters and sorting.',
+        input: { query: listQuery, },
+        handler: async ({ query, },) => {
+            const result = await users.list(
+                {
+                    search: query.search,
+                    role: query.role,
+                    status: query.status,
+                    sortBy: query.sortBy,
+                    sortOrder: query.sortOrder,
+                },
+                { page: query.page, limit: query.limit, },
+            );
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-        // Resize to max 256x256 for consistency
-        const resizedName = `avatar-${nanoid(12,)}.webp`;
-        const resizedPath = path.join(AVATAR_DIR, resizedName,);
+    defineRoute({
+        method: 'get', path: '/banned/list', auth: 'admin',
+        summary: 'List active bans.',
+        input: { query: bansQuery, },
+        handler: async ({ query, },) => {
+            const result = await users.listBans({ page: query.page, limit: query.limit, },);
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
 
-        await sharp(file.path,)
-            .resize(256, 256, { fit: 'cover', })
-            .webp({ quality: 85, })
-            .toFile(resizedPath,);
+    defineRoute({
+        method: 'delete', path: '/banned/:banId', auth: 'admin',
+        summary: 'Remove a ban by id.',
+        input: { params: z.object({ banId: z.string(), },), },
+        handler: async ({ params, audit, },) => {
+            await users.removeBan(params.banId, audit(),);
+            return { message: 'Ban removed', };
+        },
+    },),
 
-        // Remove the original upload if it's different
-        if (file.path !== resizedPath) {
-            await fs.unlink(file.path,).catch(() => {},);
-        }
+    defineRoute({
+        method: 'post', path: '/ban-ip', auth: 'admin',
+        summary: 'Ban an IP address.',
+        input: { body: banUserSchema, },
+        handler: async ({ body, audit, },) => {
+            if (!body.ipAddress) throw new AppError(400, 'BAD_REQUEST', 'IP address is required',);
+            await users.banIp(body.ipAddress, { reason: body.reason, expiresAt: body.expiresAt, }, audit(),);
+            return { message: 'IP address banned', };
+        },
+    },),
 
-        // Remove old avatar file if it was a local path
-        const oldUser = await usersRepo.findUserById(req.params.id,);
-        if (oldUser.avatarUrl?.startsWith('/avatars/',)) {
-            const oldPath = path.join(AVATAR_DIR, path.basename(oldUser.avatarUrl,),);
-            await fs.unlink(oldPath,).catch(() => {},);
-        }
+    defineRoute({
+        method: 'get', path: '/:id', auth: 'admin',
+        summary: 'Fetch a user with Patreon membership.',
+        input: { params: idParams, },
+        handler: ({ params, },) => users.getWithMembership(params.id,),
+    },),
 
-        const avatarUrl = `/avatars/${resizedName}`;
-        const user = await usersRepo.updateUser(req.params.id, { avatarUrl, },);
-        await cache.invalidateUserCache(req.params.id,);
+    defineRoute({
+        method: 'post', path: '/', auth: 'admin',
+        summary: 'Create a user (email/password credential).',
+        input: { body: createUserSchema, },
+        handler: async ({ body, audit, },) => {
+            const user = await users.create(body, audit(),);
+            return reply(user, { status: 201, },);
+        },
+    },),
 
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'user',
-            entityId: req.params.id,
-            newValues: { avatarUrl, },
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
+    defineRoute({
+        method: 'put', path: '/:id', auth: 'admin',
+        summary: 'Update a user.',
+        input: { params: idParams, body: updateUserSchema, },
+        handler: ({ params, body, audit, },) => users.update(params.id, body, audit(),),
+    },),
 
-        sendSuccess(res, user,);
-    } catch (error) {
-        handleRouteError(res, error, 'upload avatar',);
-    }
-},);
+    defineRoute({
+        method: 'post', path: '/:id/avatar', auth: 'admin',
+        summary: 'Upload a user avatar (resized to 256×256 webp).',
+        pre: [avatarUpload.single('avatar',),],
+        input: { params: idParams, },
+        handler: ({ params, req, audit, },) => {
+            const file = req.file;
+            if (!file) throw new AppError(400, 'BAD_REQUEST', 'No file uploaded',);
+            return users.setAvatar(params.id, file.path, audit(),);
+        },
+    },),
 
-// Change password (admin)
-router.post('/:id/password', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { password, } = z.object({
-            password: z.string().min(8,),
-        },).parse(req.body,);
+    defineRoute({
+        method: 'post', path: '/:id/password', auth: 'admin',
+        summary: 'Set a user\'s password.',
+        input: { params: idParams, body: z.object({ password: z.string().min(8,), },), },
+        handler: async ({ params, body, audit, },) => {
+            await users.setPassword(params.id, body.password, audit(),);
+            return { message: 'Password updated', };
+        },
+    },),
 
-        const passwordHash = await bcrypt.hash(password, 12,);
-        await query(
-            `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
-            [passwordHash, req.params.id,],
-        );
+    defineRoute({
+        method: 'post', path: '/:id/ban', auth: 'admin',
+        summary: 'Ban a user.',
+        input: { params: idParams, body: banUserSchema, },
+        handler: async ({ params, body, audit, },) => {
+            await users.ban(params.id, { reason: body.reason, expiresAt: body.expiresAt, }, audit(),);
+            return { message: 'User banned successfully', };
+        },
+    },),
 
-        await cache.invalidateUserCache(req.params.id,);
-
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'user',
-            entityId: req.params.id,
-            newValues: { passwordChanged: true, },
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-
-        sendSuccess(res, { message: 'Password updated', },);
-    } catch (error) {
-        handleRouteError(res, error, 'change password',);
-    }
-},);
-
-router.post('/:id/ban', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const { reason, expiresAt, } = banUserSchema.parse(req.body,);
-        await usersRepo.banUser(req.params.id, req.userId!, reason, expiresAt,);
-        await cache.invalidateUserCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'ban',
-            entityType: 'user',
-            entityId: req.params.id,
-            newValues: { reason, expiresAt, },
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { message: 'User banned successfully', },);
-    } catch (error) {
-        handleRouteError(res, error, 'ban user',);
-    }
-},);
-
-router.post('/:id/unban', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await usersRepo.unbanUser(req.params.id,);
-        await cache.invalidateUserCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'unban',
-            entityType: 'user',
-            entityId: req.params.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { message: 'User unbanned successfully', },);
-    } catch (error) {
-        handleRouteError(res, error, 'unban user',);
-    }
-},);
-
-router.post('/ban-ip', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const data = banUserSchema.parse(req.body,);
-        if (!data.ipAddress) {
-            return res.status(400,).json({
-                success: false,
-                error: { code: 'BAD_REQUEST', message: 'IP address is required', },
-            },);
-        }
-        await usersRepo.banIp(data.ipAddress, req.userId!, data.reason, data.expiresAt,);
-        sendSuccess(res, { message: 'IP address banned', },);
-    } catch (error) {
-        handleRouteError(res, error, 'ban IP',);
-    }
-},);
-
-router.delete('/banned/:banId', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await usersRepo.removeBan(req.params.banId,);
-        sendSuccess(res, { message: 'Ban removed', },);
-    } catch (error) {
-        handleRouteError(res, error, 'remove ban',);
-    }
-},);
-
-export default router;
+    defineRoute({
+        method: 'post', path: '/:id/unban', auth: 'admin',
+        summary: 'Unban a user.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await users.unban(params.id, audit(),);
+            return { message: 'User unbanned successfully', };
+        },
+    },),
+];
