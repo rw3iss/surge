@@ -27,6 +27,7 @@ The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are histor
 - **Social connections** — pull-based sync (YouTube, Instagram, X, Facebook, TikTok, Patreon).
 - **Header & footer editors** — drag-and-drop rows + columns, fully styled.
 - **Appearance** — shared color swatches (`swatch:{id}` references), custom fonts (`@font-face` injection), reusable block-style templates.
+- **API keys** — Settings → API Keys issues scoped `ssk_` keys for headless clients (hash at rest, shown once, revocable). `admin`/`apiKey`/`optional`-tier routes accept them; admin-shaped responses bypass the public cache.
 - **Backend SDK** — `cms.*` typed surface for routes / scripts / future plugins. `cms.pages.reorderBlocks(pageId, parentBlockId, blockIds, ctx)` is per-parent. (migrating to `services/<module>.ts` — see Key Patterns)
 - **Block IDs** — admin generates real UUIDs (`crypto.randomUUID`) so a child block can reference its parent before either has saved. Backend `createBlock` accepts a client-supplied `id`.
 - **First-run setup wizard** — `/setup` walks env, migrations, seed, admin creation.
@@ -97,7 +98,7 @@ backend/src/
 - Schema: `backend/src/db/schema.sql` (idempotent, uses IF NOT EXISTS)
 - Migrations: `backend/src/db/migrations/` (numbered SQL files)
 - Seed: `backend/src/db/seed.ts` (admin user, sample data)
-- Key tables: users, pages, blocks, posts, post_content_blocks, campaigns, donations, forms, form_questions, form_submissions, contact_messages, media, social_connections, social_posts, site_settings, subscription_plans, subscriptions, transactions, audit_log
+- Key tables: users, pages, blocks, posts, post_content_blocks, campaigns, donations, forms, form_questions, form_submissions, contact_messages, media, social_connections, social_posts, site_settings, subscription_plans, subscriptions, transactions, audit_log, api_keys
 
 ### Authentication
 - JWT access tokens (15min) + refresh tokens (7d)
@@ -123,6 +124,7 @@ backend/src/
 | /settings | settings.ts | public + admin | Site configuration |
 | /search | search.ts | public + admin | Full-text search |
 | /health | health.ts | none | Health/readiness checks |
+| /api-keys | apiKeys.ts | admin (JWT only) | API key management |
 
 ### Services
 - **auth** - JWT generation, Patreon OAuth, session management
@@ -143,7 +145,7 @@ backend/src/
 - Multer for file uploads, sharp for image thumbnails, nanoid for filenames
 - Custom error classes (AppError, NotFoundError, ValidationError, etc.)
 - PostgreSQL triggers for: updated_at, campaign totals, form submission counts, search vectors
-- **Route manifest framework** — `defineRoute({ method, path, auth, summary, input(zod), handler })` + `registerModule()` in `backend/src/api/`. Auth tiers: `public | optional | user | admin | apiKey` (`apiKey` is admin-equivalent until the API-key phase). Handlers return data or `reply(data, {meta, status})`; errors throw → `middleware/error.ts`. `manifest()` emits the machine-readable route list. Bearer-authenticated requests skip CSRF.
+- **Route manifest framework** — `defineRoute({ method, path, auth, summary, input(zod), handler })` + `registerModule()` in `backend/src/api/`. Auth tiers: `public | optional | user | admin | apiKey`; `admin` and `apiKey`-tier routes accept an admin JWT **or** a scoped `ssk_` API key (`Authorization: Bearer ssk_…`; GET/HEAD→`read+`, mutations→`write+`, hierarchy `read < write < admin`); `optional`-tier routes also accept keys (valid key = machine client, gets admin-shaped response; invalid key fails with 401). Keys cannot manage keys (`/api-keys` rejects key auth with 403). Key writes audit as `api-key:<name>`. Admin-shaped responses bypass the public Redis cache. Handlers return data or `reply(data, {meta, status})`; errors throw → `middleware/error.ts`. `manifest()` emits the machine-readable route list. Bearer-authenticated requests skip CSRF.
 - **Services own business logic** — `services/<module>.ts` is the canonical home; `routes/` are thin manifests; `sdk/` re-exports from `services/` during the headless-API transition (`cms.*` still works). Converted so far: posts.
 - **Unified list endpoints** — converted modules drop `/public` suffixes: one `GET /<module>` with `optional` auth, role-shaped (anon → published only; admins passing `status`/`sort` get the all-statuses view). Gated content returns `error.code 'CONTENT_LOCKED'` with a preview in `error.details` (`ContentLockedDetails`). First instance: posts (`/posts/public` is gone).
 
