@@ -18,7 +18,7 @@ export interface CachedItem {
 }
 
 const campaignsCache = createEntityCache<CachedItem>({ path: '/campaigns?all=true', },);
-const formsCache = createEntityCache<CachedItem>({ path: '/forms', },);
+const formsCache = createEntityCache<CachedItem>({ path: '/forms?all=true', },);
 
 export const getCampaigns = (forceRefresh = false,): Promise<CachedItem[]> =>
     campaignsCache.get(forceRefresh,);

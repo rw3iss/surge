@@ -28,6 +28,7 @@ const AdminForms: Component = () => {
         endpoint: '/forms',
         initialLimit: 20,
         params: () => ({
+            all: 'true',
             status: searchParams.status,
             sortBy: sortBy(),
             sortOrder: sortOrder(),
