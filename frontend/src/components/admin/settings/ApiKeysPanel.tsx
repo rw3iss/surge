@@ -40,9 +40,9 @@ const ApiKeysPanel: Component = () => {
 
     const handleCreate = async (e: Event,) => {
         e.preventDefault();
+        setError(null,);
         if (!name().trim() || scopes().length === 0) return;
         setCreating(true,);
-        setError(null,);
         const res = await api.post<{ apiKey: ApiKeyRow; key: string; }>('/api-keys', {
             name: name().trim(),
             scopes: scopes(),
@@ -59,9 +59,14 @@ const ApiKeysPanel: Component = () => {
     };
 
     const handleRevoke = async (key: ApiKeyRow,) => {
+        setError(null,);
         if (!confirm(`Revoke "${key.name}"? Clients using it will stop working immediately.`,)) return;
         const res = await api.delete(`/api-keys/${key.id}`,);
-        if (res.success) void refetch();
+        if (res.success) {
+            void refetch();
+        } else {
+            setError((res as any).error?.message || 'Failed to revoke key',);
+        }
     };
 
     const fmt = (iso: string | null,) =>
@@ -85,7 +90,11 @@ const ApiKeysPanel: Component = () => {
                             <button
                                 type="button"
                                 class="btn btn--secondary btn--sm"
-                                onClick={() => navigator.clipboard.writeText(createdKey()!,)}
+                                onClick={() =>
+                                    void navigator.clipboard
+                                        .writeText(createdKey()!,)
+                                        .catch(() => setError('Copy failed — select and copy the key manually',),)
+                                }
                             >
                                 Copy
                             </button>
