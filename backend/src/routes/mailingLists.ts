@@ -1,40 +1,31 @@
 /**
  * Admin + public routes for mailing lists and subscribers.
  *
- * Mount point under /api/v1/mailing-lists:
- *   ADMIN (authenticated):
- *     GET    /                                    — list all
- *     POST   /                                    — create
- *     GET    /:id                                 — fetch one
- *     PUT    /:id                                 — update
- *     DELETE /:id                                 — remove
- *     GET    /:id/subscribers                     — paginated subscribers
- *     POST   /:id/subscribers                     — admin add (force confirmed)
- *     PUT    /:id/subscribers/:subId              — update subscriber
- *     DELETE /:id/subscribers/:subId              — remove one
- *     POST   /:id/subscribers/bulk-delete         — { ids }
- *     POST   /:id/subscribers/:subId/force-confirm — flip pending → subscribed
+ * Mount point under /api/v1/mailing-lists (admin tier):
+ *   GET    /                                     — list all
+ *   POST   /                                     — create
+ *   GET    /:id                                  — fetch one
+ *   PUT    /:id                                  — update
+ *   DELETE /:id                                  — remove
+ *   GET    /:id/subscribers                      — paginated subscribers
+ *   POST   /:id/subscribers                      — admin add (force confirmed)
+ *   PUT    /:id/subscribers/:subId               — update subscriber
+ *   DELETE /:id/subscribers/:subId               — remove one
+ *   POST   /:id/subscribers/bulk-delete          — { ids }
+ *   POST   /:id/subscribers/:subId/force-confirm — flip pending → subscribed
  *
- *   PUBLIC (mounted at /api/v1/lists/:slug under a sibling router):
- *     POST   /:slug/subscribe                     — { email, name?, phone?, customFields? }
+ * Public sub-router mounted at /api/v1/lists (optional tier — email-only
+ * subscribers, captures req.user when present):
+ *   POST   /:slug/subscribe                      — { email, name?, phone?, customFields? }
  *
  * (Token-based unsubscribe lives in routes/unsubscribe.ts, mounted at
  * the public root.)
+ *
+ * Business logic lives in `services/mailingLists.ts`.
  */
-import { randomBytes, } from 'crypto';
-import { Router, } from 'express';
 import { z, } from 'zod';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
-import { NotFoundError, ValidationError, } from '../middleware/error';
-import * as lists from '../repositories/mailingLists.repo';
-import * as subs from '../repositories/mailingListSubscribers.repo';
-import { logAudit, } from '../services/audit';
-import { cache, } from '../services/cache';
-import { sendEmail, } from '../services/email';
-import { config, } from '../config';
-import { handleRouteError, sendCreated, sendSuccess, } from '../utils/response';
-
-const router = Router();
+import { defineRoute, reply, } from '../api/defineRoute';
+import * as mailingLists from '../services/mailingLists';
 
 const listSchema = z.object({
     slug: z.string().min(1,).max(64,).regex(/^[a-z0-9-]+$/,),
@@ -53,160 +44,117 @@ const subscriberAdminSchema = z.object({
     customFields: z.record(z.string(), z.unknown(),).optional(),
 },);
 
-router.get('/', authenticate(), requireAdmin, async (_req, res,) => {
-    try {
-        sendSuccess(res, await lists.list(),);
-    } catch (e) { handleRouteError(res, e, 'list mailing lists',); }
+const subscribersQuery = z.object({
+    limit: z.coerce.number().int().min(1,).optional(),
+    offset: z.coerce.number().int().min(0,).optional(),
+    search: z.string().optional(),
+    status: z.string().optional(),
 },);
 
-router.post('/', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const parsed = listSchema.safeParse(req.body,);
-        if (!parsed.success) throw new ValidationError('Invalid input', { issues: parsed.error.issues, },);
-        const created = await lists.create({ ...parsed.data, createdBy: req.userId!, },);
-        await cache.invalidateMailingListsCache();
-        await logAudit({
-            userId: req.userId!,
-            action: 'create',
-            entityType: 'mailing_list',
-            entityId: created.id,
-            newValues: { ...created, } as unknown as Record<string, unknown>,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendCreated(res, created,);
-    } catch (e) { handleRouteError(res, e, 'create mailing list',); }
-},);
+const idParams = z.object({ id: z.string(), },);
+const subIdParams = z.object({ id: z.string(), subId: z.string(), },);
 
-router.get('/:id', authenticate(), requireAdmin, async (req, res,) => {
-    try {
-        const item = await lists.findById(req.params.id,);
-        if (!item) throw new NotFoundError('Mailing list not found',);
-        sendSuccess(res, item,);
-    } catch (e) { handleRouteError(res, e, 'fetch mailing list',); }
-},);
+export const mailingListsRoutes = [
 
-router.put('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const parsed = listSchema.partial().safeParse(req.body,);
-        if (!parsed.success) throw new ValidationError('Invalid input', { issues: parsed.error.issues, },);
-        const updated = await lists.update(req.params.id, parsed.data,);
-        if (!updated) throw new NotFoundError('Mailing list not found',);
-        await cache.invalidateMailingListsCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'update',
-            entityType: 'mailing_list',
-            entityId: req.params.id,
-            newValues: parsed.data,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, updated,);
-    } catch (e) { handleRouteError(res, e, 'update mailing list',); }
-},);
+    defineRoute({
+        method: 'get', path: '/', auth: 'admin',
+        summary: 'List all mailing lists.',
+        handler: () => mailingLists.list(),
+    },),
 
-router.delete('/:id', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await lists.remove(req.params.id,);
-        await cache.invalidateMailingListsCache(req.params.id,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'delete',
-            entityType: 'mailing_list',
-            entityId: req.params.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { ok: true, },);
-    } catch (e) { handleRouteError(res, e, 'delete mailing list',); }
-},);
+    defineRoute({
+        method: 'post', path: '/', auth: 'admin',
+        summary: 'Create a mailing list.',
+        input: { body: listSchema, },
+        handler: async ({ body, audit, },) => {
+            const created = await mailingLists.create(body, audit(),);
+            return reply(created, { status: 201, },);
+        },
+    },),
 
-router.get('/:id/subscribers', authenticate(), requireAdmin, async (req, res,) => {
-    try {
-        const limit = req.query.limit ? Number(req.query.limit,) : undefined;
-        const offset = req.query.offset ? Number(req.query.offset,) : undefined;
-        const search = typeof req.query.search === 'string' ? req.query.search : undefined;
-        const status = typeof req.query.status === 'string'
-            ? (req.query.status as Parameters<typeof subs.list>[0]['status'])
-            : undefined;
-        const r = await subs.list({ listId: req.params.id, limit, offset, search, status, },);
-        sendSuccess(res, r,);
-    } catch (e) { handleRouteError(res, e, 'list subscribers',); }
-},);
+    defineRoute({
+        method: 'get', path: '/:id', auth: 'admin',
+        summary: 'Fetch a mailing list.',
+        input: { params: idParams, },
+        handler: ({ params, },) => mailingLists.getById(params.id,),
+    },),
 
-router.post('/:id/subscribers', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const parsed = subscriberAdminSchema.safeParse(req.body,);
-        if (!parsed.success) throw new ValidationError('Invalid input', { issues: parsed.error.issues, },);
-        const existing = await subs.findByEmail(req.params.id, parsed.data.email,);
-        if (existing) {
-            // Idempotent: re-add reactivates.
-            if (existing.status !== 'subscribed') await subs.setStatus(existing.id, 'subscribed',);
-            return sendSuccess(res, existing,);
-        }
-        const created = await subs.create({
-            listId: req.params.id,
-            email: parsed.data.email,
-            name: parsed.data.name,
-            phone: parsed.data.phone,
-            customFields: parsed.data.customFields,
-            status: 'subscribed',
-        },);
-        sendCreated(res, created,);
-    } catch (e) { handleRouteError(res, e, 'add subscriber',); }
-},);
+    defineRoute({
+        method: 'put', path: '/:id', auth: 'admin',
+        summary: 'Update a mailing list.',
+        input: { params: idParams, body: listSchema.partial(), },
+        handler: ({ params, body, audit, },) => mailingLists.update(params.id, body, audit(),),
+    },),
 
-router.put('/:id/subscribers/:subId', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const updated = await subs.update(req.params.subId, req.body,);
-        if (!updated) throw new NotFoundError('Subscriber not found',);
-        sendSuccess(res, updated,);
-    } catch (e) { handleRouteError(res, e, 'update subscriber',); }
-},);
+    defineRoute({
+        method: 'delete', path: '/:id', auth: 'admin',
+        summary: 'Delete a mailing list.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await mailingLists.remove(params.id, audit(),);
+            return { ok: true, };
+        },
+    },),
 
-router.delete('/:id/subscribers/:subId', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        await subs.remove(req.params.subId,);
-        sendSuccess(res, { ok: true, },);
-    } catch (e) { handleRouteError(res, e, 'remove subscriber',); }
-},);
+    defineRoute({
+        method: 'get', path: '/:id/subscribers', auth: 'admin',
+        summary: 'Paginated subscriber list (optional search/status filters).',
+        input: { params: idParams, query: subscribersQuery, },
+        handler: ({ params, query, },) => mailingLists.listSubscribers(params.id, {
+            limit: query.limit,
+            offset: query.offset,
+            search: query.search,
+            status: query.status as Parameters<typeof mailingLists.listSubscribers>[1]['status'],
+        },),
+    },),
 
-router.post('/:id/subscribers/bulk-delete', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const ids = Array.isArray(req.body?.ids,) ? req.body.ids as string[] : [];
-        await subs.bulkRemove(ids,);
-        await logAudit({
-            userId: req.userId!,
-            action: 'delete',
-            entityType: 'mailing_list_subscribers',
-            entityId: req.params.id,
-            newValues: { count: ids.length, },
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent',),
-        },);
-        sendSuccess(res, { removed: ids.length, },);
-    } catch (e) { handleRouteError(res, e, 'bulk-delete subscribers',); }
-},);
+    defineRoute({
+        method: 'post', path: '/:id/subscribers', auth: 'admin',
+        summary: 'Add a subscriber (force confirmed). Idempotent: re-add reactivates.',
+        input: { params: idParams, body: subscriberAdminSchema, },
+        handler: async ({ params, body, },) => {
+            const result = await mailingLists.addSubscriber(params.id, body,);
+            return reply(result.subscriber, { status: result.created ? 201 : 200, },);
+        },
+    },),
 
-router.post('/:id/subscribers/:subId/force-confirm', authenticate(), requireAdmin, async (req: AuthenticatedRequest, res,) => {
-    try {
-        const sub = await subs.findById(req.params.subId,);
-        if (!sub) throw new NotFoundError('Subscriber not found',);
-        await subs.setStatus(sub.id, 'subscribed',);
-        await subs.clearConfirmationToken(sub.id,);
-        const fresh = await subs.findById(sub.id,);
-        sendSuccess(res, fresh,);
-    } catch (e) { handleRouteError(res, e, 'force confirm',); }
-},);
+    defineRoute({
+        method: 'put', path: '/:id/subscribers/:subId', auth: 'admin',
+        summary: 'Update a subscriber.',
+        input: { params: subIdParams, },
+        handler: ({ params, body, },) => mailingLists.updateSubscriber(params.subId, body as Record<string, unknown>,),
+    },),
 
-export default router;
+    defineRoute({
+        method: 'delete', path: '/:id/subscribers/:subId', auth: 'admin',
+        summary: 'Remove a subscriber.',
+        input: { params: subIdParams, },
+        handler: async ({ params, },) => {
+            await mailingLists.removeSubscriber(params.subId,);
+            return { ok: true, };
+        },
+    },),
+
+    defineRoute({
+        method: 'post', path: '/:id/subscribers/bulk-delete', auth: 'admin',
+        summary: 'Bulk-delete subscribers by id list.',
+        input: { params: idParams, body: z.object({ ids: z.array(z.string(),).default([],), },), },
+        handler: ({ params, body, audit, },) => mailingLists.bulkRemoveSubscribers(params.id, body.ids, audit(),),
+    },),
+
+    defineRoute({
+        method: 'post', path: '/:id/subscribers/:subId/force-confirm', auth: 'admin',
+        summary: 'Flip a pending subscriber to subscribed.',
+        input: { params: subIdParams, },
+        handler: ({ params, },) => mailingLists.forceConfirmSubscriber(params.subId,),
+    },),
+];
 
 // ─── Public subscribe sub-router ─────────────────────────────────────
 // Mounted separately at /api/v1/lists so the URL shape is short and
 // matches the unsubscribe URL pattern (/u/:token, /lists/:slug/confirm).
-
-export const publicMailingListsRouter = Router();
+// Optional tier: anonymous email-only subscribers, captures req.user
+// when a session is present (registered-users-only lists require it).
 
 const subscribeSchema = z.object({
     email: z.string().email().optional(),
@@ -215,82 +163,15 @@ const subscribeSchema = z.object({
     customFields: z.record(z.string(), z.unknown(),).optional(),
 },);
 
-publicMailingListsRouter.post(
-    '/:slug/subscribe',
-    authenticate(false,),
-    async (req: AuthenticatedRequest, res,) => {
-        try {
-            const list = await lists.findBySlug(req.params.slug,);
-            if (!list || !list.isEnabled) throw new NotFoundError('List not found',);
-            const parsed = subscribeSchema.safeParse(req.body,);
-            if (!parsed.success) throw new ValidationError('Invalid input', { issues: parsed.error.issues, },);
+export const listsPublicRoutes = [
 
-            let email = parsed.data.email;
-            let userId: string | null = null;
-
-            if (list.registeredUsersOnly) {
-                if (!req.userId || !req.user) {
-                    throw new ValidationError('Login required to subscribe to this list',);
-                }
-                email = req.user.email;
-                userId = req.userId;
-            }
-            if (!email) throw new ValidationError('Email is required',);
-
-            const existing = await subs.findByEmail(list.id, email,);
-            const wantsDoubleOpt = list.doubleOptIn;
-            const targetStatus = wantsDoubleOpt ? 'pending_confirmation' : 'subscribed';
-
-            if (existing) {
-                if (existing.status === 'subscribed') {
-                    return sendSuccess(res, { status: 'subscribed', already: true, },);
-                }
-                await subs.setStatus(existing.id, targetStatus,);
-                return sendSuccess(res, { status: targetStatus, already: true, },);
-            }
-
-            const confirmationToken = wantsDoubleOpt ? randomBytes(24,).toString('base64url',) : null;
-            const created = await subs.create({
-                listId: list.id,
-                email,
-                userId,
-                name: parsed.data.name,
-                phone: parsed.data.phone,
-                customFields: parsed.data.customFields,
-                status: targetStatus,
-                confirmationToken,
-            },);
-
-            // Fire the double-opt-in confirmation email if needed.
-            // Failures don't roll back the subscription — the operator
-            // can resend or force-confirm from the admin UI.
-            if (wantsDoubleOpt && confirmationToken) {
-                try {
-                    const fe = (config.frontendUrl as string | undefined) ?? '';
-                    const confirmUrl = `${fe}/lists/${encodeURIComponent(list.slug,)}/confirm/${encodeURIComponent(confirmationToken,)}`;
-                    await sendEmail({
-                        to: email,
-                        subject: `Confirm your subscription to ${list.name}`,
-                        html: `
-                            <h1>One more step</h1>
-                            <p>Click the button below to confirm your subscription to <strong>${list.name}</strong>:</p>
-                            <p style="text-align:center;padding:1rem 0">
-                                <a href="${confirmUrl}" style="background:#3498cf;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block">Confirm subscription</a>
-                            </p>
-                            <p>Or copy and paste this URL into your browser:<br><code>${confirmUrl}</code></p>
-                            <p>If you didn't subscribe, you can safely ignore this email.</p>
-                        `,
-                    },);
-                } catch (mailErr) {
-                    // Log but don't fail the request. Operator gets a
-                    // "Force confirm" button in the admin UI for the
-                    // pending row if the email never lands.
-                    // eslint-disable-next-line no-console
-                    console.warn('Failed to send double-opt-in confirmation', mailErr,);
-                }
-            }
-
-            sendSuccess(res, { status: created.status, id: created.id, },);
-        } catch (e) { handleRouteError(res, e, 'public subscribe',); }
-    },
-);
+    defineRoute({
+        method: 'post', path: '/:slug/subscribe', auth: 'optional',
+        summary: 'Public subscribe to a list by slug (double-opt-in aware).',
+        input: { params: z.object({ slug: z.string(), },), body: subscribeSchema, },
+        handler: ({ params, body, user, },) => mailingLists.publicSubscribe(params.slug, body, {
+            userId: user?.id,
+            userEmail: user?.email,
+        },),
+    },),
+];

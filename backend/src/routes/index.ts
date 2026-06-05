@@ -11,7 +11,7 @@ import { devRoutes, } from './dev';
 import { fontsRoutes, } from './fonts';
 import { formsRoutes, } from './forms';
 import { healthRoutes, } from './health';
-import mailingListsRoutes, { publicMailingListsRouter, } from './mailingLists';
+import { mailingListsRoutes, listsPublicRoutes, } from './mailingLists';
 import { mailSendRoutes, } from './mailSend';
 import { mailTemplatesRoutes, } from './mailTemplates';
 import mediaRoutes from './media';
@@ -51,9 +51,9 @@ router.use('/audit', registerModule('audit', auditRoutes, { mountPath: '/api/v1/
 router.use('/dashboard', registerModule('dashboard', dashboardRoutes, { mountPath: '/api/v1/dashboard', },),);
 router.use('/dev', registerModule('dev', devRoutes, { mountPath: '/api/v1/dev', },),);
 router.use('/fonts', registerModule('fonts', fontsRoutes, { mountPath: '/api/v1/fonts', },),);
-router.use('/mailing-lists', mailingListsRoutes,);
+router.use('/mailing-lists', registerModule('mailing-lists', mailingListsRoutes, { mountPath: '/api/v1/mailing-lists', },),);
 router.use('/mail-templates', registerModule('mail-templates', mailTemplatesRoutes, { mountPath: '/api/v1/mail-templates', },),);
 router.use('/mail', registerModule('mail', mailSendRoutes, { mountPath: '/api/v1/mail', },),);
-router.use('/lists', publicMailingListsRouter,);
+router.use('/lists', registerModule('lists', listsPublicRoutes, { mountPath: '/api/v1/lists', },),);
 
 export default router;
