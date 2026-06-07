@@ -44,9 +44,9 @@ Then open <http://localhost:3000/setup> and follow the wizard. It will detect wh
 Manual install (CI / scripted):
 
 ```bash
-cp backend/.env.example backend/.env   # fill in values
-npm run db:migrate -w backend
-npm run db:seed -w backend             # add --demo for sample content
+cp packages/api/.env.example packages/api/.env   # fill in values
+npm run db:migrate                                # → packages/api
+npm run db:seed                                   # add --demo for sample content
 npm run dev
 ```
 
@@ -218,27 +218,73 @@ Site name, tagline, contact email, analytics ID, maintenance mode, branding, hea
 
 - **Frontend**: SolidJS + Vite, SCSS, `@solidjs/router`, `@solidjs/meta`, PWA (workbox).
 - **Backend**: Node 20+, Express, TypeScript, raw `pg` (no ORM), Redis cache, JWT auth, multer + sharp, nodemailer, Stripe.
-- **Shared**: `@rw/shared` workspace — types and validation/format utils.
-- **Monorepo**: npm workspaces (`frontend`, `backend`, `shared`); `npm run dev` starts both.
+- **Shared**: `@rw/cms-shared` workspace — types, API request/response DTOs, and validation/format utils consumed by every package.
+- **Monorepo**: npm workspaces under `packages/*`; `npm run dev` starts the API + web app.
 </details>
 
 <details>
 <summary><strong>Project layout</strong></summary>
 
+Four npm-workspace packages under `packages/*`, all configuration under `config/`, and shared docs under `docs/`:
+
+| Folder | npm name | Purpose |
+|---|---|---|
+| `packages/api` | `@rw/cms-api` | Express REST API — `/api/v1/*`, SSR, migrations, the backend SDK. |
+| `packages/cms` | `@rw/cms-web` | SolidJS app — public site, admin portal, setup wizard. |
+| `packages/shared` | `@rw/cms-shared` | TypeScript types, per-module request/response **DTOs**, and format/validation utils consumed by every other package. |
+| `packages/cms-client` | `@rw/cms-client` | Headless TypeScript HTTP client (**scaffold only — next project**; see [Headless Mode](#headless-mode)). |
+
 ```
-frontend/    SolidJS SPA — public site, admin portal, setup wizard
-backend/     Express REST API — /api/v1/*
-  src/
-    routes/        HTTP shims (auth, validate, response shape)
-    sdk/           cms.pages, cms.posts, … unified business-logic SDK
-    repositories/  SQL + row mapping
-    services/      auth, cache, email, payment, social, ssr
-    middleware/    auth, content-access, error, setupGate
-    db/            schema.sql, migrations/, seed.ts
-shared/      @rw/shared — TypeScript types + format/validation utils
+packages/
+  api/    Express REST API — /api/v1/*
+    src/
+      api/           defineRoute() + registry (mount + manifest), auth tiers
+      routes/        thin route manifests (auth, validate, response shape)
+      sdk/           cms.pages, cms.posts, … re-exports services
+      services/      domain logic, cache invalidation, audit
+      repositories/  SQL + row mapping
+      middleware/    auth, content-access, error, setupGate
+      db/            schema.sql, migrations/, seed.ts
+  cms/    SolidJS SPA — public site, admin portal, setup wizard
+  shared/ @rw/cms-shared — types + src/api/routes/ DTOs + format/validation utils
+  cms-client/  @rw/cms-client — headless HTTP client (scaffold)
+config/   all build/tool config (see below)
+docs/     API.md, api-manifest.json, client-sdk-plan.md, plans/specs
 ```
 
-The SDK (`backend/src/sdk/`) is the single import surface for capability methods. Routes are HTTP shims; the SDK owns domain logic, cache invalidation, and audit logging. Scripts and future plugins use the same surface — see `backend/src/sdk/README.md`.
+Routes are thin manifest handlers; `services/` own domain logic, cache invalidation, and audit logging; `sdk/` re-exports `services/` as the `cms.*` surface for scripts and future plugins — see `packages/api/src/sdk/README.md`.
+</details>
+
+<details>
+<summary><strong>Configuration lives in <code>./config</code></strong></summary>
+
+Every build/tool config file is centralized under `config/`, with per-package subdirectories plus repo-wide files:
+
+```
+config/
+  api/{tsconfig.json, vitest.config.ts}
+  cms/{tsconfig.json, vite.config.ts}
+  shared/tsconfig.json
+  cms-client/tsconfig.json
+  dprint.json                  # formatter
+  .oxlintrc.json               # linter
+  Dockerfile, docker-compose.yml
+  rw.ryanweiss.net.nginx.conf
+```
+
+**Stub gotcha:** each package keeps a one-line `tsconfig.json` at its root that just `extends` the real config in `config/<pkg>/` — this satisfies editors/`tsc -p` discovery. Vite and Vitest are invoked with explicit `--config config/cms/vite.config.ts` / `--config config/api/vitest.config.ts` flags (those configs set `root`/`envDir` back to the package dir). Lint/format scripts pass `-c config/.oxlintrc.json` / `--config config/dprint.json`.
+
+**Exceptions that must stay at their original location:**
+
+| File | Why |
+|---|---|
+| `.editorconfig` | editors discover it by walking up from the edited file |
+| `.dockerignore` | must sit at the Docker build-context root |
+| `pnpm-workspace.yaml` + lockfiles | tool-required at repo root |
+| `.github/` | GitHub requires this exact path |
+| `packages/api/.env`, `.env.example` | dotenv default load path; keeps secrets next to the API |
+| `packages/cms/index.html` | app entry, not config |
+| package-root `tsconfig.json` stubs | the extends-shim above |
 </details>
 
 <details>
@@ -284,7 +330,7 @@ FACEBOOK_APP_SECRET=...
 # Instagram is configured via OAuth in the admin portal
 ```
 
-See `backend/.env.example` for the full list.
+See `packages/api/.env.example` for the full list.
 </details>
 
 <details>
@@ -333,24 +379,37 @@ Web UI at <http://localhost:8025> — every send the app would make lands there 
 <summary><strong>Build & deploy</strong></summary>
 
 ```bash
-npm run build              # builds frontend + backend + shared
-npm start -w backend       # production server
+npm run build       # dependency-ordered: shared → api → cms → cms-client
+npm start           # production server (→ packages/api)
+
+# or via Docker (compose file lives in ./config)
+npm run docker:build
+npm run docker:up
+npm run docker:down
 ```
 
-The frontend produces a static bundle suitable for any CDN (CloudFront, Netlify, Vercel). The backend needs Node 20+, PostgreSQL, and Redis.
+`npm run build` is dependency-ordered so `@rw/cms-shared` compiles before the packages that import it. The web app produces a static bundle suitable for any CDN (CloudFront, Netlify, Vercel). The API needs Node 20+, PostgreSQL, and Redis.
 </details>
 
 <details>
 <summary><strong>Common scripts</strong></summary>
 
 ```bash
-npm run dev               # frontend + backend concurrently
-npm run dev:frontend      # frontend only (port 3000)
-npm run dev:backend       # backend only (port 3001)
-npm run build             # build all workspaces
-npm run db:migrate        # run pending migrations
+npm run dev               # api + web app concurrently
+npm run dev:frontend      # @rw/cms-web only (port 3000)
+npm run dev:backend       # @rw/cms-api only (port 3001)
+npm run build             # all workspaces, dependency-ordered
+npm run db:migrate        # run pending migrations (→ packages/api)
 npm run db:seed           # seed defaults (--demo for sample content)
-npm run docs:api          # regenerate docs/API.md + docs/api-manifest.json
+npm run docs:api          # regenerate docs/API.md + docs/api-manifest.json from the live manifest
+npm run lint              # oxlint -c config/.oxlintrc.json over packages/*/src
+npm run lint:fix          # lint with --fix
+npm run format            # dprint fmt --config config/dprint.json
+npm run format:check      # dprint check (CI gate)
+npm run test             # all workspaces, --if-present
+npm run docker:up         # docker compose -f config/docker-compose.yml up -d
+npm run docker:down       # … down
+npm run docker:build      # … build
 ```
 </details>
 
@@ -368,11 +427,30 @@ envelope:
 { "success": false, "error": { "code": "NOT_FOUND", "message": "…" } }
 ```
 
-`error.code` is one of a fixed `ErrorCode` set (exported from `@rw/shared`);
+`error.code` is one of a fixed `ErrorCode` set (exported from `@rw/cms-shared`);
 clients switch on it. The full machine-readable route list lives in
 [`docs/api-manifest.json`](docs/api-manifest.json) and the human reference in
 [`docs/API.md`](docs/API.md) — both regenerated from the live route manifest
 with `npm run docs:api`.
+
+### Typed client (`@rw/cms-client`)
+
+**Doctrine:** once built, ALL client-side API requests SHOULD flow through the
+`@rw/cms-client` package — **including our own `@rw/cms-web` app**. The direct
+`api.get()` / `api.post()` calls in `packages/cms` today are the **interim
+pattern** until the client lands. The client wraps the documented REST surface
+([`docs/API.md`](docs/API.md) + [`docs/api-manifest.json`](docs/api-manifest.json))
+with the shared DTOs, so a single typed change propagates to every caller.
+
+`packages/cms-client` currently holds only a scaffold (structure + charter
+pointer, no implementation — it's the next project). The full plan lives in
+[`docs/client-sdk-plan.md`](docs/client-sdk-plan.md).
+
+**Shared DTOs:** every module's request and response types live in
+`@rw/cms-shared` under [`packages/shared/src/api/routes/`](packages/shared/src/api/routes/).
+The backend binds its zod schemas to these same definitions, so the client and
+the server share **one** definition per shape — drift is a compile error, not a
+runtime surprise.
 
 ### Authentication
 

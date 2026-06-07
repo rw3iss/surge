@@ -4,11 +4,11 @@
 
 SiteSurge (a.k.a. SiteSurge CMS) is a self-hosted, feature-based, block-based general-purpose CMS. Pages, posts, campaigns, forms, users, media, social connections, plus a custom header/footer editor and a global appearance system (swatches, fonts, block-style templates).
 
-Monorepo with three workspaces: `frontend` (SolidJS), `backend` (Express/Node), `shared` (TypeScript types & utils).
+Monorepo with four workspaces under `packages/*`: `api` (`@rw/cms-api`, Express/Node), `cms` (`@rw/cms-web`, SolidJS), `shared` (`@rw/cms-shared`, types/DTOs/utils consumed by all), `cms-client` (`@rw/cms-client`, headless TS client — **scaffold only, not implemented**). All build/tool config lives in `./config`.
 
 **Stack:** SolidJS + Vite | Express + PostgreSQL + Redis | Stripe | Patreon OAuth | S3/Local storage
 
-The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are historical and will be renamed in a future cut. Treat them as opaque package names — the product is SiteSurge.
+The repo directory and `@rw/cms-*` scope are historical and will be renamed to SiteSurge in a future cut. Treat them as opaque package names — the product is SiteSurge.
 
 ## Core Capabilities
 - **Block-based editor** — categorized AddBlockMenu (Text / Media / Blocks / Layout, collapsible per category, feature-flag gated). Blocks: Rich Text, Custom HTML, URL Link, Image (multi-image), Video, Document, Hero, Carousel, Posts, Campaign, Form, Social, Group, Spacer. Click-outside-to-deselect + Escape close the flyout. Per-block trash icon. Recent-items submenus on Campaign/Form/Posts pre-fill the new block's id.
@@ -22,7 +22,7 @@ The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are histor
 - **Forms / surveys / polls** — typed question library, submission inbox, CSV export.
 - **Users & roles** — email/password + Patreon OAuth, member tiers, gated content, user/IP bans.
 - **Mailing lists** — opt-in feature module (`mailing_lists`, requires `users`). Per-list subscribers (registered users or email-only), token-based one-click `/u/:token` unsubscribe + RFC 8058 `List-Unsubscribe` headers, optional per-list double opt-in. Mail templates reuse the existing block editor; backend email renderer adapts every block type to table-based inline-style HTML and resolves `swatch:{id}` refs to literal hex via the palette. Send wizard creates tracked jobs (`mail_send_jobs` + `mail_send_recipients`) processed by an in-process worker with concurrency/delay knobs and a boot-time resumer. Provider abstraction (`MailProvider`): SMTP (Nodemailer, default — works with any SMTP relay incl. SendGrid/Mailgun/Postmark/SES) and stubs for native REST adapters. Welcome / donation-receipt emails flow through the same pipeline.
-- **Feature module system** — `FEATURE_REGISTRY` (`backend/src/features/registry.ts`) declares prerequisites + lazy-install migrations. `PUT /settings` runs the dependency planner (`validateEnable`) and applies pending migrations under `pg_advisory_xact_lock` before flipping each feature's `*_enabled` row. SQL migrations are tagged with `-- @feature <key>` headers; the runner skips disabled features on boot. `bootRunningMode()` runs `runMigrations()` at startup so post-enable migrations land on the next restart without manual `npm run db:migrate`.
+- **Feature module system** — `FEATURE_REGISTRY` (`packages/api/src/features/registry.ts`) declares prerequisites + lazy-install migrations. `PUT /settings` runs the dependency planner (`validateEnable`) and applies pending migrations under `pg_advisory_xact_lock` before flipping each feature's `*_enabled` row. SQL migrations are tagged with `-- @feature <key>` headers; the runner skips disabled features on boot. `bootRunningMode()` runs `runMigrations()` at startup so post-enable migrations land on the next restart without manual `npm run db:migrate`.
 - **Media library** — sharp thumbnails, local FS or S3. Reusable `MediaSelectModal` and `MediaUploadModal` mounted via Portal.
 - **Social connections** — pull-based sync (YouTube, Instagram, X, Facebook, TikTok, Patreon).
 - **Header & footer editors** — drag-and-drop rows + columns, fully styled.
@@ -40,8 +40,8 @@ The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are histor
 - Enum values stay in `block_type` for safety; the picker just doesn't surface them.
 
 ## Admin styles
-- `frontend/src/pages/admin/AdminLayout.scss` is a slim index — actual rules live in `frontend/src/pages/admin/styles/_*.scss` partials grouped by feature (admin shell, block editor, inline editors, dashboard, settings, etc.) and in `frontend/src/styles/shared/` for things both the admin and the main site use.
-- **Read `frontend/src/components/admin/ADMIN_STYLES.md` before adding admin styles.** It documents which partial owns what, when to hoist to `styles/shared/` vs keep admin-local, and the convention for `@use 'sass:color';` + `@use '../../../styles/variables' as *;` at the top of each partial.
+- `packages/cms/src/pages/admin/AdminLayout.scss` is a slim index — actual rules live in `packages/cms/src/pages/admin/styles/_*.scss` partials grouped by feature (admin shell, block editor, inline editors, dashboard, settings, etc.) and in `packages/cms/src/styles/shared/` for things both the admin and the main site use.
+- **Read `packages/cms/src/components/admin/ADMIN_STYLES.md` before adding admin styles.** It documents which partial owns what, when to hoist to `styles/shared/` vs keep admin-local, and the convention for `@use 'sass:color';` + `@use '../../../styles/variables' as *;` at the top of each partial.
 - Repeated inline `style={{ ... }}` patterns belong in a partial. Common shared helpers (`.confirm-modal*`, `.preview-empty-message`, `.form-help-muted`) live in `styles/shared/` or `global.scss`.
 
 ## Theme tokens (CSS custom properties)
@@ -53,22 +53,28 @@ The repo directory and workspace identifiers (`rw-cms`, `@rw/shared`) are histor
 
 ```
 rw-cms/
-├── frontend/     # SolidJS SPA (port 3000, proxies API to 3001)
-├── backend/      # Express REST API (port 3001)
-└── shared/       # @rw/shared - types and utility functions
+├── packages/
+│   ├── api/         # @rw/cms-api  — Express REST API (port 3001), SSR, migrations
+│   ├── cms/         # @rw/cms-web  — SolidJS SPA (port 3000, proxies API to 3001)
+│   ├── shared/      # @rw/cms-shared — types, src/api/routes/ DTOs, format/validation utils
+│   └── cms-client/  # @rw/cms-client — headless HTTP client (scaffold only)
+├── config/          # all build/tool config (per-package subdirs + repo-wide)
+└── docs/            # API.md, api-manifest.json, client-sdk-plan.md, plans/specs
 ```
 
 ### Monorepo Setup
-- npm workspaces (`frontend`, `backend`, `shared`)
-- `npm run dev` runs both frontend and backend via concurrently
+- npm workspaces `packages/*`: `@rw/cms-api`, `@rw/cms-web`, `@rw/cms-shared`, `@rw/cms-client`
+- `npm run dev` runs api + web app via concurrently
+- `npm run build` is **dependency-ordered**: shared → api → cms → cms-client (shared compiles first)
+- `npm test` runs `--workspaces --if-present` (only api ships tests today)
 - Node >= 20.0.0 required
-- Shared package is `@rw/shared` (types + format/validation utils)
+- `@rw/cms-shared` (types + API DTOs + format/validation utils) is imported by all other packages; it imports from none of them
 
 ## Backend
 
 ### Architecture (SOLID Principles)
 ```
-backend/src/
+packages/api/src/
 ├── api/             # Route framework: defineRoute(), registry (mount + manifest), auth tiers, role helpers
 ├── repositories/    # Data access layer (SQL queries, row mapping)
 │   ├── base.repo.ts       # Shared pagination, findById, updateById, deleteById
@@ -90,14 +96,14 @@ backend/src/
 ```
 
 ### Entry Points
-- `backend/src/index.ts` - main entry, connects DB/Redis, starts server
-- `backend/src/app.ts` - Express app factory with middleware chain
+- `packages/api/src/index.ts` - main entry, connects DB/Redis, starts server
+- `packages/api/src/app.ts` - Express app factory with middleware chain
 
 ### Database
 - PostgreSQL with raw `pg` queries (no ORM)
-- Schema: `backend/src/db/schema.sql` (idempotent, uses IF NOT EXISTS)
-- Migrations: `backend/src/db/migrations/` (numbered SQL files)
-- Seed: `backend/src/db/seed.ts` (admin user, sample data)
+- Schema: `packages/api/src/db/schema.sql` (idempotent, uses IF NOT EXISTS)
+- Migrations: `packages/api/src/db/migrations/` (numbered SQL files)
+- Seed: `packages/api/src/db/seed.ts` (admin user, sample data)
 - Key tables: users, pages, blocks, posts, post_content_blocks, campaigns, donations, forms, form_questions, form_submissions, contact_messages, media, social_connections, social_posts, site_settings, subscription_plans, subscriptions, transactions, audit_log, api_keys
 
 ### Authentication
@@ -137,9 +143,10 @@ Root-mounted raw modules (outside `/api/v1`, registered in `app.ts`): `feed` (`/
 - **storage/** - Local filesystem or S3 (factory pattern), thumbnail generation with sharp
 
 ### Config
-- `backend/src/config/index.ts` - Zod-validated env vars
+- `packages/api/src/config/index.ts` - Zod-validated env vars
 - All external service credentials optional (graceful degradation)
-- See `.env.example` or README for full variable list
+- `.env` / `.env.example` live at `packages/api/` (dotenv default path — a documented `./config` exception)
+- See `packages/api/.env.example` or README for full variable list
 
 ### Key Patterns
 - Snake_case in DB, camelCase in API responses (mapped in repositories/services via `mapRow`)
@@ -147,10 +154,11 @@ Root-mounted raw modules (outside `/api/v1`, registered in `app.ts`): `feed` (`/
 - Multer for file uploads, sharp for image thumbnails, nanoid for filenames
 - Custom error classes (AppError, NotFoundError, ValidationError, etc.)
 - PostgreSQL triggers for: updated_at, campaign totals, form submission counts, search vectors
-- **Route manifest framework** — `defineRoute({ method, path, auth, summary, input(zod), handler })` + `registerModule()` in `backend/src/api/`. Auth tiers: `public | optional | user | admin | apiKey`; `admin` and `apiKey`-tier routes accept an admin JWT **or** a scoped `ssk_` API key (`Authorization: Bearer ssk_…`; GET/HEAD→`read+`, mutations→`write+`, hierarchy `read < write < admin`); `optional`-tier routes also accept keys (valid key = machine client, gets admin-shaped response; invalid key fails with 401). Keys cannot manage keys (`/api-keys` rejects key auth with 403). Key writes audit as `api-key:<name>`. Admin-shaped responses bypass the public Redis cache. Handlers return data or `reply(data, {meta, status})`; errors throw → `middleware/error.ts`. `manifest()` emits the machine-readable route list. Bearer-authenticated requests skip CSRF. **Sweep complete: all 28 route modules are on the manifest** — the legacy `handleRouteError`/`send*`/`handleBulkAction` helpers and `utils/response.ts` are deleted.
+- **Route manifest framework** — `defineRoute({ method, path, auth, summary, input(zod), handler })` + `registerModule()` in `packages/api/src/api/`. Auth tiers: `public | optional | user | admin | apiKey`; `admin` and `apiKey`-tier routes accept an admin JWT **or** a scoped `ssk_` API key (`Authorization: Bearer ssk_…`; GET/HEAD→`read+`, mutations→`write+`, hierarchy `read < write < admin`); `optional`-tier routes also accept keys (valid key = machine client, gets admin-shaped response; invalid key fails with 401). Keys cannot manage keys (`/api-keys` rejects key auth with 403). Key writes audit as `api-key:<name>`. Admin-shaped responses bypass the public Redis cache. Handlers return data or `reply(data, {meta, status})`; errors throw → `middleware/error.ts`. `manifest()` emits the machine-readable route list. Bearer-authenticated requests skip CSRF. **Sweep complete: all 28 route modules are on the manifest** — the legacy `handleRouteError`/`send*`/`handleBulkAction` helpers and `utils/response.ts` are deleted.
 - **Services own business logic** — `services/<module>.ts` is the canonical home; `routes/` are thin manifests (no inline SQL, no `res.json`, no try/catch); SQL lives in `repositories/` and `services/`; `sdk/` re-exports from `services/` (`cms.*` still works).
 - **API docs generated from the manifest** — `npm run docs:api` builds the running-mode app, reads `manifest()`, and writes `docs/API.md` + `docs/api-manifest.json` (do not hand-edit those two).
 - **Unified list endpoints** — converted modules drop `/public` suffixes: one `GET /<module>` with `optional` auth, role-shaped (anon → published only; admins passing `status`/`sort` get the all-statuses view). Gated content returns `error.code 'CONTENT_LOCKED'` with a preview in `error.details` (`ContentLockedDetails`). First instance: posts (`/posts/public` is gone).
+- **Shared request/response DTOs** — every module's wire types live in `@rw/cms-shared` at `packages/shared/src/api/routes/<module>.ts` (all 28 modules covered; conventions documented in the barrel header `packages/shared/src/api/index.ts` — module-prefixed names, list responses = element arrays with pagination on `meta`, entity types referenced never duplicated). The backend **binds** its zod schemas to these: `input` schemas use `satisfies z.ZodType<XBody>` where clean, else an `AssertCompatible<z.infer<typeof schema>, XQuery>` compile-time assertion (for query schemas whose coercion makes input ≠ output). **DTO drift is a compile error.** Clients and the backend share ONE definition per shape.
 
 ## Frontend
 
@@ -201,9 +209,9 @@ Dashboard, Pages, PageEditor, Posts, PostEditor, Campaigns, CampaignEditor, Form
 - Component-scoped `.scss` files
 - Primary color: #e63946, Secondary: #1d3557
 
-## Shared Package (@rw/shared)
+## Shared Package (@rw/cms-shared)
 
-### Types (shared/src/types/)
+### Types (packages/shared/src/types/)
 - `api.ts` - ApiResponse, ApiError, ApiMeta, PaginationParams, SearchParams
 - `campaign.ts` - Campaign, Donation, DonationIntent, CampaignStats, DonationSummary
 - `content.ts` - Page, Block, BlockSettings, Post, SocialPost, Media, NavigationItem, SiteSettings
@@ -211,22 +219,37 @@ Dashboard, Pages, PageEditor, Posts, PostEditor, Campaigns, CampaignEditor, Form
 - `message.ts` - ContactMessage, ContactMessageInput, MessageFilters
 - `user.ts` - User, UserBan, UserSession, PatreonMembership, LoginCredentials, AuthResponse
 
-### Utils (shared/src/utils/)
+### API DTOs (packages/shared/src/api/routes/)
+- One `<module>.ts` per route module (28 total) with request DTOs (`<Module><Action>Query`/`Body`/`Params`) + response DTOs (`<Module><Action>Response`), re-exported via the `src/api/index.ts` barrel. Conventions live in that barrel's header comment. Backend zod schemas bind to these.
+
+### Utils (packages/shared/src/utils/)
 - `format.ts` - formatCurrency, formatNumber, formatDate, formatDateTime, formatRelativeTime, formatFileSize, formatPercentage, pluralize
 - `validation.ts` - isValidEmail, isValidSlug, isValidPassword, generateSlug, sanitizeHtml, truncate
+- `isAdminRole` and other role predicates hoisted here so api + cms share one definition
 
 ## Development Commands
 
 ```bash
-npm run dev              # Start frontend + backend concurrently
-npm run dev:frontend     # Frontend only (port 3000)
-npm run dev:backend      # Backend only (port 3001)
-npm run build            # Build all workspaces
-npm run db:migrate       # Run database migrations
-npm run db:seed          # Seed initial data
-npm run test -w backend  # Run backend unit tests (vitest)
-npm run docs:api         # Regenerate docs/API.md + docs/api-manifest.json from the live manifest
+npm run dev                  # api + web app concurrently
+npm run dev:frontend         # @rw/cms-web only (port 3000)
+npm run dev:backend          # @rw/cms-api only (port 3001)
+npm run build                # all workspaces, dependency-ordered (shared → api → cms → cms-client)
+npm run db:migrate           # run migrations (→ packages/api)
+npm run db:seed              # seed initial data
+npm test                     # all workspaces --if-present (vitest in api)
+npm run docs:api             # regenerate docs/API.md + docs/api-manifest.json from the live manifest
+npm run lint                 # oxlint -c config/.oxlintrc.json packages/*/src   (lint:fix for --fix)
+npm run format               # dprint fmt --config config/dprint.json           (format:check for CI gate)
+npm run docker:up            # docker compose -f config/docker-compose.yml up -d (also docker:down / docker:build)
 ```
+
+## Gotchas
+- **Config stubs:** each package's root `tsconfig.json` is a one-line `extends` shim pointing at `config/<pkg>/tsconfig.json`. The real config (incl. vite/vitest) lives in `config/`; vite/vitest are invoked with `--config config/<pkg>/...` flags (those set `root`/`envDir` back to the package). Edit the file in `config/`, not the stub.
+- **.env exception:** `.env` / `.env.example` stay at `packages/api/` (dotenv default path), NOT in `./config`. Other documented exceptions kept at root: `.editorconfig`, `.dockerignore`, `pnpm-workspace.yaml` + lockfiles, `.github/`, `packages/cms/index.html`.
+- **Import scope:** the workspace scope is `@rw/cms-*` (was `@rw/shared`). Import shared types/DTOs/utils from `@rw/cms-shared`. `@rw/cms-shared` imports from no sibling package.
+- **dprint pre-existing drift:** ~250 files predate the formatter config, so `npm run format:check` currently FAILS (known/expected). Don't bulk-reformat as a side effect; format only files you touch.
+- **DTO convention + drift:** request/response DTOs for all 28 modules live in `packages/shared/src/api/routes/` — conventions in the barrel header (`packages/shared/src/api/index.ts`). Backend zod binds to them (`satisfies z.ZodType<X>` / `AssertCompatible`), so a DTO mismatch is a compile error.
+- **cms-client = scaffold only:** `packages/cms-client` is structure + charter pointer, no implementation (next project). Doctrine: once built, ALL client-side requests — including from `@rw/cms-web` — should route through `@rw/cms-client`; direct `api.*` calls in `packages/cms` are the interim pattern.
 
 ## External Services
 - **PostgreSQL** - Primary database
