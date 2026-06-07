@@ -7,7 +7,7 @@
     "build": "vite build --config ../../config/cms/vite.config.ts",
     "preview": "vite preview --config ../../config/cms/vite.config.ts",
     "lint": "eslint src --ext .ts,.tsx",
-    "test": "vitest"
+    "test": "vitest --passWithNoTests"
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.11",

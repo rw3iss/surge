@@ -1,0 +1,1 @@
+One TypeScript namespace per manifest module (posts, pages, campaigns, forms, users, media, settings, …) — each file exports a typed method set matching the corresponding routes in docs/api-manifest.json.
