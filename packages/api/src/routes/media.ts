@@ -19,6 +19,7 @@ import multer from 'multer';
 import { nanoid, } from 'nanoid';
 import path from 'path';
 import { z, } from 'zod';
+import type { AssertCompatible, MediaListQuery, MediaUpdateBody, } from '@rw/cms-shared';
 import { config, } from '../config';
 import { defineRoute, reply, } from '../api/defineRoute';
 import * as media from '../services/media';
@@ -57,6 +58,15 @@ const listQuery = z.object({
     page: z.coerce.number().int().min(1,).default(1,),
     limit: z.coerce.number().int().min(1,).max(100,).default(50,),
 },);
+
+const updateMetaSchema = z.object({
+    title: z.string().optional(),
+    alt: z.string().optional(),
+    caption: z.string().optional(),
+},) satisfies z.ZodType<MediaUpdateBody>;
+
+// Query coerces (string → number), so assert z.infer compatibility.
+type _AssertMediaListQuery = AssertCompatible<z.infer<typeof listQuery>, MediaListQuery>;
 
 function reqFile(req: { file?: Express.Multer.File; },): UploadFile | undefined {
     const f = req.file;
@@ -135,14 +145,7 @@ export const mediaRoutes = [
     defineRoute({
         method: 'put', path: '/:id', auth: 'admin',
         summary: 'Update media metadata (title/alt/caption).',
-        input: {
-            params: idParams,
-            body: z.object({
-                title: z.string().optional(),
-                alt: z.string().optional(),
-                caption: z.string().optional(),
-            },),
-        },
+        input: { params: idParams, body: updateMetaSchema, },
         handler: ({ params, body, },) => media.updateMeta(params.id, body,),
     },),
 

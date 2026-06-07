@@ -1,4 +1,5 @@
 import { z, } from 'zod';
+import type { SettingsUpdateBody, } from '@rw/cms-shared';
 import { defineRoute, } from '../api/defineRoute';
 import * as settings from '../services/settings';
 import * as swatches from '../services/swatches';
@@ -39,7 +40,7 @@ const settingsSchema = z.object({
      * features that declare it as a prerequisite.
      */
     disableDependents: z.boolean().optional(),
-},);
+},) satisfies z.ZodType<SettingsUpdateBody>;
 
 const keyParams = z.object({ key: z.string(), },);
 

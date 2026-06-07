@@ -24,6 +24,13 @@
  * bad signature) to honour Stripe's contract exactly.
  */
 import { z, } from 'zod';
+import type {
+    AssertCompatible,
+    PaymentsDonateBody,
+    PaymentsPlanCreateBody,
+    PaymentsSubscribeBody,
+    PaymentsTransactionsQuery,
+} from '@rw/cms-shared';
 import { defineRoute, reply, } from '../api/defineRoute';
 import * as payments from '../services/payments';
 
@@ -34,11 +41,11 @@ const donateSchema = z.object({
     donorEmail: z.string().email(),
     message: z.string().max(500,).optional(),
     visibility: z.enum(['public', 'anonymous', 'hidden',],).optional(),
-},);
+},) satisfies z.ZodType<PaymentsDonateBody>;
 
 const subscribeSchema = z.object({
     planId: z.string().uuid(),
-},);
+},) satisfies z.ZodType<PaymentsSubscribeBody>;
 
 const planSchema = z.object({
     name: z.string().min(1,).max(255,),
@@ -48,12 +55,15 @@ const planSchema = z.object({
     features: z.array(z.string(),).optional(),
     sortOrder: z.number().int().optional(),
     isActive: z.boolean().optional(),
-},);
+},) satisfies z.ZodType<PaymentsPlanCreateBody>;
 
 const pageQuery = z.object({
     page: z.coerce.number().int().min(1,).default(1,),
     limit: z.coerce.number().int().min(1,).max(100,).default(50,),
 },);
+
+// Query coerces (string → number), so assert z.infer compatibility.
+type _AssertPaymentsPageQuery = AssertCompatible<z.infer<typeof pageQuery>, PaymentsTransactionsQuery>;
 
 export const paymentsRoutes = [
 
