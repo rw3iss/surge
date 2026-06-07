@@ -1,12 +1,22 @@
 .donate-page {
   padding: $spacing-xl var(--site-gutter, #{$container-padding});
 
+  @include mobile-only {
+    padding: $spacing-lg var(--site-gutter, #{$container-padding});
+  }
+
   &__header {
     text-align: center;
     margin-bottom: $spacing-2xl;
 
     h1 { margin-bottom: $spacing-sm; }
     p { color: $text-light; font-size: $font-size-lg; }
+
+    @include mobile-only {
+      margin-bottom: $spacing-xl;
+
+      p { font-size: $font-size-base; }
+    }
   }
 
   &__section {

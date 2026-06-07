@@ -25,6 +25,10 @@
     border-radius: $border-radius-lg;
     box-shadow: $shadow-md;
     border: 1px solid $border-color;
+
+    @include mobile-only {
+      padding: $spacing-lg $spacing-md;
+    }
   }
 
   &__section-header {
@@ -193,6 +197,8 @@
     transition: all $transition-fast;
     text-decoration: none;
 
+    // #f96854 is the Patreon brand orange; intentionally a literal,
+    // not a theme token.
     &--patreon {
       background: #f96854;
       color: white;

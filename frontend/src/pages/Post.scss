@@ -123,6 +123,13 @@
     &:hover {
       box-shadow: $shadow-md;
     }
+
+    // On phones, side-by-side image + text gives the text ~180px of
+    // width. Stack vertically so the image goes full-width and the
+    // copy gets room to breathe.
+    @include mobile-only {
+      flex-direction: column;
+    }
   }
 
   &__link-image {
@@ -130,6 +137,12 @@
     min-height: 100px;
     object-fit: cover;
     flex-shrink: 0;
+
+    @include mobile-only {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      min-height: 0;
+    }
   }
 
   &__link-body {

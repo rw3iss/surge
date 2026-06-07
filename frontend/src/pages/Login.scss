@@ -11,6 +11,12 @@
     border-radius: $border-radius-lg;
     box-shadow: $shadow-lg;
     border: 1px solid $border-color;
+
+    // Tighter horizontal padding on small screens so the card doesn't
+    // become a thin column with cramped inputs.
+    @include mobile-only {
+      padding: $spacing-lg $spacing-md;
+    }
   }
 
   &__title {
@@ -48,6 +54,8 @@
     gap: $spacing-sm;
     transition: all $transition-fast;
 
+    // #f96854 is the Patreon brand orange; intentionally a literal,
+    // not a theme token.
     &--patreon {
       background: #f96854;
       color: white;

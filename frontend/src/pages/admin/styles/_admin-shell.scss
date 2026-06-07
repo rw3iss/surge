@@ -59,12 +59,12 @@
     background: $secondary-color;
     border: none;
     border-radius: $border-radius-md;
-    padding: 10px;
+    padding: $spacing-sm;
     cursor: pointer;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 5px;
+    gap: $spacing-xs;
     width: 42px;
     height: 42px;
     box-shadow: $shadow-md;
@@ -74,7 +74,7 @@
       width: 22px;
       height: 2px;
       background: white;
-      border-radius: 2px;
+      border-radius: $spacing-2xs;
       transition: all 0.3s ease;
     }
 
@@ -95,12 +95,12 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--modal-overlay-bg, #{$modal-overlay-bg});
     z-index: 999;
   }
 
   &__sidebar {
-    width: 200px;
+    width: $admin-sidebar-width;
     // Sidebar tokens come from admin appearance settings; fall back to
     // the static dark navy + white when unset.
     background: var(--admin-sidebar-bg, #{$secondary-color});
@@ -287,7 +287,7 @@
 
   &__main {
     flex: 1;
-    margin-left: 200px;
+    margin-left: $admin-sidebar-width;
     padding: $spacing-xl;
     // Page area uses --admin-page-bg / --admin-page-text from settings,
     // falling back to the static neutral background and text colors.
@@ -302,11 +302,10 @@
   }
 
   // ─── Collapsed sidebar ───
-  $collapsed-width: 56px;
 
   &--collapsed {
     .admin-layout__sidebar {
-      width: $collapsed-width;
+      width: $admin-sidebar-collapsed-width;
     }
 
     .admin-layout__logo {
@@ -332,7 +331,7 @@
     }
 
     .admin-layout__main {
-      margin-left: $collapsed-width;
+      margin-left: $admin-sidebar-collapsed-width;
     }
   }
 }
@@ -340,7 +339,7 @@
 
 
 // Mobile responsive styles
-@media (max-width: 768px) {
+@include mobile-only {
   .admin-layout {
     &__hamburger {
       display: flex;
@@ -365,7 +364,7 @@
     }
 
     &--collapsed .admin-layout__sidebar {
-      width: 200px;
+      width: $admin-sidebar-width;
     }
 
     .admin-layout__collapse-toggle {
@@ -452,7 +451,7 @@
 
 
 // Stack form fields on mobile
-@media (max-width: 768px) {
+@include mobile-only {
   .admin-form {
     .form-row {
       flex-direction: column;
@@ -594,6 +593,22 @@
         border: 1px solid $border-color;
         border-radius: $border-radius-sm;
         font-size: $font-size-sm;
+    }
+
+    // On phones the bar can't keep three+ controls on one row without
+    // wrap orphans. Stack them so search and selects each take a full
+    // line and stay tappable.
+    @include mobile-only {
+        flex-direction: column;
+        align-items: stretch;
+        gap: $spacing-sm;
+
+        &__search,
+        &__select {
+            max-width: none;
+            min-width: 0;
+            width: 100%;
+        }
     }
 }
 

@@ -18,7 +18,7 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.4px;
-        color: #999;
+        color: $text-light;
         line-height: 1.3;
         display: flex;
         align-items: center;
@@ -28,7 +28,7 @@
     &__help-text {
         font-weight: 400;
         font-size: 10px;
-        color: #aaa;
+        color: $text-light;
         text-transform: none;
         letter-spacing: 0;
     }

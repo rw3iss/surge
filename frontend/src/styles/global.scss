@@ -1,3 +1,10 @@
+// Theme-level custom properties consumed by partials. SCSS tokens stay
+// the source of truth (compile-time); these vars expose a runtime
+// override surface for future high-contrast / theme-toggle work.
+:root {
+  --modal-overlay-bg: #{$modal-overlay-bg};
+}
+
 // Reset
 *,
 *::before,

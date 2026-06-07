@@ -129,7 +129,7 @@
 .post-picker-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--modal-overlay-bg, #{$modal-overlay-bg});
   z-index: $z-index-modal;
   display: flex;
   align-items: center;

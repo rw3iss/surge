@@ -5,6 +5,10 @@
     padding: $spacing-xl $spacing-lg $spacing-3xl;
     box-sizing: border-box;
 
+    @include mobile-only {
+        padding: $spacing-lg $spacing-md $spacing-2xl;
+    }
+
     &__loading {
         text-align: center;
         padding: $spacing-3xl;
@@ -50,6 +54,10 @@
         font-weight: 700;
         margin: 0 0 $spacing-xs;
         line-height: 1.2;
+
+        @include mobile-only {
+            font-size: $font-size-2xl;
+        }
     }
 
     &__subtitle {
@@ -67,6 +75,10 @@
         border-radius: $border-radius-lg;
         padding: $spacing-lg;
         margin-bottom: $spacing-xl;
+
+        @include mobile-only {
+            padding: $spacing-md;
+        }
     }
 
     &__tracker-header {
@@ -118,6 +130,10 @@
         padding-top: $spacing-md;
         border-top: 1px solid $border-color;
         flex-wrap: wrap;
+
+        @include mobile-only {
+            gap: $spacing-md;
+        }
     }
 
     &__stat {

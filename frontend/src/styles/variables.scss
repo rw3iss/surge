@@ -26,6 +26,7 @@ $line-height-base: 1.5;
 $line-height-tight: 1.25;
 
 // Spacing
+$spacing-2xs: 2px;
 $spacing-xs: 4px;
 $spacing-sm: 8px;
 $spacing-md: 16px;
@@ -44,6 +45,13 @@ $breakpoint-2xl: 1536px;
 // Container
 $container-max-width: 1200px;
 $container-padding: $spacing-md;
+
+// Admin shell
+$admin-sidebar-width: 200px;
+$admin-sidebar-collapsed-width: 56px;
+
+// Overlays (modals, sheets, drawers)
+$modal-overlay-bg: rgba(0, 0, 0, 0.5);
 
 // Border radius
 $border-radius-sm: 4px;
