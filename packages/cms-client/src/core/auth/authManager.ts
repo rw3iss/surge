@@ -13,10 +13,32 @@ interface AuthManagerOpts {
     store?: TokenStore | null;
 }
 
+/**
+ * The exact auth surface the request funnel (`core/client.ts`) reads on
+ * `this.auth`, plus the change/expired subscriptions. `CmsClientCore.auth`
+ * is typed as this interface so the assembled `AuthModule` (which wraps the
+ * manager and is swapped in as `core.auth`) must forward every member — the
+ * compiler enforces the forwarding instead of an `as` cast. Both
+ * `AuthManager` and `AuthModule` `implements AuthRuntime`; adding a new
+ * `this.auth.foo()` call in the core that isn't here is a compile error.
+ */
+export interface AuthRuntime {
+    readonly ready: Promise<void>;
+    authHeaders(method: string,): Promise<Record<string, string>>;
+    getTokens(): AuthTokens | null;
+    refresh(): Promise<AuthResponse>;
+    login(credentials: LoginCredentials & { rememberMe?: boolean; },): Promise<AuthResponse>;
+    logout(): Promise<void>;
+    isAuthenticated(): boolean;
+    setApiKey(key: string,): void;
+    onChange(cb: (t: AuthTokens | null,) => void,): () => void;
+    onExpired(cb: () => void,): () => void;
+}
+
 /** Owns auth state. Decorates each request with the right credential and
  *  runs the single-flight refresh on 401. Auto-loads persisted tokens on
  *  construction so a page refresh restores the session. */
-export class AuthManager {
+export class AuthManager implements AuthRuntime {
     readonly ready: Promise<void>;
     private mode: AuthMode;
     private apiKey?: string;

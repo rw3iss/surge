@@ -1,7 +1,7 @@
 import type { CmsClientConfig, MutationOptions, QueryOptions, ResolvedConfig, } from './types';
 import type { AuthResponse, LoginCredentials, } from '@rw/cms-shared';
 import { resolveConfig, } from './config';
-import { AuthManager, } from './auth/authManager';
+import { AuthManager, type AuthRuntime, } from './auth/authManager';
 import { createDefaultTokenStore, } from './auth/tokenStore';
 import { CacheManager, } from './cache/cacheManager';
 import { resolveAdapter, } from './cache/adapters/detect';
@@ -27,7 +27,10 @@ export interface InternalRequest {
  *  public surface (auth, cache, onError) + the assembled `cms.<module>`. */
 export class CmsClientCore {
     readonly config: ResolvedConfig;
-    readonly auth: AuthManager;
+    /** Typed as the funnel-facing AuthRuntime so the assembled AuthModule
+     *  can replace it without an unchecked cast (see modules/index.ts). The
+     *  concrete instance constructed below is an AuthManager. */
+    auth: AuthRuntime;
     readonly cache: CacheManager;
     private errorBus = new Emitter<{ error: CmsError }>();
 

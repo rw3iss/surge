@@ -57,10 +57,11 @@ export function assembleModules(core: CmsClientCore,): CmsClientCore & CmsModule
     c.search = new SearchModule(core,);
     c.audit = new AuditModule(core,);
     c.dashboard = new DashboardModule(core,);
-    // `core.auth` is the readonly AuthManager the request funnel reads;
-    // AuthModule wraps it and forwards that surface, so we can replace the
-    // public `auth` handle with the module while the funnel keeps working.
-    (c as { auth: AuthModule; }).auth = new AuthModule(core,);
+    // `core.auth` is typed AuthRuntime; AuthModule implements it and wraps
+    // the underlying AuthManager, so replacing the public `auth` handle with
+    // the module type-checks directly (no cast). Any core call to a member
+    // AuthModule failed to forward would now be a compile error.
+    c.auth = new AuthModule(core,);
     c.apiKeys = new ApiKeysModule(core,);
     c.connections = new ConnectionsModule(core,);
     c.blockStyles = new BlockStylesModule(core,);

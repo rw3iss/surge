@@ -3,7 +3,7 @@ import type {
     AuthLogoutAllResponse, AuthMeResponse, AuthPatreonSyncResponse, AuthAutologinResponse,
 } from '@rw/cms-shared';
 import type { CmsClientCore, } from '../core/client';
-import type { AuthManager, } from '../core/auth/authManager';
+import type { AuthRuntime, } from '../core/auth/authManager';
 import type { AuthTokens, } from '../core/types';
 import { ModuleBase, } from './base';
 
@@ -17,9 +17,9 @@ import { ModuleBase, } from './base';
  * login/logout/refresh delegate to it so persistence is never duplicated.
  * The Patreon/autologin OAuth CALLBACK routes are not exposed.
  */
-export class AuthModule extends ModuleBase {
+export class AuthModule extends ModuleBase implements AuthRuntime {
     protected readonly module = 'auth';
-    private readonly manager: AuthManager;
+    private readonly manager: AuthRuntime;
 
     constructor(core: CmsClientCore,) {
         super(core,);
