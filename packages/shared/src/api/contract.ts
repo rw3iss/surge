@@ -23,6 +23,19 @@ export interface ApiMeta {
     totalPages?: number;
 }
 
+/** Pagination meta carried on the envelope for paginated list reads. */
+export type PageMeta = ApiMeta;
+
+/**
+ * A paginated list result: the element rows plus the envelope's page meta.
+ * Client list methods whose backend route replies with `meta` return this
+ * instead of a bare array, so callers can read `data` + `meta.total`/etc.
+ */
+export interface Paginated<T,> {
+    data: T[];
+    meta: PageMeta;
+}
+
 export interface PaginationParams {
     page?: number;
     limit?: number;
