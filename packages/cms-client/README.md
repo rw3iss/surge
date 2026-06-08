@@ -1,20 +1,43 @@
 # @rw/cms-client
 
-> **NOT IMPLEMENTED** — structure scaffold only. See [docs/client-sdk-plan.md](../../docs/client-sdk-plan.md) for the full charter.
+The headless, typed TypeScript client for any SiteSurge CMS backend — one
+`cms.*` namespace surface over HTTP, with token lifecycle, an SWR cache, typed
+errors, and optional SolidJS bindings. Zero runtime dependencies; works in
+Node ≥ 18 and modern browsers.
 
-Typed TypeScript HTTP client for the SiteSurge CMS backend. Once built, ALL
-client-side API requests from `@rw/cms-web` and any external consumer will flow
-through this package.
+**Doctrine:** all client-side API requests for SiteSurge route through this
+package — `@rw/cms-web`, external apps, and Node/agent scripts alike.
 
-## Goal
+## Install
 
-```ts
-const cms = createClient({ baseUrl, auth: { apiKey: 'ssk_…' } });
-const posts = await cms.posts.list({ status: 'all' });   // typed, paginated
-const post  = await cms.posts.getBySlug('hello-world');  // throws ContentLockedError
+In-repo it is already wired as a workspace dependency:
+
+```jsonc
+{ "dependencies": { "@rw/cms-client": "workspace:*" } }
 ```
 
-Works in Node ≥ 18 and modern browsers. Zero runtime dependencies (fetch-based).
+Publish-ready (ESM + CJS + `.d.ts`, `exports` map with `.` and `./solid`); no
+npm publish yet.
+
+## 30-second example
+
+```ts
+import { createClient } from '@rw/cms-client';
+
+const cms = createClient({ baseUrl: 'https://cms.example.com', auth: { apiKey: 'ssk_…' } });
+const posts = await cms.posts.list({ status: 'all' });   // typed, paginated, cached
+
+// Or a Bearer session — login persists tokens (localStorage by default):
+const app = createClient({ baseUrl: 'https://cms.example.com' });
+await app.auth.login({ email: 'admin@example.com', password: 'secret' });
+const me = await app.auth.me();
+```
+
+## Full reference
+
+See **[docs/Overview.md](docs/Overview.md)** — config reference, auth modes,
+caching (SWR), the error hierarchy, the SolidJS adapter, and a per-module method
+table for all 26 namespaces.
 
 ## Integration smoke test
 
@@ -53,23 +76,15 @@ key); a second identical list is served from the memory cache (one network
 call across both); `health.live()` works; and `posts.getById('000…')` rejects
 with `NotFoundError`.
 
+## Drift check
+
+`npm run check:drift -w packages/cms-client` asserts every route in
+`docs/api-manifest.json` is reachable by a client method (or explicitly
+allowlisted in `src/modules/coverage.ts`).
+
 ## References
 
+- **Full client reference:** [docs/Overview.md](docs/Overview.md)
 - **Charter & design decisions:** [docs/client-sdk-plan.md](../../docs/client-sdk-plan.md)
-- **API surface (28 modules / 196 routes):** [docs/API.md](../../docs/API.md)
 - **Machine-readable manifest:** [docs/api-manifest.json](../../docs/api-manifest.json)
 - **Shared types & DTOs:** `@rw/cms-shared` ([packages/shared](../shared))
-
-## Planned layout
-
-```
-packages/cms-client/
-├── src/
-│   ├── core/           # fetch wrapper, auth, token refresh, typed errors
-│   ├── modules/        # one namespace per manifest module
-│   └── index.ts        # createClient() factory
-├── config/cms-client/
-│   └── tsconfig.json   # build config (rooted here, extended by tsconfig stub)
-├── package.json
-└── README.md           # this file
-```
