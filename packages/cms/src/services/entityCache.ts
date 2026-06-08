@@ -3,8 +3,8 @@
  * `recentItems`. Exposes a tiny API:
  *
  *   const cache = createEntityCache<MyItem>({
- *       fetch: () => api.get('/things'),
- *       parse: (raw) => raw,            // optional shape transform
+ *       fetch: () => cms.things.list(),   // returns { data, meta }
+ *       parse: (raw) => raw,              // optional shape transform
  *   });
  *   await cache.get();           // lazy-fetch (cached)
  *   await cache.get(true);       // force-refresh
@@ -15,12 +15,11 @@
  * and refresh on invalidation without piping through a signal manually.
  */
 import { createSignal, } from 'solid-js';
-import type { ApiResponse, } from '@rw/cms-shared';
-import { api, } from './api';
 
 export interface EntityCacheOptions<TItem> {
-    /** API path (e.g. '/campaigns', '/forms?sort=created_desc&limit=10'). */
-    path: string;
+    /** Typed fetcher returning a paginated `{ data }` envelope (the
+     *  `@rw/cms-client` list-method shape). Only `data` is read. */
+    fetch: () => Promise<{ data: unknown[]; }>;
     /** Map the raw API row to the cached shape. Defaults to identity. */
     parse?: (raw: unknown,) => TItem;
 }
@@ -44,8 +43,8 @@ export function createEntityCache<TItem>(opts: EntityCacheOptions<TItem>,): Enti
 
             inflight = (async () => {
                 try {
-                    const response = await api.get(opts.path,) as ApiResponse<unknown>;
-                    const raw = response.success ? ((response as unknown as { data: unknown[]; }).data ?? []) : [];
+                    const response = await opts.fetch();
+                    const raw = response.data ?? [];
                     cached = (raw as unknown[]).map(parse,);
                     setTick(t => t + 1,);
                     return cached;

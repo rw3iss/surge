@@ -6,6 +6,7 @@
  * Invalidation also busts the AddBlockMenu's recent-items cache for
  * the matching source so submenus stay fresh after a save / delete.
  */
+import { cms, } from './cmsClient';
 import { createEntityCache, } from './entityCache';
 import { invalidateRecent, } from './recentItems';
 
@@ -17,8 +18,8 @@ export interface CachedItem {
     [key: string]: unknown;
 }
 
-const campaignsCache = createEntityCache<CachedItem>({ path: '/campaigns?all=true', },);
-const formsCache = createEntityCache<CachedItem>({ path: '/forms?all=true', },);
+const campaignsCache = createEntityCache<CachedItem>({ fetch: () => cms.campaigns.list(), },);
+const formsCache = createEntityCache<CachedItem>({ fetch: () => cms.forms.list(), },);
 
 export const getCampaigns = (forceRefresh = false,): Promise<CachedItem[]> =>
     campaignsCache.get(forceRefresh,);

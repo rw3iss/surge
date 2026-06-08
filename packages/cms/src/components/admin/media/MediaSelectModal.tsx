@@ -1,5 +1,5 @@
 import { Component, createSignal, For, onCleanup, onMount, Show, } from 'solid-js';
-import { api, } from '../../../services/api';
+import { cms, } from '../../../services/cmsClient';
 import './MediaSelectModal.scss';
 
 const ITEMS_PER_PAGE = 10;
@@ -36,18 +36,17 @@ const MediaSelectModal: Component<MediaSelectModalProps> = (props,) => {
     const fetchMedia = async () => {
         setLoading(true,);
         try {
-            const params = new URLSearchParams();
-            if (props.types?.length) params.set('types', props.types.join(',',),);
-            if (searchText()) params.set('search', searchText(),);
-            params.set('sort', sort(),);
-            params.set('page', String(page(),),);
-            params.set('limit', String(ITEMS_PER_PAGE,),);
+            const query: Record<string, string | number> = {
+                sort: sort(),
+                page: page(),
+                limit: ITEMS_PER_PAGE,
+            };
+            if (props.types?.length) query.types = props.types.join(',',);
+            if (searchText()) query.search = searchText();
 
-            const response = await api.get(`/media?${params.toString()}`,);
-            if (response.success) {
-                setItems((response as any).data || [],);
-                setTotalPages((response as any).meta?.totalPages || 1,);
-            }
+            const result = await cms.media.list(query,);
+            setItems((result.data || []) as unknown as MediaItem[],);
+            setTotalPages(result.meta?.totalPages || 1,);
         } catch (e) {
             console.error('Failed to fetch media:', e,);
         }

@@ -1,6 +1,6 @@
 import type { SiteSettings, } from '@rw/cms-shared';
 import { createSignal, } from 'solid-js';
-import { fetchSettings, } from '../services/api';
+import { cms, } from '../services/cmsClient';
 import { FEATURES, FeatureConfig, FeatureKey, getDependents as registryDependents, getFeature, } from '../config/features';
 
 /**
@@ -30,9 +30,8 @@ export function loadSiteSettings(): Promise<SiteSettings | null> {
     if (fetchPromise) return fetchPromise;
     fetchPromise = (async () => {
         try {
-            const response = await fetchSettings();
-            if (response.success && response.data) {
-                const data = response.data as SiteSettings;
+            const data = (await cms.settings.getPublic()) as unknown as SiteSettings;
+            if (data) {
                 setSiteSettings(data,);
                 return data;
             }

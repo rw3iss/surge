@@ -11,7 +11,7 @@
  * a thin client cache — no extra API surface needed.
  */
 import { createSignal, } from 'solid-js';
-import { api, } from './api';
+import { cms, } from './cmsClient';
 import type { RecentSource, } from '../config/blockTypes';
 
 export interface RecentItem {
@@ -25,15 +25,16 @@ export interface RecentItem {
 const LIMIT = 10;
 
 // The admin list endpoints use slightly different query shapes:
-//   • /posts:     ?sort=date_desc       (single string switched in repo)
-//   • /campaigns: ?sortBy=created_at&sortOrder=desc
-//   • /forms:     ?sortBy=updated_at&sortOrder=desc
-// All accept `?limit=N`. We pin "newest-first, top 10" explicitly so
-// the submenu order doesn't depend on the route's default.
-const ENDPOINTS: Record<RecentSource, string> = {
-    campaigns: '/campaigns?all=true&sortBy=created_at&sortOrder=desc&limit=10',
-    forms: '/forms?all=true&sortBy=updated_at&sortOrder=desc&limit=10',
-    posts: '/posts?sort=date_desc&limit=10',
+//   • posts:     sort=date_desc       (single string switched in repo)
+//   • campaigns: sortBy=created_at&sortOrder=desc
+//   • forms:     sortBy=updated_at&sortOrder=desc
+// All accept `limit`. We pin "newest-first, top 10" explicitly so
+// the submenu order doesn't depend on the route's default. Each fetcher
+// returns the typed client's `{ data }` paginated envelope.
+const FETCHERS: Record<RecentSource, () => Promise<{ data: unknown[]; }>> = {
+    campaigns: () => cms.campaigns.list({ sortBy: 'created_at', sortOrder: 'desc', limit: 10, } as any,),
+    forms: () => cms.forms.list({ sortBy: 'updated_at', sortOrder: 'desc', limit: 10, } as any,),
+    posts: () => cms.posts.list({ sort: 'date_desc', limit: 10, },),
 };
 
 interface CacheEntry {
@@ -60,9 +61,8 @@ export function fetchRecent(source: RecentSource,): Promise<RecentItem[]> {
 
     const p = (async () => {
         try {
-            const response = await api.get(ENDPOINTS[source],);
-            if (!response.success) return [];
-            const raw = ((response as any).data ?? []) as Array<Record<string, unknown>>;
+            const response = await FETCHERS[source]();
+            const raw = (response.data ?? []) as Array<Record<string, unknown>>;
             const items: RecentItem[] = raw.slice(0, LIMIT,).map(r => ({
                 id: String(r.id,),
                 title: String(r.title ?? r.name ?? r.slug ?? '(untitled)',),

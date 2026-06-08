@@ -19,7 +19,7 @@
  */
 import type { SiteSwatch, } from '@rw/cms-shared';
 import { createSignal, } from 'solid-js';
-import { api, } from './api';
+import { cms, } from './cmsClient';
 
 /**
  * Default palette used when the API hasn't responded yet OR returned
@@ -127,8 +127,8 @@ export function loadSwatches(forceRefresh = false,): Promise<SiteSwatch[]> {
     if (loadPromise && !forceRefresh) return loadPromise;
     loadPromise = (async () => {
         try {
-            const response = await api.get('/settings/site-colors',);
-            const data = response.success ? normalize((response as any).data,) : buildDefaultSwatches();
+            const raw = await cms.settings.listSwatches();
+            const data = normalize(raw,);
             setSwatchesSignal(data,);
             loaded = true;
             return data;
@@ -145,16 +145,17 @@ export function loadSwatches(forceRefresh = false,): Promise<SiteSwatch[]> {
 /** Persist a new swatch list. On success, the local signal is updated
  *  immediately so all consumers see the change without a refetch. */
 export async function saveSwatches(next: SiteSwatch[],): Promise<boolean> {
-    const response = await api.put('/settings/site-colors', next,);
-    if (response.success) {
+    try {
+        const echoedRaw = await cms.settings.replaceSwatches(next,);
         // Trust the server's normalized echo over our local copy.
-        const echoed = normalize((response as any).data,);
+        const echoed = normalize(echoedRaw,);
         setSwatchesSignal(echoed,);
         loaded = true;
         loadPromise = Promise.resolve(echoed,);
         return true;
+    } catch {
+        return false;
     }
-    return false;
 }
 
 /** Force a refetch from the server (e.g. after another tab edits). */
@@ -178,9 +179,8 @@ export interface SwatchUsageReport {
 
 export async function fetchSwatchUsages(id: string,): Promise<SwatchUsageReport> {
     try {
-        const response = await api.get(`/settings/site-colors/usages/${encodeURIComponent(id,)}`,);
-        if (response.success && (response as any).data) {
-            const d = (response as any).data;
+        const d = await cms.settings.swatchUsages(id,);
+        if (d) {
             return {
                 total: typeof d.total === 'number' ? d.total : 0,
                 breakdown: Array.isArray(d.breakdown,) ? d.breakdown : [],

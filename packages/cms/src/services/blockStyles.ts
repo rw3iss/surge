@@ -1,5 +1,5 @@
 import { createSignal, } from 'solid-js';
-import { api, } from './api';
+import { cms, } from './cmsClient';
 
 export interface BlockStyleData {
     id?: string;
@@ -66,11 +66,14 @@ export const BlockStyleService = {
         if (styles().length > 0) return styles();
         if (pending) return pending;
         pending = (async () => {
-            const res = await api.get('/block-styles',);
-            const list = res.success ? ((res as any).data || []) : [];
-            setStyles(list,);
+            try {
+                const list = (await cms.blockStyles.list()) as unknown as BlockStyleData[];
+                setStyles(Array.isArray(list,) ? list : [],);
+            } catch {
+                setStyles([],);
+            }
             pending = null;
-            return list;
+            return styles();
         })();
         return pending;
     },
@@ -88,33 +91,36 @@ export const BlockStyleService = {
     async create(data: Partial<BlockStyleData>,): Promise<BlockStyleData | null> {
         // Ensure defaults are filled in for any missing values
         const payload = { ...BLOCK_STYLE_DEFAULTS, ...data, };
-        const res = await api.post('/block-styles', payload,);
-        if (res.success) {
+        try {
+            const created = await cms.blockStyles.create(payload as any,);
             this.invalidateCache();
             void this.getAll();
-            return (res as any).data;
+            return created as unknown as BlockStyleData;
+        } catch {
+            return null;
         }
-        return null;
     },
 
     async update(id: string, data: Partial<BlockStyleData>,): Promise<BlockStyleData | null> {
-        const res = await api.put(`/block-styles/${id}`, data,);
-        if (res.success) {
+        try {
+            const updated = await cms.blockStyles.update(id, data as any,);
             this.invalidateCache();
             void this.getAll();
-            return (res as any).data;
+            return updated as unknown as BlockStyleData;
+        } catch {
+            return null;
         }
-        return null;
     },
 
     async remove(id: string,): Promise<boolean> {
-        const res = await api.delete(`/block-styles/${id}`,);
-        if (res.success) {
+        try {
+            await cms.blockStyles.remove(id,);
             this.invalidateCache();
             void this.getAll();
             return true;
+        } catch {
+            return false;
         }
-        return false;
     },
 
     /** Returns a fresh copy of the default style values */

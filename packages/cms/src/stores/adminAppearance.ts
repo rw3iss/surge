@@ -1,5 +1,5 @@
 import { createSignal, } from 'solid-js';
-import { fetchAdminAppearance, } from '../services/api';
+import { cms, } from '../services/cmsClient';
 import { colorCssValue, } from './../services/colorResolver';
 
 /**
@@ -43,8 +43,8 @@ export function loadAdminAppearance(): Promise<AdminAppearance | null> {
     if (loadPromise) return loadPromise;
     loadPromise = (async () => {
         try {
-            const r = await fetchAdminAppearance();
-            const data = (r.success && r.data) ? r.data as AdminAppearance : {};
+            const r = await cms.settings.getAdminAppearance();
+            const data = (r && typeof r === 'object') ? r as AdminAppearance : {};
             setAdminAppearance(data,);
             return data;
         } catch {

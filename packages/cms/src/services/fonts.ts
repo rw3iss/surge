@@ -8,7 +8,7 @@
  * each one re-fetching.
  */
 import { createSignal, } from 'solid-js';
-import { api, } from './api';
+import { cms, } from './cmsClient';
 
 export interface Font {
     id: string;
@@ -36,10 +36,8 @@ export function loadFonts(forceRefresh = false,): Promise<Font[]> {
     if (loadPromise && !forceRefresh) return loadPromise;
     loadPromise = (async () => {
         try {
-            const res = await api.get<Font[]>('/fonts',);
-            const data = res.success && Array.isArray((res as any).data,)
-                ? (res as any).data as Font[]
-                : [];
+            const list = await cms.fonts.list();
+            const data = Array.isArray(list,) ? (list as unknown as Font[]) : [];
             setFonts(data,);
             loaded = true;
             return data;
@@ -67,31 +65,18 @@ export interface UploadFontOptions {
 /** Upload a font file via FormData. Returns the new Font row on
  *  success, throws with a server-supplied message on failure. */
 export async function uploadFont(file: File, opts: UploadFontOptions = {},): Promise<Font> {
-    const formData = new FormData();
-    formData.append('file', file,);
-    if (opts.customId) formData.append('customId', opts.customId,);
-    if (opts.familyName) formData.append('familyName', opts.familyName,);
+    const fields: Record<string, string> = {};
+    if (opts.customId) fields.customId = opts.customId;
+    if (opts.familyName) fields.familyName = opts.familyName;
 
-    // Use fetch directly — the api wrapper wants JSON. Same auth
-    // (cookies via credentials: 'include') and CSRF header pattern
-    // that api.ts uses internally.
-    const csrf = document.cookie.match(/csrf-token=([^;]+)/,)?.[1] ?? '';
-    const response = await fetch('/api/v1/fonts', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'X-CSRF-Token': csrf, },
-        body: formData,
-    },);
-    const data = await response.json();
-    if (!data.success) {
-        throw new Error(data.error?.message || 'Upload failed',);
-    }
+    // The client builds the multipart FormData internally and applies the
+    // same cookie + CSRF transport the old hand-rolled fetch used.
+    const created = await cms.fonts.upload(file, fields,);
     await reloadFonts();
-    return data.data as Font;
+    return created as unknown as Font;
 }
 
 export async function deleteFont(id: string,): Promise<void> {
-    const res = await api.delete(`/fonts/${id}`,);
-    if (!res.success) throw new Error((res as any).error?.message || 'Delete failed',);
+    await cms.fonts.remove(id,);
     await reloadFonts();
 }

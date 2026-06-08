@@ -13,7 +13,8 @@
  * here so block consumers don't have to repeat the math.
  */
 import type { Post, } from '@rw/cms-shared';
-import { api, } from './api';
+import type { PostListQuery, } from '@rw/cms-shared';
+import { cms, } from './cmsClient';
 import { cached, invalidateNamespace, } from './requestCache';
 
 /** Output of a post-list query. The list endpoint optionally hydrates
@@ -79,10 +80,9 @@ function daysAgoToIso(days: number | undefined,): string | undefined {
  * separate so the cache key reflects the wire shape (i.e. two callers
  * passing equivalent `daysAgo` values produce the same hash).
  */
-function buildBackendParams(f: PostListFilters,): Record<string, string> {
-    const out: Record<string, string> = {};
-    if (f.count) out.limit = String(f.count,);
-    out.page = '1';
+function buildBackendParams(f: PostListFilters,): PostListQuery {
+    const out: PostListQuery = { page: 1, };
+    if (f.count) out.limit = f.count;
     const beforeIso = daysAgoToIso(f.beforeDaysAgo,);
     const afterIso = daysAgoToIso(f.afterDaysAgo,);
     // beforeDaysAgo (e.g. "5 days ago") = show RECENT posts published
@@ -110,14 +110,13 @@ export async function fetchPostList(
     const ttl = options.ttlMs ?? DEFAULT_TTL_MS;
 
     return cached(NAMESPACE, params, ttl, async () => {
-        const queryString = new URLSearchParams(params,).toString();
-        const response = await api.get<PostWithBlocks[]>(`/posts?${queryString}`,);
-        if (!response.success) {
+        try {
+            const result = await cms.posts.list(params,);
+            const data = result.data as unknown as PostWithBlocks[] | undefined;
+            return { posts: Array.isArray(data,) ? data : [], total: result.meta?.total ?? 0, };
+        } catch {
             return { posts: [], total: 0, };
         }
-        const data = (response as any).data as PostWithBlocks[] | undefined;
-        const meta = (response as any).meta as { total?: number; } | undefined;
-        return { posts: Array.isArray(data,) ? data : [], total: meta?.total ?? 0, };
     },);
 }
 

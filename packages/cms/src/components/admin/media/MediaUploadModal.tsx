@@ -1,5 +1,5 @@
 import { Component, createSignal, Show, } from 'solid-js';
-import { api, } from '../../../services/api';
+import { cms, } from '../../../services/cmsClient';
 import './MediaUploadModal.scss';
 
 interface MediaItem {
@@ -57,21 +57,17 @@ export default function MediaUploadModal(props: MediaUploadModalProps,) {
         setError('',);
 
         try {
-            const additionalData: Record<string, string> = {};
-            if (title()) additionalData.title = title();
-            if (description()) additionalData.alt = description();
+            const fields: Record<string, string> = {};
+            if (title()) fields.title = title();
+            if (description()) fields.alt = description();
 
-            const response = await api.upload('/media', f, 'file', additionalData,);
-            if (response.success) {
-                setSuccess(true,);
-                setTimeout(() => {
-                    props.onUploaded((response as any).data as MediaItem,);
-                }, 1000,);
-            } else {
-                setError((response as any).error?.message || 'Upload failed',);
-            }
+            const media = await cms.media.upload(f, fields,);
+            setSuccess(true,);
+            setTimeout(() => {
+                props.onUploaded(media as unknown as MediaItem,);
+            }, 1000,);
         } catch (err: any) {
-            setError(err.message || 'Upload failed',);
+            setError(err?.message || 'Upload failed',);
         } finally {
             setUploading(false,);
         }

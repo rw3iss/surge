@@ -5,7 +5,8 @@
  * through `@rw/cms-shared` because the wizard payload is internal and
  * shouldn't pollute the public type surface.
  */
-import { api, } from './api';
+import { CmsError, } from '@rw/cms-client';
+import { cms, } from './cmsClient';
 
 export type InstallStage = 'env' | 'db' | 'install' | 'ready';
 
@@ -126,49 +127,69 @@ export interface ValidationIssue {
 
 export const setupApi = {
     async getStatus(): Promise<InstallationStatus | null> {
-        const res = await api.get<InstallationStatus>('/setup/status',);
-        return res.success && res.data ? res.data : null;
+        try {
+            return (await cms.setup.status()) as unknown as InstallationStatus;
+        } catch {
+            return null;
+        }
     },
 
     async testDb(input: PostgresProbeInput,): Promise<PostgresProbeResult> {
-        const res = await api.post<PostgresProbeResult>('/setup/test-db', input,);
-        return res.success && res.data ? res.data : { ok: false, error: res.error?.message, };
+        try {
+            return (await cms.setup.testDb(input as any,)) as unknown as PostgresProbeResult;
+        } catch (err) {
+            return { ok: false, error: err instanceof Error ? err.message : 'Test failed', };
+        }
     },
 
     async testRedis(url: string,): Promise<ProbeResult<{ pong: string; }>> {
-        const res = await api.post<ProbeResult<{ pong: string; }>>('/setup/test-redis', { url, },);
-        return res.success && res.data ? res.data : { ok: false, error: res.error?.message, };
+        try {
+            return (await cms.setup.testRedis({ url, } as any,)) as unknown as ProbeResult<{ pong: string; }>;
+        } catch (err) {
+            return { ok: false, error: err instanceof Error ? err.message : 'Test failed', };
+        }
     },
 
     async testSmtp(input: { host: string; port: number; secure?: boolean; user?: string; pass?: string; },): Promise<ProbeResult> {
-        const res = await api.post<ProbeResult>('/setup/test-smtp', input,);
-        return res.success && res.data ? res.data : { ok: false, error: res.error?.message, };
+        try {
+            return (await cms.setup.testSmtp(input as any,)) as unknown as ProbeResult;
+        } catch (err) {
+            return { ok: false, error: err instanceof Error ? err.message : 'Test failed', };
+        }
     },
 
     async testS3(input: { region: string; accessKeyId: string; secretAccessKey: string; bucket: string; },): Promise<ProbeResult> {
-        const res = await api.post<ProbeResult>('/setup/test-s3', input,);
-        return res.success && res.data ? res.data : { ok: false, error: res.error?.message, };
+        try {
+            return (await cms.setup.testS3(input as any,)) as unknown as ProbeResult;
+        } catch (err) {
+            return { ok: false, error: err instanceof Error ? err.message : 'Test failed', };
+        }
     },
 
     async generateJwt(): Promise<string> {
-        const res = await api.post<{ secret: string; }>('/setup/generate-jwt',);
-        if (res.success && res.data) return res.data.secret;
-        throw new Error(res.error?.message ?? 'Could not generate secret',);
+        const res = await cms.setup.generateJwt() as unknown as { secret: string; };
+        if (res?.secret) return res.secret;
+        throw new Error('Could not generate secret',);
     },
 
     async install(payload: InstallPayload,): Promise<{ ok: boolean; data?: InstallSuccess; errors?: ValidationIssue[]; stage?: string; message?: string; }> {
-        const res = await api.post<InstallSuccess>('/setup/install', payload,);
-        if (res.success && res.data) return { ok: true, data: res.data, };
-        const errors = (res.error?.details as { errors?: ValidationIssue[]; stage?: string; })?.errors ?? [];
-        const stage = (res.error?.details as { stage?: string; })?.stage;
-        // Single-section errors from AppError(409 EmailExists, etc) come through as
-        // error.details = { section, field, code }. Promote those into the issue list.
-        if (errors.length === 0 && res.error?.details) {
-            const d = res.error.details as { section?: string; field?: string; code?: string; };
-            if (d.section) {
-                errors.push({ section: d.section, field: d.field, message: res.error.message, code: d.code, },);
+        try {
+            const data = (await cms.setup.install(payload as any,)) as unknown as InstallSuccess;
+            return { ok: true, data, };
+        } catch (err) {
+            const details = err instanceof CmsError ? err.details : undefined;
+            const message = err instanceof Error ? err.message : 'Install failed';
+            const errors = (details as { errors?: ValidationIssue[]; })?.errors ?? [];
+            const stage = (details as { stage?: string; })?.stage;
+            // Single-section errors from AppError(409 EmailExists, etc) come through as
+            // details = { section, field, code }. Promote those into the issue list.
+            if (errors.length === 0 && details) {
+                const d = details as { section?: string; field?: string; code?: string; };
+                if (d.section) {
+                    errors.push({ section: d.section, field: d.field, message, code: d.code, },);
+                }
             }
+            return { ok: false, errors, stage, message, };
         }
-        return { ok: false, errors, stage, message: res.error?.message, };
     },
 };
