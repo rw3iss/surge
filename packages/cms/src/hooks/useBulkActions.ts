@@ -11,16 +11,15 @@ interface BulkBody {
 
 /**
  * Maps an entity type to its `cms.<module>.bulk` method. The wire body for
- * every bulk endpoint is `{ ids, action, value }` (the backend's shared
- * bulkActions runner reads `value`); the per-entity DTOs vary slightly in
- * field naming, so the body is cast at the call boundary.
+ * every bulk endpoint is `{ ids, action, value }` — all per-entity DTOs now
+ * agree on that shape (the backend's shared bulkActions runner reads `value`).
  */
 const ENTITY_BULK: Record<BulkEntityType, (body: BulkBody,) => Promise<{ updated: number; }>> = {
-    post: (body,) => cms.posts.bulk(body as never,),
-    page: (body,) => cms.pages.bulk(body as never,),
-    campaign: (body,) => cms.campaigns.bulk(body as never,),
-    form: (body,) => cms.forms.bulk(body as never,),
-    message: (body,) => cms.messages.bulk(body as never,),
+    post: (body,) => cms.posts.bulk(body,),
+    page: (body,) => cms.pages.bulk(body,),
+    campaign: (body,) => cms.campaigns.bulk(body,),
+    form: (body,) => cms.forms.bulk(body,),
+    message: (body,) => cms.messages.bulk(body,),
 };
 
 export interface UseBulkActionsOptions {

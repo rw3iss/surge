@@ -48,8 +48,8 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
             await cms.forms.submit(props.form.slug, { answers: formAnswers, },);
             setSubmitted(true,);
             if (props.form.showResults) loadResults();
-        } catch {
-            setError('An error occurred. Please try again.',);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'An error occurred. Please try again.',);
         } finally {
             setSubmitting(false,);
         }

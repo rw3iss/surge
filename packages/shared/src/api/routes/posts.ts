@@ -97,7 +97,8 @@ export interface ContentLockedDetails {
 export interface PostBulkBody {
     ids: string[];
     action: 'delete' | 'status';
-    status?: string;
+    /** status value when action='status' */
+    value?: string;
 }
 
 /** POST /posts/bulk — count + action performed. */

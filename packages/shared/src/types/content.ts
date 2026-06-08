@@ -6,6 +6,8 @@ export interface Page {
     id: string;
     slug: string;
     title: string;
+    /** Alignment of the auto-printed `<h1>` title (when showTitle). */
+    titleAlignment?: 'left' | 'center' | 'right';
     description?: string;
     metaTitle?: string;
     metaDescription?: string;
@@ -107,6 +109,7 @@ export interface Post {
     metaTitle?: string;
     metaDescription?: string;
     publishedAt?: Date;
+    publishAt?: string | null;
     createdAt: Date;
     updatedAt: Date;
 }

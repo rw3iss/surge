@@ -114,7 +114,7 @@ const AdminPostEditor: Component = () => {
     },);
 
     createEffect(() => {
-        const p = post() as any;
+        const p = post();
         if (p) {
             setTitle(p.title || '',);
             setSlug(p.slug || '',);

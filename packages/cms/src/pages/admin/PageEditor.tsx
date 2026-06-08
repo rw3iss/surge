@@ -151,7 +151,7 @@ const AdminPageEditor: Component = () => {
     const [deleting, setDeleting,] = createSignal(false,);
 
     createEffect(() => {
-        const p = page() as any;
+        const p = page();
         if (p) {
             setTitle(p.title || '',);
             setTitleAlignment(p.titleAlignment || 'left',);
@@ -161,8 +161,8 @@ const AdminPageEditor: Component = () => {
             // Default true preserves prior behavior for legacy rows
             // saved before this column existed (mapRow returns
             // `undefined` for missing columns).
-            setShowTitle((p as any).showTitle !== false,);
-            setIsHomepage(Boolean((p as any).isHomepage,),);
+            setShowTitle(p.showTitle !== false,);
+            setIsHomepage(Boolean(p.isHomepage,),);
             if (p.blocks?.length) {
                 const converted = p.blocks.map((b: any,) => pageBlockToBlockData(b,));
                 setBlocks(converted,);
