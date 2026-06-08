@@ -5,6 +5,7 @@ import type {
     UserUnbanResponse, UserDeleteResponse, UserBanListQuery, UserBanListResponse,
     UserBanIpBody, UserBanIpResponse, UserBanDeleteResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /users namespace (all admin) — user CRUD, avatar upload, bans. */
@@ -12,8 +13,8 @@ export class UsersModule extends ModuleBase {
     protected readonly module = 'users';
 
     /** GET /users — paginated admin list with search/role/status/sort filters. */
-    list(query?: UserListQuery,): Promise<UserListResponse> {
-        return this.get<UserListResponse>('/users', { query: query as Record<string, unknown>, },);
+    list(query?: UserListQuery,): Promise<Paginated<UserListResponse[number]>> {
+        return this.getPaged<UserListResponse[number]>('/users', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /users/:id — user with their resolved Patreon membership (or null). */
@@ -59,8 +60,8 @@ export class UsersModule extends ModuleBase {
     }
 
     /** GET /users/banned/list — active bans. Page meta on the envelope. */
-    listBanned(query?: UserBanListQuery,): Promise<UserBanListResponse> {
-        return this.get<UserBanListResponse>('/users/banned/list', { query: query as Record<string, unknown>, },);
+    listBanned(query?: UserBanListQuery,): Promise<Paginated<UserBanListResponse[number]>> {
+        return this.getPaged<UserBanListResponse[number]>('/users/banned/list', { query: query as Record<string, unknown>, },);
     }
 
     /** DELETE /users/banned/:banId — remove a ban row. */

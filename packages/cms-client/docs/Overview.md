@@ -53,8 +53,9 @@ const cms = createClient({
     auth: { apiKey: 'ssk_…' },
 });
 
-// 2. A typed, cached list.
-const posts = await cms.posts.list({ status: 'all' });   // PostListResponse
+// 2. A typed, cached, paginated list → { data, meta }.
+const { data: posts, meta } = await cms.posts.list({ status: 'all' });
+//    posts: Post[]   meta: { page?, limit?, total?, totalPages? }
 
 // 3. Or a Bearer session: login persists tokens (localStorage by default),
 //    and every later call is authenticated automatically.
@@ -315,12 +316,43 @@ Each `<details>` lists every public method with its signature
 Auth tiers: **public** (no auth) · **optional** (anon allowed; auth enriches) ·
 **user** (any authenticated user) · **admin** (admin role / `admin` API-key scope).
 
+### Pagination
+
+List methods whose backend route replies with page meta return
+`Paginated<T> = { data: T[]; meta: PageMeta }` (both exported from
+`@rw/cms-shared`; `PageMeta = { page?, limit?, total?, totalPages? }` — all
+optional, matching the envelope). Destructure the result:
+
+```ts
+const { data, meta } = await cms.posts.list({ status: 'all', page: 1 });
+//    data: Post[]        meta.total / meta.totalPages drive the pager
+```
+
+The `{ data, meta }` object is cached as a whole under the normal SWR key,
+so a paginated read still serves from cache and refreshes in the background.
+
+Paginated methods (return `Paginated<T>`): `posts.list`, `posts.search`,
+`pages.list`, `campaigns.list` (admin), `campaigns.donations`,
+`campaigns.allDonations`, `forms.list` (admin), `forms.listSubmissions`,
+`users.list`, `users.listBanned`, `messages.list`, `media.list`,
+`audit.list`, `payments.transactions`, `payments.adminSubscriptions`,
+`payments.adminTransactions`, `payments.adminUserTransactions`,
+`social.listPosts`, `social.platformPosts`.
+
+Collection reads whose route returns a **bare array** (no meta) keep
+returning the array directly: `campaigns.listPublic`, `forms.listPublic`,
+`mailingLists.list`, `mailSend.listJobs`, `connections.list`,
+`social.feed`/`platformFeed`/`homepage`, `payments.subscriptions`/`plans`,
+`blockStyles.list`, `fonts.list`, `settings.listSwatches`, and the grouped
+`search.query`/`adminSearch`. The `{ items, total }`-shaped reads
+(`mailingLists.subscribers`, `mailSend.jobRecipients`) are likewise unchanged.
+
 <details><summary><code>cms.posts</code> — blog posts, revisions, block reorder (12 methods)</summary>
 
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
-| `list` | `(query?: PostListQuery) → PostListResponse` | `GET /posts` | optional | cached GET |
-| `search` | `(query: PostSearchQuery) → PostSearchResponse` | `GET /posts/search` | public | cached GET |
+| `list` | `(query?: PostListQuery) → Paginated<Post>` | `GET /posts` | optional | cached GET (paginated) |
+| `search` | `(query: PostSearchQuery) → Paginated<Post>` | `GET /posts/search` | public | cached GET (paginated) |
 | `getBySlug` | `(slug: string, query?: PostBySlugQuery) → PostBySlugResponse` | `GET /posts/slug/:slug` | optional | cached GET (throws `ContentLockedError` on gated content) |
 | `getById` | `(id: string) → PostByIdResponse` | `GET /posts/:id` | admin | cached GET |
 | `create` | `(body: PostCreateBody) → PostCreateResponse` | `POST /posts` | admin | mutation → posts |
@@ -345,7 +377,7 @@ const post = await cms.posts.getBySlug('hello-world');
 | `navigation` | `() → PageNavigationResponse` | `GET /pages/navigation` | public | cached GET |
 | `homepage` | `() → PageHomepageResponse` | `GET /pages/homepage` | public | cached GET |
 | `getBySlug` | `(slug: string, query?: PageBySlugQuery) → PageBySlugResponse` | `GET /pages/slug/:slug` | optional | cached GET (throws `ContentLockedError`) |
-| `list` | `(query?: PageListQuery) → PageListResponse` | `GET /pages` | admin | cached GET |
+| `list` | `(query?: PageListQuery) → Paginated<Page>` | `GET /pages` | admin | cached GET (paginated) |
 | `getById` | `(id: string) → PageByIdResponse` | `GET /pages/:id` | admin | cached GET |
 | `create` | `(body: PageCreateBody) → PageCreateResponse` | `POST /pages` | admin | mutation → pages |
 | `update` | `(id: string, body: PageUpdateBody) → PageUpdateResponse` | `PUT /pages/:id` | admin | mutation → pages |
@@ -370,11 +402,11 @@ const page = await cms.pages.getBySlug('about');
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
 | `listPublic` | `(query?: CampaignListQuery) → CampaignPublicListResponse` | `GET /campaigns` | optional | cached GET (bare published array) |
-| `list` | `(query?: CampaignListQuery) → CampaignAdminListResponse` | `GET /campaigns?all=true` | optional | cached GET (paginated all-statuses) |
+| `list` | `(query?: CampaignListQuery) → Paginated<Campaign>` | `GET /campaigns?all=true` | optional | cached GET (paginated all-statuses) |
 | `getBySlug` | `(slug: string) → CampaignBySlugResponse` | `GET /campaigns/slug/:slug` | public | cached GET |
-| `donations` | `(id: string, query?: CampaignDonationsQuery) → CampaignDonationsResponse` | `GET /campaigns/:id/donations` | public | cached GET (masked) |
+| `donations` | `(id: string, query?: CampaignDonationsQuery) → Paginated<PublicDonation>` | `GET /campaigns/:id/donations` | public | cached GET (masked, paginated) |
 | `donationSummary` | `() → CampaignDonationSummaryResponse` | `GET /campaigns/donations/summary` | admin | cached GET |
-| `allDonations` | `(query?: CampaignAllDonationsQuery) → CampaignAllDonationsResponse` | `GET /campaigns/donations/all` | admin | cached GET |
+| `allDonations` | `(query?: CampaignAllDonationsQuery) → Paginated<Donation>` | `GET /campaigns/donations/all` | admin | cached GET (paginated) |
 | `getById` | `(id: string) → CampaignByIdResponse` | `GET /campaigns/:id` | admin | cached GET |
 | `create` | `(body: CampaignCreateBody) → CampaignCreateResponse` | `POST /campaigns` | admin | mutation → campaigns |
 | `update` | `(id: string, body: CampaignUpdateBody) → CampaignUpdateResponse` | `PUT /campaigns/:id` | admin | mutation → campaigns |
@@ -382,8 +414,8 @@ const page = await cms.pages.getBySlug('about');
 | `bulk` | `(body: CampaignBulkBody) → CampaignBulkResponse` | `POST /campaigns/bulk` | admin | mutation → campaigns |
 
 ```ts
-const live = await cms.campaigns.listPublic();
-const all = await cms.campaigns.list({ status: 'draft' }); // adds all=true
+const live = await cms.campaigns.listPublic();             // bare Campaign[]
+const { data: all, meta } = await cms.campaigns.list({ status: 'draft' }); // adds all=true; paginated
 ```
 </details>
 
@@ -392,12 +424,12 @@ const all = await cms.campaigns.list({ status: 'draft' }); // adds all=true
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
 | `listPublic` | `(query?: FormListQuery) → FormPublicListResponse` | `GET /forms` | optional | cached GET (bare published array) |
-| `list` | `(query?: FormListQuery) → FormAdminListResponse` | `GET /forms?all=true` | optional | cached GET (paginated all-statuses) |
+| `list` | `(query?: FormListQuery) → Paginated<Form>` | `GET /forms?all=true` | optional | cached GET (paginated all-statuses) |
 | `getBySlug` | `(slug: string) → FormBySlugResponse` | `GET /forms/slug/:slug` | optional | cached GET |
 | `results` | `(slug: string) → FormResultsResponse` | `GET /forms/slug/:slug/results` | public | cached GET |
 | `submit` | `(slug: string, body: FormSubmitBody) → FormSubmitResponse` | `POST /forms/slug/:slug/submit` | optional | mutation → forms |
 | `getById` | `(id: string) → FormByIdResponse` | `GET /forms/:id` | admin | cached GET |
-| `listSubmissions` | `(id: string, query?: FormSubmissionsQuery) → FormSubmissionsResponse` | `GET /forms/:id/submissions` | admin | cached GET |
+| `listSubmissions` | `(id: string, query?: FormSubmissionsQuery) → Paginated<FormSubmission>` | `GET /forms/:id/submissions` | admin | cached GET (paginated) |
 | `exportSubmissions` | `(id: string) → FormSubmissionsExportResponse` | `GET /forms/:id/submissions/export` | admin | raw (CSV string) |
 | `create` | `(body: FormCreateBody) → FormCreateResponse` | `POST /forms` | admin | mutation → forms |
 | `update` | `(id: string, body: FormUpdateBody) → FormUpdateResponse` | `PUT /forms/:id` | admin | mutation → forms |
@@ -421,7 +453,7 @@ const csv = await cms.forms.exportSubmissions(form.data.id);
 | `upload` | `(file: Blob, fields?: MediaUploadFields) → MediaUploadResponse` | `POST /media` | admin | mutation → media (multipart, field `file`) |
 | `blockUpload` | `(file: Blob, fields?: MediaBlockUploadFields) → MediaBlockUploadResponse` | `POST /media/block-upload` | admin | mutation → media (echoes postId/blockId) |
 | `bulkUpload` | `(files: Blob[]) → MediaBulkUploadResponse` | `POST /media/bulk` | admin | mutation → media (field `files`, max 10) |
-| `list` | `(query?: MediaListQuery) → MediaListResponse` | `GET /media` | admin | cached GET |
+| `list` | `(query?: MediaListQuery) → Paginated<MediaWire>` | `GET /media` | admin | cached GET (paginated) |
 | `getById` | `(id: string) → MediaByIdResponse` | `GET /media/:id` | admin | cached GET |
 | `update` | `(id: string, body: MediaUpdateBody) → MediaUpdateResponse` | `PUT /media/:id` | admin | mutation → media |
 | `remove` | `(id: string) → MediaDeleteResponse` | `DELETE /media/:id` | admin | mutation → media |
@@ -435,7 +467,7 @@ const up = await cms.media.upload(fileBlob, { alt: 'Hero' });
 
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
-| `list` | `(query?: UserListQuery) → UserListResponse` | `GET /users` | admin | cached GET |
+| `list` | `(query?: UserListQuery) → Paginated<User>` | `GET /users` | admin | cached GET (paginated) |
 | `getById` | `(id: string) → UserByIdResponse` | `GET /users/:id` | admin | cached GET |
 | `create` | `(body: UserCreateBody) → UserCreateResponse` | `POST /users` | admin | mutation → users |
 | `update` | `(id: string, body: UserUpdateBody) → UserUpdateResponse` | `PUT /users/:id` | admin | mutation → users |
@@ -445,11 +477,11 @@ const up = await cms.media.upload(fileBlob, { alt: 'Hero' });
 | `ban` | `(id: string, body?: UserBanBody) → UserBanResponse` | `POST /users/:id/ban` | admin | mutation → users |
 | `unban` | `(id: string) → UserUnbanResponse` | `POST /users/:id/unban` | admin | mutation → users |
 | `banIp` | `(body: UserBanIpBody) → UserBanIpResponse` | `POST /users/ban-ip` | admin | mutation → users |
-| `listBanned` | `(query?: UserBanListQuery) → UserBanListResponse` | `GET /users/banned/list` | admin | cached GET |
+| `listBanned` | `(query?: UserBanListQuery) → Paginated<UserBanRow>` | `GET /users/banned/list` | admin | cached GET (paginated) |
 | `removeBan` | `(banId: string) → UserBanDeleteResponse` | `DELETE /users/banned/:banId` | admin | mutation → users |
 
 ```ts
-const users = await cms.users.list({ role: 'admin' });
+const { data: users, meta } = await cms.users.list({ role: 'admin' });
 await cms.users.ban(userId, { reason: 'spam' });
 ```
 </details>
@@ -459,7 +491,7 @@ await cms.users.ban(userId, { reason: 'spam' });
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
 | `submit` | `(body: MessageSubmitBody) → MessageSubmitResponse` | `POST /messages` | optional | mutation → messages |
-| `list` | `(query?: MessageListQuery) → MessageListResponse` | `GET /messages` | admin | cached GET |
+| `list` | `(query?: MessageListQuery) → Paginated<ContactMessage>` | `GET /messages` | admin | cached GET (paginated) |
 | `getById` | `(id: string) → MessageByIdResponse` | `GET /messages/:id` | admin | cached GET (marks unread → read) |
 | `updateStatus` | `(id: string, body: MessageStatusUpdateBody) → MessageStatusUpdateResponse` | `PUT /messages/:id/status` | admin | mutation → messages |
 | `remove` | `(id: string) → MessageDeleteResponse` | `DELETE /messages/:id` | admin | mutation → messages |
@@ -476,8 +508,8 @@ await cms.messages.submit({ name: 'A', email: 'a@b.c', message: 'Hi' });
 
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
-| `listPosts` | `(query?: SocialPostsQuery) → SocialPostsResponse` | `GET /social/posts` | public | cached GET |
-| `platformPosts` | `(platform: string, query?: SocialPlatformPostsQuery) → SocialPlatformPostsResponse` | `GET /social/posts/:platform` | public | cached GET |
+| `listPosts` | `(query?: SocialPostsQuery) → Paginated<SocialPost>` | `GET /social/posts` | public | cached GET (paginated) |
+| `platformPosts` | `(platform: string, query?: SocialPlatformPostsQuery) → Paginated<SocialPost>` | `GET /social/posts/:platform` | public | cached GET (paginated) |
 | `feed` | `(query?: SocialFeedQuery) → SocialFeedResponse` | `GET /social/feed` | public | cached GET (live merged) |
 | `platformFeed` | `(platform: string, query?: SocialFeedQuery) → SocialPlatformFeedResponse` | `GET /social/feed/:platform` | public | cached GET |
 | `homepage` | `() → SocialHomepageResponse` | `GET /social/homepage` | public | cached GET |
@@ -507,10 +539,10 @@ const hits = await cms.search.query('climate', { limit: 10 });
 
 | Method | Signature | HTTP | Auth | Cache |
 |--------|-----------|------|------|-------|
-| `list` | `(query?: AuditListQuery) → AuditListResponse` | `GET /audit` | admin | cached GET (entity/action/user/date filters) |
+| `list` | `(query?: AuditListQuery) → Paginated<AuditLogEntry>` | `GET /audit` | admin | cached GET (paginated; entity/action/user/date filters) |
 
 ```ts
-const log = await cms.audit.list({ entity: 'post', page: 1 });
+const { data: log, meta } = await cms.audit.list({ entity: 'post', page: 1 });
 ```
 </details>
 
@@ -740,11 +772,11 @@ present). The Stripe `webhook` route is deliberately NOT exposed.
 | `unsubscribe` | `() → PaymentsUnsubscribeResponse` | `POST /payments/unsubscribe` | user | mutation (cancel at period end) |
 | `createCustomer` | `() → PaymentsCreateCustomerResponse` | `POST /payments/create-customer` | user | mutation |
 | `subscriptions` | `() → PaymentsSubscriptionsResponse` | `GET /payments/subscriptions` | user | cached GET |
-| `transactions` | `(query?: PaymentsTransactionsQuery) → PaymentsTransactionsResponse` | `GET /payments/transactions` | user | cached GET |
+| `transactions` | `(query?: PaymentsTransactionsQuery) → Paginated<UserTransaction>` | `GET /payments/transactions` | user | cached GET (paginated) |
 | `plans` | `() → PaymentsPublicPlansResponse` | `GET /payments/plans` | public | cached GET |
-| `adminSubscriptions` | `(query?: PaymentsAdminSubscriptionsQuery) → PaymentsAdminSubscriptionsResponse` | `GET /payments/admin/subscriptions` | admin | cached GET |
-| `adminTransactions` | `(query?: PaymentsAdminTransactionsQuery) → PaymentsAdminTransactionsResponse` | `GET /payments/admin/transactions` | admin | cached GET |
-| `adminUserTransactions` | `(userId: string) → PaymentsAdminUserTransactionsResponse` | `GET /payments/admin/user/:userId/transactions` | admin | cached GET |
+| `adminSubscriptions` | `(query?: PaymentsAdminSubscriptionsQuery) → Paginated<AdminSubscription>` | `GET /payments/admin/subscriptions` | admin | cached GET (paginated) |
+| `adminTransactions` | `(query?: PaymentsAdminTransactionsQuery) → Paginated<AdminTransaction>` | `GET /payments/admin/transactions` | admin | cached GET (paginated) |
+| `adminUserTransactions` | `(userId: string) → Paginated<UserTransaction>` | `GET /payments/admin/user/:userId/transactions` | admin | cached GET (paginated) |
 | `adminPlans` | `() → PaymentsAdminPlansResponse` | `GET /payments/admin/plans` | admin | cached GET |
 | `createPlan` | `(body: PaymentsPlanCreateBody) → PaymentsPlanCreateResponse` | `POST /payments/admin/plans` | admin | mutation → payments |
 | `updatePlan` | `(id: string, body: PaymentsPlanUpdateBody) → PaymentsPlanUpdateResponse` | `PUT /payments/admin/plans/:id` | admin | mutation → payments (union response) |

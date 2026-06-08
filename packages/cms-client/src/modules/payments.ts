@@ -8,6 +8,7 @@ import type {
     PaymentsAdminTransactionsQuery, PaymentsAdminTransactionsResponse,
     PaymentsAdminUserTransactionsResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /**
@@ -45,8 +46,8 @@ export class PaymentsModule extends ModuleBase {
     }
 
     /** GET /payments/transactions — the current user's transaction history. */
-    transactions(query?: PaymentsTransactionsQuery,): Promise<PaymentsTransactionsResponse> {
-        return this.get<PaymentsTransactionsResponse>('/payments/transactions', { query: query as Record<string, unknown>, },);
+    transactions(query?: PaymentsTransactionsQuery,): Promise<Paginated<PaymentsTransactionsResponse[number]>> {
+        return this.getPaged<PaymentsTransactionsResponse[number]>('/payments/transactions', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /payments/plans — active plans for the public subscribe page. */
@@ -55,18 +56,18 @@ export class PaymentsModule extends ModuleBase {
     }
 
     /** GET /payments/admin/subscriptions — all subscriptions (admin). */
-    adminSubscriptions(query?: PaymentsAdminSubscriptionsQuery,): Promise<PaymentsAdminSubscriptionsResponse> {
-        return this.get<PaymentsAdminSubscriptionsResponse>('/payments/admin/subscriptions', { query: query as Record<string, unknown>, },);
+    adminSubscriptions(query?: PaymentsAdminSubscriptionsQuery,): Promise<Paginated<PaymentsAdminSubscriptionsResponse[number]>> {
+        return this.getPaged<PaymentsAdminSubscriptionsResponse[number]>('/payments/admin/subscriptions', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /payments/admin/transactions — all transactions (admin; type/status filters). */
-    adminTransactions(query?: PaymentsAdminTransactionsQuery,): Promise<PaymentsAdminTransactionsResponse> {
-        return this.get<PaymentsAdminTransactionsResponse>('/payments/admin/transactions', { query: query as Record<string, unknown>, },);
+    adminTransactions(query?: PaymentsAdminTransactionsQuery,): Promise<Paginated<PaymentsAdminTransactionsResponse[number]>> {
+        return this.getPaged<PaymentsAdminTransactionsResponse[number]>('/payments/admin/transactions', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /payments/admin/user/:userId/transactions — one user's transactions (admin). */
-    adminUserTransactions(userId: string,): Promise<PaymentsAdminUserTransactionsResponse> {
-        return this.get<PaymentsAdminUserTransactionsResponse>('/payments/admin/user/:userId/transactions', { params: { userId, }, },);
+    adminUserTransactions(userId: string,): Promise<Paginated<PaymentsAdminUserTransactionsResponse[number]>> {
+        return this.getPaged<PaymentsAdminUserTransactionsResponse[number]>('/payments/admin/user/:userId/transactions', { params: { userId, }, },);
     }
 
     /** GET /payments/admin/plans — all plans (admin). */

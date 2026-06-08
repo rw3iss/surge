@@ -1,12 +1,18 @@
 import { describe, expect, it, vi, } from 'vitest';
 import type {
     PostListResponse, MediaUploadResponse, CampaignPublicListResponse,
-    CampaignAdminListResponse, FormSubmissionsExportResponse,
+    CampaignAdminListResponse, FormSubmissionsExportResponse, Paginated,
 } from '@rw/cms-shared';
 import { createClient, } from '../index';
 
 function jsonResponse(data: unknown, status = 200,): Response {
     return new Response(JSON.stringify({ success: status < 400, data, },), {
+        status, headers: { 'content-type': 'application/json', },
+    },);
+}
+
+function pagedResponse(data: unknown, meta: Record<string, number>, status = 200,): Response {
+    return new Response(JSON.stringify({ success: status < 400, data, meta, },), {
         status, headers: { 'content-type': 'application/json', },
     },);
 }
@@ -22,11 +28,14 @@ function lastUrl(fetchImpl: ReturnType<typeof vi.fn>,): string {
 }
 
 describe('content modules', () => {
-    it('posts.list() hits GET /api/v1/posts', async () => {
-        const fetchImpl = vi.fn().mockResolvedValue(jsonResponse([{ id: 'p1', },],),);
+    it('posts.list() hits GET /api/v1/posts and returns { data, meta }', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(
+            pagedResponse([{ id: 'p1', },], { page: 1, limit: 10, total: 1, totalPages: 1, },),
+        );
         const cms = createClient({ baseUrl: 'http://api', fetch: fetchImpl as never, auth: { store: null, }, },);
-        const out: PostListResponse = await cms.posts.list();
-        expect(out,).toEqual([{ id: 'p1', },],);
+        const out: Paginated<PostListResponse[number]> = await cms.posts.list();
+        expect(out.data,).toEqual([{ id: 'p1', },],);
+        expect(out.meta,).toEqual({ page: 1, limit: 10, total: 1, totalPages: 1, },);
         const [url, init,] = fetchImpl.mock.calls[0];
         expect(String(url,),).toContain('http://api/api/v1/posts',);
         expect((init as RequestInit).method,).toBe('GET',);
@@ -57,8 +66,8 @@ describe('content modules', () => {
         expect(pub,).toEqual([],);
         expect(lastUrl(fetchImpl,),).not.toContain('all=true',);
 
-        const admin: CampaignAdminListResponse = await cms.campaigns.list({},);
-        expect(admin,).toEqual([],);
+        const admin: Paginated<CampaignAdminListResponse[number]> = await cms.campaigns.list({},);
+        expect(admin.data,).toEqual([],);
         expect(lastUrl(fetchImpl,),).toContain('all=true',);
     },);
 

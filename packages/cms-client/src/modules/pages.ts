@@ -6,6 +6,7 @@ import type {
     PageBlockBody, PageBlockCreateResponse, PageBlockUpdateBody, PageBlockUpdateResponse,
     PageBlockDeleteResponse, PageReorderBlocksBody, PageReorderBlocksResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /pages namespace — CMS pages with embedded blocks, revisions, block CRUD. */
@@ -28,8 +29,8 @@ export class PagesModule extends ModuleBase {
     }
 
     /** GET /pages (admin) — any status, paginated. */
-    list(query?: PageListQuery,): Promise<PageListResponse> {
-        return this.get<PageListResponse>('/pages', { query: query as Record<string, unknown>, },);
+    list(query?: PageListQuery,): Promise<Paginated<PageListResponse[number]>> {
+        return this.getPaged<PageListResponse[number]>('/pages', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /pages/:id (admin) — full page with blocks, any status. */

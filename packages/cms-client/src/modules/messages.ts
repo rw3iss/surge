@@ -5,6 +5,7 @@ import type {
     MessageBulkStatusBody, MessageBulkStatusResponse,
     MessageBulkDeleteBody, MessageBulkDeleteResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /messages namespace — public contact-form submit + admin inbox. */
@@ -17,8 +18,8 @@ export class MessagesModule extends ModuleBase {
     }
 
     /** GET /messages — paginated admin list with status/search filters. */
-    list(query?: MessageListQuery,): Promise<MessageListResponse> {
-        return this.get<MessageListResponse>('/messages', { query: query as Record<string, unknown>, },);
+    list(query?: MessageListQuery,): Promise<Paginated<MessageListResponse[number]>> {
+        return this.getPaged<MessageListResponse[number]>('/messages', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /messages/:id — fetching marks unread → read. */

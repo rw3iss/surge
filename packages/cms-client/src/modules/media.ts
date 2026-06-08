@@ -3,6 +3,7 @@ import type {
     MediaBulkUploadResponse, MediaListQuery, MediaListResponse, MediaByIdResponse,
     MediaUpdateBody, MediaUpdateResponse, MediaDeleteResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** Append a Blob/File plus optional string fields onto a FormData. */
@@ -39,8 +40,8 @@ export class MediaModule extends ModuleBase {
     }
 
     /** GET /media — paginated admin list with type/types/search/sort filters. */
-    list(query?: MediaListQuery,): Promise<MediaListResponse> {
-        return this.get<MediaListResponse>('/media', { query: query as Record<string, unknown>, },);
+    list(query?: MediaListQuery,): Promise<Paginated<MediaListResponse[number]>> {
+        return this.getPaged<MediaListResponse[number]>('/media', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /media/:id — the media row. */

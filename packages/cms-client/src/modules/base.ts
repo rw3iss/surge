@@ -1,5 +1,6 @@
 import type { CmsClientCore, InternalRequest, } from '../core/client';
 import type { MutationOptions, QueryOptions, } from '../core/types';
+import type { Paginated, } from '@rw/cms-shared';
 import { interpolatePath, } from '../core/url';
 
 /** Base every module namespace extends. Provides typed helpers that build
@@ -17,6 +18,19 @@ export abstract class ModuleBase {
         return this.core.send<T>({
             module: this.module, method: 'GET', path: interpolatePath(path, opts.params,),
             query: opts.query, raw: opts.raw, rootMounted: opts.rootMounted, options: opts.options,
+        },);
+    }
+
+    /** Cached paginated GET. Returns `{ data, meta }` (meta carries
+     *  page/limit/total/totalPages from the envelope). Use for list routes
+     *  whose backend handler replies with `meta`; entity reads use `get`. */
+    protected getPaged<T>(path: string, opts: {
+        params?: Record<string, string | number>; query?: Record<string, unknown>;
+        options?: QueryOptions;
+    } = {},): Promise<Paginated<T>> {
+        return this.core.sendPaged<T>({
+            module: this.module, method: 'GET', path: interpolatePath(path, opts.params,),
+            query: opts.query, options: opts.options,
         },);
     }
 

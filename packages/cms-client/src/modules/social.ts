@@ -4,6 +4,7 @@ import type {
     SocialHomepageSetResponse, SocialSyncBody, SocialSyncResponse,
     SocialPostDeleteResponse, SocialPlatformPostsQuery, SocialPlatformPostsResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /social namespace — stored posts + live feeds + sync + homepage selection. */
@@ -11,13 +12,13 @@ export class SocialModule extends ModuleBase {
     protected readonly module = 'social';
 
     /** GET /social/posts — stored posts across platforms; optional platform filter. */
-    listPosts(query?: SocialPostsQuery,): Promise<SocialPostsResponse> {
-        return this.get<SocialPostsResponse>('/social/posts', { query: query as Record<string, unknown>, },);
+    listPosts(query?: SocialPostsQuery,): Promise<Paginated<SocialPostsResponse[number]>> {
+        return this.getPaged<SocialPostsResponse[number]>('/social/posts', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /social/posts/:platform — stored posts for one platform. */
-    platformPosts(platform: string, query?: SocialPlatformPostsQuery,): Promise<SocialPlatformPostsResponse> {
-        return this.get<SocialPlatformPostsResponse>('/social/posts/:platform', { params: { platform, }, query: query as Record<string, unknown>, },);
+    platformPosts(platform: string, query?: SocialPlatformPostsQuery,): Promise<Paginated<SocialPlatformPostsResponse[number]>> {
+        return this.getPaged<SocialPlatformPostsResponse[number]>('/social/posts/:platform', { params: { platform, }, query: query as Record<string, unknown>, },);
     }
 
     /** GET /social/feed — live merged feed (no pagination). */

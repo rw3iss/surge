@@ -5,6 +5,7 @@ import type {
     CampaignByIdResponse, CampaignCreateBody, CampaignCreateResponse, CampaignUpdateBody,
     CampaignUpdateResponse, CampaignDeleteResponse, CampaignBulkBody, CampaignBulkResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /campaigns namespace — public bare-array list + admin all-statuses list, donations. */
@@ -17,8 +18,8 @@ export class CampaignsModule extends ModuleBase {
     }
 
     /** GET /campaigns (admin) — passes all=true to switch to the paginated all-statuses list. */
-    list(query?: CampaignListQuery,): Promise<CampaignAdminListResponse> {
-        return this.get<CampaignAdminListResponse>('/campaigns', { query: { all: true, ...(query as Record<string, unknown>), }, },);
+    list(query?: CampaignListQuery,): Promise<Paginated<CampaignAdminListResponse[number]>> {
+        return this.getPaged<CampaignAdminListResponse[number]>('/campaigns', { query: { all: true, ...(query as Record<string, unknown>), }, },);
     }
 
     /** GET /campaigns/slug/:slug — the published campaign. */
@@ -27,8 +28,8 @@ export class CampaignsModule extends ModuleBase {
     }
 
     /** GET /campaigns/:id/donations — masked public donations, paginated. */
-    donations(id: string, query?: CampaignDonationsQuery,): Promise<CampaignDonationsResponse> {
-        return this.get<CampaignDonationsResponse>('/campaigns/:id/donations', { params: { id, }, query: query as Record<string, unknown>, },);
+    donations(id: string, query?: CampaignDonationsQuery,): Promise<Paginated<CampaignDonationsResponse[number]>> {
+        return this.getPaged<CampaignDonationsResponse[number]>('/campaigns/:id/donations', { params: { id, }, query: query as Record<string, unknown>, },);
     }
 
     /** GET /campaigns/donations/summary — dashboard donation totals (admin). */
@@ -37,8 +38,8 @@ export class CampaignsModule extends ModuleBase {
     }
 
     /** GET /campaigns/donations/all — full donation rows (admin), paginated. */
-    allDonations(query?: CampaignAllDonationsQuery,): Promise<CampaignAllDonationsResponse> {
-        return this.get<CampaignAllDonationsResponse>('/campaigns/donations/all', { query: query as Record<string, unknown>, },);
+    allDonations(query?: CampaignAllDonationsQuery,): Promise<Paginated<CampaignAllDonationsResponse[number]>> {
+        return this.getPaged<CampaignAllDonationsResponse[number]>('/campaigns/donations/all', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /campaigns/:id (admin) — the campaign at any status. */

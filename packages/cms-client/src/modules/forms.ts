@@ -6,6 +6,7 @@ import type {
     FormQuestionCreateBody, FormQuestionCreateResponse, FormQuestionUpdateBody,
     FormQuestionUpdateResponse, FormQuestionDeleteResponse, FormSubmissionsExportResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /forms namespace — public list/submit + admin CRUD, questions, CSV export. */
@@ -18,8 +19,8 @@ export class FormsModule extends ModuleBase {
     }
 
     /** GET /forms (admin) — passes all=true to switch to the paginated all-statuses list. */
-    list(query?: FormListQuery,): Promise<FormAdminListResponse> {
-        return this.get<FormAdminListResponse>('/forms', { query: { all: true, ...(query as Record<string, unknown>), }, },);
+    list(query?: FormListQuery,): Promise<Paginated<FormAdminListResponse[number]>> {
+        return this.getPaged<FormAdminListResponse[number]>('/forms', { query: { all: true, ...(query as Record<string, unknown>), }, },);
     }
 
     /** GET /forms/slug/:slug — published form with questions. */
@@ -43,8 +44,8 @@ export class FormsModule extends ModuleBase {
     }
 
     /** GET /forms/:id/submissions (admin) — submission rows, paginated. */
-    listSubmissions(id: string, query?: FormSubmissionsQuery,): Promise<FormSubmissionsResponse> {
-        return this.get<FormSubmissionsResponse>('/forms/:id/submissions', { params: { id, }, query: query as Record<string, unknown>, },);
+    listSubmissions(id: string, query?: FormSubmissionsQuery,): Promise<Paginated<FormSubmissionsResponse[number]>> {
+        return this.getPaged<FormSubmissionsResponse[number]>('/forms/:id/submissions', { params: { id, }, query: query as Record<string, unknown>, },);
     }
 
     /**

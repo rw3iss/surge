@@ -4,6 +4,9 @@ import { CmsClientCore, } from './client';
 function envelope(data: unknown, status = 200,) {
     return new Response(JSON.stringify({ success: status < 400, data, },), { status, headers: { 'content-type': 'application/json', }, },);
 }
+function pagedEnvelope(data: unknown, meta: Record<string, number>, status = 200,) {
+    return new Response(JSON.stringify({ success: status < 400, data, meta, },), { status, headers: { 'content-type': 'application/json', }, },);
+}
 function errorEnvelope(code: string, message: string, status: number,) {
     return new Response(JSON.stringify({ success: false, error: { code, message, }, },), { status, headers: { 'content-type': 'application/json', }, },);
 }
@@ -15,6 +18,35 @@ describe('CmsClientCore', () => {
         await core.send({ module: 'posts', method: 'GET', path: '/posts', query: { page: 1, }, },);
         await core.send({ module: 'posts', method: 'GET', path: '/posts', query: { page: 1, }, },);
         expect(fetchImpl,).toHaveBeenCalledOnce();
+    },);
+
+    it('sendPaged returns { data, meta } from the envelope', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(
+            pagedEnvelope([{ id: 'p1', }, { id: 'p2', },], { page: 2, limit: 10, total: 42, totalPages: 5, },),
+        );
+        const core = new CmsClientCore({ baseUrl: 'http://api', fetch: fetchImpl, auth: { store: null, }, },);
+        const out = await core.sendPaged<{ id: string; }>({ module: 'posts', method: 'GET', path: '/posts', query: { page: 2, }, },);
+        expect(out.data,).toEqual([{ id: 'p1', }, { id: 'p2', },],);
+        expect(out.meta,).toEqual({ page: 2, limit: 10, total: 42, totalPages: 5, },);
+    },);
+
+    it('sendPaged caches the { data, meta } object (second read served from cache)', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(
+            pagedEnvelope([{ id: 'p', },], { total: 1, totalPages: 1, },),
+        );
+        const core = new CmsClientCore({ baseUrl: 'http://api', fetch: fetchImpl, auth: { store: null, }, },);
+        const a = await core.sendPaged<{ id: string; }>({ module: 'posts', method: 'GET', path: '/posts', },);
+        const b = await core.sendPaged<{ id: string; }>({ module: 'posts', method: 'GET', path: '/posts', },);
+        expect(fetchImpl,).toHaveBeenCalledOnce();
+        expect(b.meta,).toEqual(a.meta,);
+        expect(b.data,).toEqual([{ id: 'p', },],);
+    },);
+
+    it('an entity GET still returns the entity directly (no meta wrapping)', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(envelope({ id: 'pg1', slug: 'about', },),);
+        const core = new CmsClientCore({ baseUrl: 'http://api', fetch: fetchImpl, auth: { store: null, }, },);
+        const out = await core.send({ module: 'pages', method: 'GET', path: '/pages/pg1', },);
+        expect(out,).toEqual({ id: 'pg1', slug: 'about', },);
     },);
 
     it('a mutation invalidates the list cache', async () => {

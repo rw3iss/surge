@@ -5,6 +5,7 @@ import type {
     PostBulkBody, PostBulkResponse, PostRevisionListResponse, PostRevisionResponse,
     PostRevisionRestoreResponse, PostReorderBlocksBody, PostReorderBlocksResponse,
 } from '@rw/cms-shared';
+import type { Paginated, } from '@rw/cms-shared';
 import { ModuleBase, } from './base';
 
 /** /posts namespace — blog posts with content blocks, revisions, reorder. */
@@ -12,13 +13,13 @@ export class PostsModule extends ModuleBase {
     protected readonly module = 'posts';
 
     /** GET /posts — public published list (anon) / admin all-statuses with status|sort. */
-    list(query?: PostListQuery,): Promise<PostListResponse> {
-        return this.get<PostListResponse>('/posts', { query: query as Record<string, unknown>, },);
+    list(query?: PostListQuery,): Promise<Paginated<PostListResponse[number]>> {
+        return this.getPaged<PostListResponse[number]>('/posts', { query: query as Record<string, unknown>, },);
     }
 
     /** GET /posts/search — full-text over published posts. */
-    search(query: PostSearchQuery,): Promise<PostSearchResponse> {
-        return this.get<PostSearchResponse>('/posts/search', { query: query as unknown as Record<string, unknown>, },);
+    search(query: PostSearchQuery,): Promise<Paginated<PostSearchResponse[number]>> {
+        return this.getPaged<PostSearchResponse[number]>('/posts/search', { query: query as unknown as Record<string, unknown>, },);
     }
 
     /** GET /posts/slug/:slug — throws ContentLockedError on gated content. */

@@ -1,12 +1,12 @@
 import type { CmsClientConfig, MutationOptions, QueryOptions, ResolvedConfig, } from './types';
-import type { AuthResponse, LoginCredentials, } from '@rw/cms-shared';
+import type { AuthResponse, LoginCredentials, Paginated, } from '@rw/cms-shared';
 import { resolveConfig, } from './config';
 import { AuthManager, type AuthRuntime, } from './auth/authManager';
 import { createDefaultTokenStore, } from './auth/tokenStore';
 import { CacheManager, } from './cache/cacheManager';
 import { resolveAdapter, } from './cache/adapters/detect';
 import { cacheKey, cacheKeyPrefix, } from './cache/keys';
-import { performRequest, } from './request';
+import { performRequest, performRequestEnvelope, } from './request';
 import { withRetry, } from './retry';
 import { joinUrl, } from './url';
 import { CmsError, UnauthorizedError, } from './errors';
@@ -19,6 +19,7 @@ export interface InternalRequest {
     query?: Record<string, unknown>;
     body?: unknown;
     raw?: boolean;
+    paged?: boolean;           // GET list: surface the envelope's `meta` as { data, meta }
     rootMounted?: boolean;     // feed/sitemap: skip /api/v1 prefix
     options?: MutationOptions & QueryOptions;
 }
@@ -68,10 +69,14 @@ export class CmsClientCore {
                 ...this.config.headers, ...(await this.auth.authHeaders(req.method,)),
             };
             if (req.options?.idempotencyKey) headers['Idempotency-Key'] = req.options.idempotencyKey;
-            return performRequest<T>({
+            const spec = {
                 fetchImpl: this.config.fetchImpl, method: req.method, url, headers,
                 body: req.body, raw: req.raw, timeoutMs: this.config.timeoutMs, signal: req.options?.signal,
-            },);
+            };
+            // Paged GETs surface the envelope's meta as { data, meta }; the
+            // cache then stores that object under the normal key scheme.
+            if (req.paged) return performRequestEnvelope(spec,) as Promise<T>;
+            return performRequest<T>(spec,);
         };
         try { return await send(); }
         catch (err) {
@@ -104,6 +109,13 @@ export class CmsClientCore {
             if (err instanceof CmsError) this.errorBus.emit('error', err,);
             throw err;
         }
+    }
+
+    /** Paginated GET. Like `send`, but returns `{ data, meta }` from the
+     *  envelope (meta = page/limit/total/totalPages). Reuses the same GET
+     *  cache/retry/refresh pipeline; the cache stores the Paginated object. */
+    async sendPaged<T>(req: InternalRequest,): Promise<Paginated<T>> {
+        return this.send<Paginated<T>>({ ...req, paged: true, },);
     }
 
     /** Subscribe to live updates for a cached GET (SWR background refresh). */
