@@ -283,6 +283,16 @@ export const ROUTE_COVERAGE: string[] = [
     'PUT /api/v1/shop/reviews/:id',
     'DELETE /api/v1/shop/reviews/:id',
 
+    // ── shop checkout + orders (feature-gated) ──
+    'POST /api/v1/shop/checkout/preview',
+    'POST /api/v1/shop/checkout',
+    'GET /api/v1/shop/orders',
+    'GET /api/v1/shop/orders/number/:orderNumber',
+    'GET /api/v1/shop/orders/:orderNumber/download/:token',
+    'GET /api/v1/shop/orders/:id',
+    'PATCH /api/v1/shop/orders/:id',
+    'POST /api/v1/shop/orders/:id/resend-receipt',
+
     // ── feed / sitemap (raw, root-mounted) ──
     'GET /feed.xml',
     'GET /sitemap.xml',

@@ -100,4 +100,42 @@ describe('shop module', () => {
         expect((init as RequestInit).method,).toBe('PUT',);
         expect(JSON.parse((init as RequestInit).body as string,),).toEqual({ status: 'approved', },);
     },);
+
+    it('checkout.create() POSTs /shop/checkout with the body', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(
+            jsonResponse({ clientSecret: 'cs', orderId: 'o1', orderNumber: 'SS-1', totalCents: 2500, }, undefined, 201,),
+        );
+        const cms = createClient({ baseUrl: 'http://api', fetch: fetchImpl as never, auth: { store: null, }, },);
+        const out = await cms.shop.checkout.create({
+            items: [{ variantId: 'v1', qty: 1, },], customerEmail: 'a@b.com',
+        },);
+        expect(out.orderNumber,).toBe('SS-1',);
+        const [url, init,] = fetchImpl.mock.calls[0];
+        expect(String(url,),).toBe('http://api/api/v1/shop/checkout',);
+        expect((init as RequestInit).method,).toBe('POST',);
+        expect(JSON.parse((init as RequestInit).body as string,),).toEqual({
+            items: [{ variantId: 'v1', qty: 1, },], customerEmail: 'a@b.com',
+        },);
+    },);
+
+    it('orders.list() GETs /shop/orders and returns Paginated', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(
+            jsonResponse([], { page: 1, limit: 20, total: 0, totalPages: 0, },),
+        );
+        const cms = createClient({ baseUrl: 'http://api', fetch: fetchImpl as never, auth: { store: null, }, },);
+        const out = await cms.shop.orders.list();
+        expect(out.data,).toEqual([],);
+        expect(out.meta.total,).toBe(0,);
+        const [url, init,] = fetchImpl.mock.calls[0];
+        expect(String(url,),).toBe('http://api/api/v1/shop/orders',);
+        expect((init as RequestInit).method,).toBe('GET',);
+    },);
+
+    it('orders.getByNumber() GETs /shop/orders/number/:orderNumber', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ id: 'o1', orderNumber: 'SS-1', },),);
+        const cms = createClient({ baseUrl: 'http://api', fetch: fetchImpl as never, auth: { store: null, }, },);
+        await cms.shop.orders.getByNumber('SS-1',);
+        const [url,] = fetchImpl.mock.calls[0];
+        expect(String(url,),).toBe('http://api/api/v1/shop/orders/number/SS-1',);
+    },);
 },);

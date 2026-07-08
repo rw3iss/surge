@@ -49,14 +49,16 @@ describe('module assembly', () => {
         expect(typeof cms.shop.categories.getBySlug,).toBe('function',);
         expect(typeof cms.shop.collections.list,).toBe('function',);
         expect(typeof cms.shop.tags.list,).toBe('function',);
+        expect(typeof cms.shop.checkout.create,).toBe('function',);
+        expect(typeof cms.shop.orders.list,).toBe('function',);
         expect(typeof cms.feed.xml,).toBe('function',);
         expect(typeof cms.sitemap.xml,).toBe('function',);
         expect(typeof cms.sitemap.regenerate,).toBe('function',);
     },);
 
-    it('exports a complete coverage registry (217 + 6 = 223 manifest routes)', () => {
+    it('exports a complete coverage registry (225 + 6 = 231 manifest routes)', () => {
         const unique = new Set(ROUTE_COVERAGE,);
         expect(unique.size,).toBe(ROUTE_COVERAGE.length,); // no duplicates
-        expect(ROUTE_COVERAGE.length + INTENTIONALLY_UNEXPOSED.length,).toBe(223,);
+        expect(ROUTE_COVERAGE.length + INTENTIONALLY_UNEXPOSED.length,).toBe(231,);
     },);
 },);

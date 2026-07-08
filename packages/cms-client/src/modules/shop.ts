@@ -1,5 +1,16 @@
 import type {
     Paginated,
+    ShopCheckoutBody,
+    ShopCheckoutPreviewBody,
+    ShopCheckoutPreviewResponse,
+    ShopCheckoutResponse,
+    ShopOrderByNumberResponse,
+    ShopOrderListQuery,
+    ShopOrderListResponse,
+    ShopOrderResendReceiptResponse,
+    ShopOrderResponse,
+    ShopOrderUpdateBody,
+    ShopOrderUpdateResponse,
     ShopCategoryBySlugResponse,
     ShopCategoryCreateBody,
     ShopCategoryCreateResponse,
@@ -161,6 +172,53 @@ export class ShopModule extends ModuleBase {
         remove: (reviewId: string,): Promise<ShopReviewDeleteResponse> =>
             this.mutate<ShopReviewDeleteResponse>('DELETE', '/shop/reviews/:id', {
                 params: { id: reviewId, }, invalidates: ['shop',],
+            },),
+    };
+
+    /** Checkout — the on-site Stripe flow. `preview` prices a cart without
+     *  creating an order; `create` places the order + returns the
+     *  PaymentIntent client secret for Elements. */
+    readonly checkout = {
+        /** POST /shop/checkout/preview — live totals (no order created). */
+        preview: (body: ShopCheckoutPreviewBody,): Promise<ShopCheckoutPreviewResponse> =>
+            this.mutate<ShopCheckoutPreviewResponse>('POST', '/shop/checkout/preview', { body, },),
+
+        /** POST /shop/checkout — place the order; returns { clientSecret, orderId, orderNumber, totalCents }. */
+        create: (body: ShopCheckoutBody,): Promise<ShopCheckoutResponse> =>
+            this.mutate<ShopCheckoutResponse>('POST', '/shop/checkout', { body, invalidates: ['shop',], },),
+    };
+
+    /** Orders — role-shaped: users see own, admins see all. Never cached. */
+    readonly orders = {
+        /** GET /shop/orders — own (user) / all (admin), paginated. */
+        list: (query?: ShopOrderListQuery,): Promise<Paginated<ShopOrderListResponse[number]>> =>
+            this.getPaged<ShopOrderListResponse[number]>('/shop/orders', { query: query as Record<string, unknown>, },),
+
+        /** GET /shop/orders/:id — full order detail. */
+        get: (id: string,): Promise<ShopOrderResponse> =>
+            this.get<ShopOrderResponse>('/shop/orders/:id', { params: { id, }, },),
+
+        /** GET /shop/orders/number/:orderNumber — confirmation-page detail. */
+        getByNumber: (orderNumber: string,): Promise<ShopOrderByNumberResponse> =>
+            this.get<ShopOrderByNumberResponse>('/shop/orders/number/:orderNumber', { params: { orderNumber, }, },),
+
+        /** PATCH /shop/orders/:id (admin) — status/fulfillment/tracking/notes/refund. */
+        update: (id: string, body: ShopOrderUpdateBody,): Promise<ShopOrderUpdateResponse> =>
+            this.mutate<ShopOrderUpdateResponse>('PATCH', '/shop/orders/:id', {
+                params: { id, }, body, invalidates: ['shop',],
+            },),
+
+        /** POST /shop/orders/:id/resend-receipt (admin). */
+        resendReceipt: (id: string,): Promise<ShopOrderResendReceiptResponse> =>
+            this.mutate<ShopOrderResendReceiptResponse>('POST', '/shop/orders/:id/resend-receipt', {
+                params: { id, },
+            },),
+
+        /** GET /shop/orders/:orderNumber/download/:token — token-gated digital
+         *  download; returns the resolved file URL. */
+        downloadUrl: (orderNumber: string, token: string,): Promise<{ url: string; }> =>
+            this.get<{ url: string; }>('/shop/orders/:orderNumber/download/:token', {
+                params: { orderNumber, token, },
             },),
     };
 }

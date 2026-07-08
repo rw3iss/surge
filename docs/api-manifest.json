@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-08T19:55:24.705Z",
+  "generatedAt": "2026-07-08T20:07:49.605Z",
   "totalModules": 29,
-  "totalRoutes": 223,
+  "totalRoutes": 231,
   "modules": [
     {
       "module": "api-keys",
@@ -1536,6 +1536,62 @@
           "absolutePath": "/api/v1/shop/reviews/:id",
           "auth": "admin",
           "summary": "Delete a review; recomputes the product rating if it was approved."
+        },
+        {
+          "method": "POST",
+          "path": "/checkout/preview",
+          "absolutePath": "/api/v1/shop/checkout/preview",
+          "auth": "optional",
+          "summary": "Preview checkout totals (subtotal/shipping/tax) without creating an order."
+        },
+        {
+          "method": "POST",
+          "path": "/checkout",
+          "absolutePath": "/api/v1/shop/checkout",
+          "auth": "optional",
+          "summary": "Place an order: validate the cart, create a pending order + Stripe PaymentIntent, return the client secret."
+        },
+        {
+          "method": "GET",
+          "path": "/orders",
+          "absolutePath": "/api/v1/shop/orders",
+          "auth": "user",
+          "summary": "List orders. Regular users see their own (by user_id/email); admins see all. Paginated."
+        },
+        {
+          "method": "GET",
+          "path": "/orders/number/:orderNumber",
+          "absolutePath": "/api/v1/shop/orders/number/:orderNumber",
+          "auth": "optional",
+          "summary": "Fetch an order by its human order number (public confirmation view; limited fields for anonymous callers)."
+        },
+        {
+          "method": "GET",
+          "path": "/orders/:orderNumber/download/:token",
+          "absolutePath": "/api/v1/shop/orders/:orderNumber/download/:token",
+          "auth": "public",
+          "summary": "Resolve a token-gated digital download to a file URL (public; unguessable token is the guard)."
+        },
+        {
+          "method": "GET",
+          "path": "/orders/:id",
+          "absolutePath": "/api/v1/shop/orders/:id",
+          "auth": "user",
+          "summary": "Fetch an order by id with items. Users see their own; admins see any."
+        },
+        {
+          "method": "PATCH",
+          "path": "/orders/:id",
+          "absolutePath": "/api/v1/shop/orders/:id",
+          "auth": "admin",
+          "summary": "Update an order (admin): status/fulfillment/tracking/notes. Transition to refunded issues a Stripe refund."
+        },
+        {
+          "method": "POST",
+          "path": "/orders/:id/resend-receipt",
+          "absolutePath": "/api/v1/shop/orders/:id/resend-receipt",
+          "auth": "admin",
+          "summary": "Re-send the order receipt email (admin)."
         }
       ]
     },
