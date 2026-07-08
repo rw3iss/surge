@@ -7,12 +7,17 @@ import type {
     ShopProductBySlugQuery,
     ShopProductCreateBody,
     ShopProductListQuery,
+    ShopReviewAdminListQuery,
+    ShopReviewCreateBody,
+    ShopReviewListQuery,
+    ShopReviewModerateBody,
 } from '@rw/cms-shared';
 import { defineRoute, reply, } from '../api/defineRoute';
 import { isAdminRole, } from '../api/roles';
 import { NotFoundError, } from '../core/errors';
 import * as catalog from '../services/shop/catalog';
 import * as products from '../services/shop/products';
+import * as reviews from '../services/shop/reviews';
 
 // ─── Schemas ──────────────────────────────────────────────────────
 
@@ -99,10 +104,39 @@ const collectionSchema = z.object({
 
 const collectionListQuery = z.object({ all: z.string().optional(), },);
 
+// ── Reviews ──
+
+const reviewProductParams = z.object({ productId: z.string(), },);
+
+const reviewListQuery = z.object({
+    sort: z.string().optional(),
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(20,),
+},);
+
+const reviewCreateSchema = z.object({
+    rating: z.number().int().min(1,).max(5,),
+    title: z.string().max(255,).optional(),
+    body: z.string().optional(),
+},) satisfies z.ZodType<ShopReviewCreateBody>;
+
+const reviewAdminListQuery = z.object({
+    status: z.enum(['pending', 'approved', 'rejected',],).optional(),
+    productId: z.string().optional(),
+    page: z.coerce.number().int().min(1,).default(1,),
+    limit: z.coerce.number().int().min(1,).max(100,).default(20,),
+},);
+
+const reviewModerateSchema = z.object({
+    status: z.enum(['approved', 'rejected',],),
+},) satisfies z.ZodType<ShopReviewModerateBody>;
+
 // Query schemas coerce (string → number), so assert z.infer compatibility.
 type _AssertProductListQuery = AssertCompatible<z.infer<typeof productListQuery>, ShopProductListQuery>;
 type _AssertProductSlugQuery = AssertCompatible<z.infer<typeof productSlugQuery>, ShopProductBySlugQuery>;
 type _AssertCollectionListQuery = AssertCompatible<z.infer<typeof collectionListQuery>, ShopCollectionListQuery>;
+type _AssertReviewListQuery = AssertCompatible<z.infer<typeof reviewListQuery>, ShopReviewListQuery>;
+type _AssertReviewAdminListQuery = AssertCompatible<z.infer<typeof reviewAdminListQuery>, ShopReviewAdminListQuery>;
 
 // ─── Routes ───────────────────────────────────────────────────────
 // Literal paths (/products/slug/:slug, /products/bulk, /categories/*,
@@ -319,5 +353,79 @@ export const shopRoutes = [
         method: 'get', path: '/tags', auth: 'public',
         summary: 'Distinct product tag list.',
         handler: () => catalog.listTagsCached(),
+    },),
+
+    // ── Reviews ──
+    // Public list is approved-only → cache-safe for anonymous readers.
+    // /products/:productId/reviews (3 segments) doesn't collide with the
+    // /products/:id family; /reviews/:id/helpful before /reviews/:id.
+
+    // List a product's approved reviews (public, cached, paginated).
+    defineRoute({
+        method: 'get', path: '/products/:productId/reviews', auth: 'optional',
+        summary: 'List a product\'s approved reviews (public), paginated (newest or most-helpful).',
+        input: { params: reviewProductParams, query: reviewListQuery, },
+        handler: async ({ params, query, },) => {
+            const result = await reviews.listPublic(
+                params.productId, { page: query.page, limit: query.limit, }, query.sort,
+            );
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
+
+    // Submit a review (logged-in user). Always created pending (moderated);
+    // verified_purchase set from a real paid-order lookup.
+    defineRoute({
+        method: 'post', path: '/products/:productId/reviews', auth: 'user',
+        summary: 'Submit a product review (user tier). Created pending for moderation.',
+        input: { params: reviewProductParams, body: reviewCreateSchema, },
+        handler: async ({ params, body, audit, },) => {
+            const review = await reviews.create(
+                { productId: params.productId, rating: body.rating, title: body.title, body: body.body, },
+                audit(),
+            );
+            return reply(review, { status: 201, },);
+        },
+    },),
+
+    // Mark a review helpful (public).
+    defineRoute({
+        method: 'post', path: '/reviews/:id/helpful', auth: 'optional',
+        summary: 'Increment a review\'s helpful count.',
+        input: { params: idParams, },
+        handler: ({ params, },) => reviews.markHelpful(params.id,),
+    },),
+
+    // Moderation queue (admin, any status, filters).
+    defineRoute({
+        method: 'get', path: '/reviews', auth: 'admin',
+        summary: 'List reviews for moderation (any status; filter by status/productId).',
+        input: { query: reviewAdminListQuery, },
+        handler: async ({ query, },) => {
+            const result = await reviews.listAdmin(
+                { status: query.status, productId: query.productId, },
+                { page: query.page, limit: query.limit, },
+            );
+            return reply(result.data, { meta: result.meta, },);
+        },
+    },),
+
+    // Moderate a review (admin): approve/reject + recompute rating.
+    defineRoute({
+        method: 'put', path: '/reviews/:id', auth: 'admin',
+        summary: 'Moderate a review (approve/reject); recomputes the product rating.',
+        input: { params: idParams, body: reviewModerateSchema, },
+        handler: ({ params, body, audit, },) => reviews.moderate(params.id, body.status, audit(),),
+    },),
+
+    // Delete a review (admin).
+    defineRoute({
+        method: 'delete', path: '/reviews/:id', auth: 'admin',
+        summary: 'Delete a review; recomputes the product rating if it was approved.',
+        input: { params: idParams, },
+        handler: async ({ params, audit, },) => {
+            await reviews.remove(params.id, audit(),);
+            return { message: 'Review deleted', };
+        },
     },),
 ];

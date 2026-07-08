@@ -7,3 +7,4 @@
 export * as products from './products';
 export * as variants from './variants';
 export * as catalog from './catalog';
+export * as reviews from './reviews';

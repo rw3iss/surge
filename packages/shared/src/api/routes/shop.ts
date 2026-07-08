@@ -19,6 +19,7 @@ import type {
     ShopProduct,
     ShopProductDetail,
     ShopProductType,
+    ShopReview,
 } from '../../types/shop';
 import type { BulkActionResult, } from './_shared';
 
@@ -252,3 +253,68 @@ export interface ShopCollectionDeleteResponse {
 
 /** GET /shop/tags — distinct tag list. */
 export type ShopTagListResponse = string[];
+
+// ─── Reviews ──────────────────────────────────────────────────────
+// Public list = approved-only (cache-safe); admin list = any status
+// (moderation queue). New reviews are always created `status='pending'`.
+
+/** Params for GET/POST /shop/products/:productId/reviews. */
+export interface ShopReviewProductParams {
+    productId: string;
+}
+
+/** Query accepted by GET /shop/products/:productId/reviews (public). */
+export interface ShopReviewListQuery {
+    /** 'helpful' → most-helpful first; else newest first */
+    sort?: string;
+    page?: number;
+    limit?: number;
+}
+
+/** GET /shop/products/:productId/reviews — approved reviews (public).
+ *  Page meta rides the ApiResponse envelope. */
+export type ShopReviewListResponse = ShopReview[];
+
+/** Body for POST /shop/products/:productId/reviews (user tier). */
+export interface ShopReviewCreateBody {
+    rating: number;
+    title?: string;
+    body?: string;
+}
+
+/** POST /shop/products/:productId/reviews (201) — the created (pending) review. */
+export type ShopReviewCreateResponse = ShopReview;
+
+/** Params for the review-by-id family (helpful / moderate / delete). */
+export interface ShopReviewIdParams {
+    id: string;
+}
+
+/** POST /shop/reviews/:id/helpful — new helpful count. */
+export interface ShopReviewHelpfulResponse {
+    helpfulCount: number;
+}
+
+/** Query accepted by GET /shop/reviews (admin moderation queue). */
+export interface ShopReviewAdminListQuery {
+    status?: string;
+    productId?: string;
+    page?: number;
+    limit?: number;
+}
+
+/** GET /shop/reviews — any-status reviews (admin). Page meta on the envelope. */
+export type ShopReviewAdminListResponse = ShopReview[];
+
+/** Body for PUT /shop/reviews/:id (admin moderate). */
+export interface ShopReviewModerateBody {
+    status: 'approved' | 'rejected';
+}
+
+/** PUT /shop/reviews/:id — the moderated review. */
+export type ShopReviewModerateResponse = ShopReview;
+
+/** DELETE /shop/reviews/:id — confirmation message. */
+export interface ShopReviewDeleteResponse {
+    message: string;
+}
