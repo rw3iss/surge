@@ -172,6 +172,35 @@ export interface ShopOrderItem {
     createdAt: string;
 }
 
+// ── Composite / assembled read shapes ────────────────────────────────
+
+/** A product option with its ordered values (assembled read). */
+export interface ShopProductOptionDetail extends ShopProductOption {
+    values: ShopOptionValue[];
+}
+
+/** A product media row joined to the underlying media asset's url/type. */
+export interface ShopProductMediaDetail extends ShopProductMedia {
+    url: string;
+    mediaType?: string | null;
+    thumbnailUrl?: string | null;
+    alt?: string | null;
+}
+
+/**
+ * Full product detail: the product row plus its assembled options (with
+ * values), variants, and media. Returned by slug/by-id reads and stored
+ * by the product save (`replaceProductStructure`).
+ */
+export interface ShopProductDetail extends ShopProduct {
+    options: ShopProductOptionDetail[];
+    variants: ShopVariant[];
+    media: ShopProductMediaDetail[];
+    categoryIds: string[];
+    collectionIds: string[];
+    tags: string[];
+}
+
 // ── Config (site_settings rows: shop_settings / shop_appearance) ──────
 
 export interface ShopShippingRate {
