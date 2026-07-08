@@ -21,6 +21,12 @@ export interface ShopProduct {
     createdBy?: string | null;
     createdAt: string;
     updatedAt: string;
+    /** Minimum variant price (cents). Populated on list responses
+     *  (findPublicProducts / findAllProducts); undefined on other reads. */
+    fromPriceCents?: number;
+    /** URL of the product's position-0 image. Populated on list responses;
+     *  undefined on other reads, null when the product has no image. */
+    primaryImageUrl?: string | null;
 }
 
 export interface ShopProductOption {

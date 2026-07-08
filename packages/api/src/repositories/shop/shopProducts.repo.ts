@@ -36,6 +36,22 @@ const VALID_SORT_COLUMNS: Record<string, string> = {
     rating_count: 'rating_count',
 };
 
+/**
+ * Extra computed columns for list rows (public + admin lists). Correlated
+ * subqueries against the outer `shop_products` row:
+ *   - from_price_cents: min variant price across the product's variants.
+ *   - primary_image_url: url of the position-0 (lowest position) image
+ *     media row, resolved to the `media.url` column.
+ * mapRow camelCases these to fromPriceCents / primaryImageUrl.
+ */
+const LIST_EXTRAS = `
+    (SELECT MIN(v.price_cents) FROM shop_variants v
+         WHERE v.product_id = shop_products.id) AS from_price_cents,
+    (SELECT m.url FROM shop_product_media spm
+         JOIN media m ON m.id = spm.media_id
+         WHERE spm.product_id = shop_products.id AND spm.kind = 'image'
+         ORDER BY spm.position ASC LIMIT 1) AS primary_image_url`;
+
 function buildSortClause(sortBy?: string, sortOrder?: string,): string {
     const column = VALID_SORT_COLUMNS[sortBy || 'created_at'] || 'created_at';
     const direction = sortOrder === 'asc' ? 'ASC' : 'DESC';
@@ -67,7 +83,7 @@ export async function findPublicProducts(
     const orderClause = buildSortClause(filters.sortBy, filters.sortOrder,);
 
     return paginatedQuery<ShopProduct>(
-        `SELECT * FROM shop_products ${whereClause} ${orderClause}`,
+        `SELECT *, ${LIST_EXTRAS} FROM shop_products ${whereClause} ${orderClause}`,
         `SELECT COUNT(*) FROM shop_products ${whereClause}`,
         params,
         pagination,
@@ -94,7 +110,7 @@ export async function findAllProducts(
     const orderClause = buildSortClause(filters.sortBy || 'updated_at', filters.sortOrder || 'desc',);
 
     return paginatedQuery<ShopProduct>(
-        `SELECT * FROM shop_products ${whereClause} ${orderClause}`,
+        `SELECT *, ${LIST_EXTRAS} FROM shop_products ${whereClause} ${orderClause}`,
         `SELECT COUNT(*) FROM shop_products ${whereClause}`,
         params,
         pagination,

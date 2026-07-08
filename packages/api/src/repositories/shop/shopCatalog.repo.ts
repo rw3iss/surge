@@ -9,6 +9,20 @@ import { query, } from '../../db';
 import { mapRow, mapRows, } from '../../utils/mapRow';
 import { deleteById, findByIdOrThrow, updateById, } from '../base.repo';
 
+/**
+ * Extra computed columns for storefront product lists (min variant price +
+ * position-0 image url). Correlated subqueries against the `p` product row.
+ * mapRow camelCases these to fromPriceCents / primaryImageUrl. Mirrors
+ * LIST_EXTRAS in shopProducts.repo (aliased `p` here).
+ */
+const PRODUCT_LIST_EXTRAS = `
+    (SELECT MIN(v.price_cents) FROM shop_variants v
+         WHERE v.product_id = p.id) AS from_price_cents,
+    (SELECT m.url FROM shop_product_media spm
+         JOIN media m ON m.id = spm.media_id
+         WHERE spm.product_id = p.id AND spm.kind = 'image'
+         ORDER BY spm.position ASC LIMIT 1) AS primary_image_url`;
+
 // ─── Categories ───────────────────────────────────────────────────
 
 export async function findAllCategories(): Promise<ShopCategory[]> {
@@ -55,7 +69,7 @@ export async function deleteCategory(id: string,): Promise<void> {
 /** Active products in a category (public). */
 export async function findProductsInCategory(categoryId: string,): Promise<ShopProduct[]> {
     const result = await query(
-        `SELECT p.* FROM shop_products p
+        `SELECT p.*, ${PRODUCT_LIST_EXTRAS} FROM shop_products p
              JOIN shop_product_categories pc ON pc.product_id = p.id
              WHERE pc.category_id = $1 AND p.status = 'active'
              ORDER BY p.created_at DESC`,
@@ -111,7 +125,7 @@ export async function deleteCollection(id: string,): Promise<void> {
 /** Active products in a collection (public), curated order. */
 export async function findProductsInCollection(collectionId: string,): Promise<ShopProduct[]> {
     const result = await query(
-        `SELECT p.* FROM shop_products p
+        `SELECT p.*, ${PRODUCT_LIST_EXTRAS} FROM shop_products p
              JOIN shop_collection_products cp ON cp.product_id = p.id
              WHERE cp.collection_id = $1 AND p.status = 'active'
              ORDER BY cp.position ASC`,
@@ -133,7 +147,7 @@ export async function findDistinctTags(): Promise<string[]> {
 /** Active products carrying a tag (public). */
 export async function findProductsByTag(tag: string,): Promise<ShopProduct[]> {
     const result = await query(
-        `SELECT p.* FROM shop_products p
+        `SELECT p.*, ${PRODUCT_LIST_EXTRAS} FROM shop_products p
              JOIN shop_product_tags pt ON pt.product_id = p.id
              WHERE pt.tag = $1 AND p.status = 'active'
              ORDER BY p.created_at DESC`,
