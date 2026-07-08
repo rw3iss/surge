@@ -7,6 +7,8 @@ import { adminOrApiKey, optionalOrApiKey, } from './apiKeyAuth';
 import type { ApiKeyRequest, } from './apiKeyAuth';
 import { isReply, } from './types';
 import type { RouteDef, } from './types';
+import { requireFeature, } from './requireFeature';
+import type { FeatureKey, } from '../features/registry';
 
 interface ModuleEntry {
     module: string;
@@ -95,7 +97,11 @@ export function buildRouter(defs: RouteDef[],): Router {
  *  run more than once (tests, setup mode), and setup registers inside
  *  createApp, so without the dedupe the manifest would grow phantom
  *  duplicate entries. */
-export function registerModule(module: string, defs: RouteDef[], opts: { mountPath: string, },): Router {
+export function registerModule(
+    module: string,
+    defs: RouteDef[],
+    opts: { mountPath: string, feature?: FeatureKey, },
+): Router {
     const entry: ModuleEntry = { module, mountPath: opts.mountPath, defs, };
     const existing = registry.findIndex((e,) => e.module === module,);
     if (existing >= 0) {
@@ -103,7 +109,17 @@ export function registerModule(module: string, defs: RouteDef[], opts: { mountPa
     } else {
         registry.push(entry,);
     }
-    return buildRouter(defs,);
+    const router = buildRouter(defs,);
+    if (opts.feature) {
+        // Prepend the feature guard so a disabled feature's routes 404 —
+        // as if they didn't exist — for reads and writes alike. The
+        // manifest entry above is unchanged, so docs still list them.
+        const gated = Router();
+        gated.use(requireFeature(opts.feature,),);
+        gated.use(router,);
+        return gated;
+    }
+    return router;
 }
 
 /** Machine-readable manifest — consumed by the docs generator (Phase 4)

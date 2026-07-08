@@ -39,6 +39,15 @@ export async function get<T = unknown,>(key: string,): Promise<T | null> {
     return result.rows[0].value;
 }
 
+/** Server-side feature check. Reads the `<key>_enabled` row; when the
+ *  row is absent, falls back to the registry-declared default. Used by
+ *  the `requireFeature` route guard. */
+export async function isFeatureEnabledServer(key: FeatureKey,): Promise<boolean> {
+    const row = await get<unknown>(featureSettingKey(key,),);
+    if (row === null) return FEATURE_REGISTRY[key].defaultEnabled;
+    return row === true || row === 'true';
+}
+
 /** List every settings row. Useful for boot-time hydration of admin
  *  panels that surface multiple keys at once. */
 export async function list(): Promise<Array<{ key: string; value: unknown; }>> {
