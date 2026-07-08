@@ -28,6 +28,7 @@ import * as messages from './messages';
 import * as pages from './pages';
 import * as posts from './posts';
 import * as settings from './settings';
+import * as shop from './shop';
 import * as swatches from './swatches';
 import * as users from './users';
 
@@ -40,6 +41,7 @@ export const cms = {
     pages,
     posts,
     settings,
+    shop,
     swatches,
     users,
 };
