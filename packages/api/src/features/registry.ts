@@ -11,7 +11,7 @@
 
 export type FeatureKey =
     | 'patreon' | 'posts' | 'campaigns' | 'forms' | 'messages' | 'users'
-    | 'mailing_lists';
+    | 'mailing_lists' | 'shop';
 
 export interface FeatureConfig {
     key: FeatureKey;
@@ -89,6 +89,68 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureConfig> = {
             '036_seed_mailing_lists_feature_setting.sql',
             '037_add_send_job_template_snapshot.sql',
         ],
+    },
+    shop: {
+        key: 'shop',
+        label: 'Shop',
+        description: 'Products, cart, orders, and Stripe checkout.',
+        defaultEnabled: false,
+        requires: ['users'],
+        migrations: [
+            '039_create_shop_products.sql',
+            '040_create_shop_product_options.sql',
+            '041_create_shop_option_values.sql',
+            '042_create_shop_variants.sql',
+            '043_create_shop_product_media.sql',
+            '044_create_shop_categories.sql',
+            '045_create_shop_collections.sql',
+            '046_create_shop_product_tags.sql',
+            '047_create_shop_reviews.sql',
+            '048_create_shop_orders.sql',
+            '049_create_shop_order_items.sql',
+        ],
+        // Creation order — uninstall drops in reverse. CASCADE FKs make the
+        // exact order safe regardless (child/m2m tables drop with their parent).
+        tables: [
+            'shop_products',
+            'shop_product_options',
+            'shop_option_values',
+            'shop_variants',
+            'shop_product_media',
+            'shop_categories',
+            'shop_product_categories',
+            'shop_collections',
+            'shop_collection_products',
+            'shop_product_tags',
+            'shop_reviews',
+            'shop_orders',
+            'shop_order_items',
+        ],
+        settingsKeys: ['shop_settings', 'shop_appearance'],
+        // Seed default settings rows inside the enable txn. Idempotent.
+        onEnable: async (client) => {
+            const shopSettings = {
+                currency: 'usd',
+                taxEnabled: true,
+                businessName: '',
+                storeEnabled: true,
+            };
+            const shopAppearance = {
+                gridColumns: 3,
+                showRatings: true,
+                cardStyle: 'standard',
+            };
+            await client.query(
+                `INSERT INTO site_settings (key, value)
+                 VALUES ('shop_settings', $1::jsonb), ('shop_appearance', $2::jsonb)
+                 ON CONFLICT (key) DO NOTHING`,
+                [JSON.stringify(shopSettings), JSON.stringify(shopAppearance)],
+            );
+        },
+        // Cache invalidation is handled by the uninstall service after the
+        // txn commits (cache.invalidateSettingsCache()); keep this hook a
+        // no-op so registry.ts stays import-light.
+        onUninstall: async () => {},
     },
 };
 
