@@ -24,7 +24,7 @@ import { logAudit, } from './audit';
 import { cache, } from './cache';
 import { FEATURE_REGISTRY, FeatureKey, featureSettingKey, } from '../features/registry';
 import { validateEnable, } from '../features/validator';
-import { applyFeatureMigrations, } from '../features/migrations';
+import { installFeatureStep, } from '../features/lifecycle';
 import { uuidOrNull, } from '../utils/uuid';
 import type { AuditContext, } from './types';
 
@@ -290,8 +290,13 @@ export class FeatureCascadeError extends Error {
  * The `pg_advisory_xact_lock`-equivalent BEGIN/COMMIT flow around the
  * migration applier is preserved verbatim from the original route.
  */
-export async function updateSettings(data: UpdateSettingsInput, ctx: AuditContext,): Promise<{ message: string; }> {
+export async function updateSettings(data: UpdateSettingsInput, ctx: AuditContext,): Promise<{
+    message: string;
+    features?: { key: FeatureKey; enabled: boolean; appliedMigrations: string[]; }[];
+}> {
     const actor = uuidOrNull(ctx.userId,);
+
+    const installResults: { key: FeatureKey; enabled: boolean; appliedMigrations: string[]; }[] = [];
 
     const settingsMap: Record<string, unknown> = {
         site_name: data.siteName,
@@ -362,11 +367,13 @@ export async function updateSettings(data: UpdateSettingsInput, ctx: AuditContex
         try {
             await client.query('BEGIN',);
             for (const step of result.plan) {
+                let appliedMigrations: string[] = [];
                 if (step.enabled) {
                     // Run any outstanding feature migrations *before*
-                    // flipping the bit. If any fail, the whole plan rolls
-                    // back and the toggle stays off.
-                    await applyFeatureMigrations(step.key, client,);
+                    // flipping the bit, then fire the onEnable hook. If
+                    // any fail, the whole plan rolls back and the toggle
+                    // stays off.
+                    appliedMigrations = await installFeatureStep(step.key, client,);
                 }
                 await client.query(
                     `INSERT INTO site_settings (key, value, updated_by)
@@ -377,6 +384,7 @@ export async function updateSettings(data: UpdateSettingsInput, ctx: AuditContex
                          updated_at = NOW()`,
                     [featureSettingKey(step.key,), JSON.stringify(step.enabled,), actor,],
                 );
+                installResults.push({ key: step.key, enabled: step.enabled, appliedMigrations, },);
             }
             await client.query('COMMIT',);
         } catch (err) {
@@ -408,7 +416,7 @@ export async function updateSettings(data: UpdateSettingsInput, ctx: AuditContex
         userAgent: ctx.userAgent,
     },);
 
-    return { message: 'Settings updated', };
+    return { message: 'Settings updated', features: installResults, };
 }
 
 // ─── Per-key cached JSON settings ─────────────────────────────────────
