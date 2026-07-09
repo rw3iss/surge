@@ -25,7 +25,7 @@ export const envSchema = z.object({
     CACHE_TTL_SECONDS: z.string().transform(Number,).default('300',),
 
     JWT_SECRET: z.string().min(32,).optional(),
-    JWT_ACCESS_TOKEN_EXPIRES: z.string().default('15m',),
+    JWT_ACCESS_TOKEN_EXPIRES: z.string().default('1h',),
     JWT_REFRESH_TOKEN_EXPIRES: z.string().default('7d',),
 
     PATREON_CLIENT_ID: z.string().optional(),

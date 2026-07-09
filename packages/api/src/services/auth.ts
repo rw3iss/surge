@@ -34,9 +34,17 @@ interface PatreonUser {
     }>;
 }
 
+// Refresh-token lifetime for "remember me" sessions. The default
+// (config.jwt.refreshTokenExpires, 7d) applies to normal logins; a
+// remembered session gets this longer window and — crucially — it is
+// re-applied on every refresh (the `remember` flag rides inside the
+// refresh JWT), so the 30-day window is self-sustaining.
+const REMEMBER_REFRESH_EXPIRES = '30d';
+
 export function generateTokens(
     userId: string,
     role: UserRole,
+    rememberMe = false,
 ): { accessToken: string; refreshToken: string; expiresAt: Date; } {
     // Auth code is only invoked in running mode where these are guaranteed
     // by hasMinimalRunningConfig(). The non-null assertions reflect that
@@ -48,9 +56,9 @@ export function generateTokens(
     );
 
     const refreshToken = jwt.sign(
-        { userId, role, type: 'refresh', },
+        { userId, role, type: 'refresh', remember: rememberMe, },
         config.jwt.secret!,
-        { expiresIn: config.jwt.refreshTokenExpires as any, },
+        { expiresIn: (rememberMe ? REMEMBER_REFRESH_EXPIRES : config.jwt.refreshTokenExpires) as any, },
     );
 
     const decoded = jwt.decode(accessToken,) as { exp: number; };
@@ -212,6 +220,7 @@ export async function authenticateWithEmail(
     password: string,
     ipAddress?: string,
     userAgent?: string,
+    rememberMe = false,
 ): Promise<AuthResponse> {
     // Check if user is banned
     const banCheck = await query(
@@ -251,7 +260,7 @@ export async function authenticateWithEmail(
 
     const user = mapRow<User>(dbUser,);
 
-    const { accessToken, refreshToken, expiresAt, } = generateTokens(user.id, user.role,);
+    const { accessToken, refreshToken, expiresAt, } = generateTokens(user.id, user.role, rememberMe,);
 
     await createSession(user.id, accessToken, refreshToken, expiresAt, ipAddress, userAgent,);
 
@@ -262,17 +271,23 @@ export async function refreshTokens(
     currentRefreshToken: string,
     ipAddress?: string,
     userAgent?: string,
-): Promise<AuthResponse> {
+): Promise<AuthResponse & { rememberMe: boolean; }> {
     try {
         const decoded = jwt.verify(currentRefreshToken, config.jwt.secret!,) as unknown as {
             userId: string;
             role: UserRole;
             type: string;
+            remember?: boolean;
         };
 
         if (decoded.type !== 'refresh') {
             throw new Error('Invalid token type',);
         }
+
+        // Preserve the "remember me" window across rotations: the incoming
+        // refresh token carries the flag, so the reissued one keeps the
+        // 30-day lifetime (and the caller re-sets the 30-day cookie).
+        const rememberMe = decoded.remember === true;
 
         const sessionResult = await query(
             'SELECT user_id FROM user_sessions WHERE refresh_token = $1',
@@ -303,11 +318,11 @@ export async function refreshTokens(
 
         const user = mapRow<User>(dbUser,);
 
-        const { accessToken, refreshToken, expiresAt, } = generateTokens(user.id, user.role,);
+        const { accessToken, refreshToken, expiresAt, } = generateTokens(user.id, user.role, rememberMe,);
 
         await createSession(user.id, accessToken, refreshToken, expiresAt, ipAddress, userAgent,);
 
-        return { user, accessToken, refreshToken, expiresAt, };
+        return { user, accessToken, refreshToken, expiresAt, rememberMe, };
     } catch {
         throw new Error('Invalid or expired refresh token',);
     }

@@ -69,7 +69,7 @@ const refreshSchema = z.object({
 /** Refresh-token cookie lifetimes (ms — what Express's cookie.maxAge wants). */
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const REFRESH_COOKIE_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const ACCESS_COOKIE_MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes
+const ACCESS_COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour (keep in sync with JWT_ACCESS_TOKEN_EXPIRES)
 
 // ─── Rate limiter (attached via `pre`) ────────────────────────────
 
@@ -157,7 +157,7 @@ export const authRoutes = [
 
             let authResponse;
             try {
-                authResponse = await authenticateWithEmail(body.email, body.password, ipAddress, userAgent,);
+                authResponse = await authenticateWithEmail(body.email, body.password, ipAddress, userAgent, body.rememberMe,);
             } catch (error) {
                 logger.error('Login error', { error, },);
                 throw new UnauthorizedError(error instanceof Error ? error.message : 'Login failed',);
@@ -217,9 +217,12 @@ export const authRoutes = [
             const ipAddress = clientIp(req.headers, req.ip,);
             const userAgent = req.headers['user-agent'];
 
+            let rememberMe = false;
             let authResponse;
             try {
-                authResponse = await refreshTokens(refreshToken, ipAddress, userAgent,);
+                // `rememberMe` (decoded from the incoming refresh token) sizes
+                // the reissued refresh cookie; it is not part of the wire DTO.
+                ({ rememberMe, ...authResponse } = await refreshTokens(refreshToken, ipAddress, userAgent,));
             } catch (error) {
                 logger.error('Token refresh error', { error, },);
                 throw new UnauthorizedError('Invalid or expired refresh token',);
@@ -236,7 +239,7 @@ export const authRoutes = [
                 httpOnly: true,
                 secure: config.isProduction,
                 sameSite: 'lax',
-                maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+                maxAge: rememberMe ? REFRESH_COOKIE_REMEMBER_MS : REFRESH_COOKIE_MAX_AGE_MS,
             },);
 
             return authResponse;
