@@ -1,13 +1,9 @@
 import { A, } from '@solidjs/router';
 import { Component, createSignal, Show, } from 'solid-js';
 import SeoHead from '../components/common/seo/SeoHead';
+import { cms, } from '../services/cmsClient';
 import { isFeatureEnabled, isPatreonEnabled, siteName, } from '../stores/siteSettings';
 import './Join.scss';
-
-function getCsrfToken(): string {
-    const match = document.cookie.match(/csrf-token=([^;]+)/,);
-    return match ? match[1] : '';
-}
 
 const Join: Component = () => {
     const [name, setName,] = createSignal('',);
@@ -38,32 +34,12 @@ const Join: Component = () => {
 
         setIsLoading(true,);
         try {
-            // TODO: deferred — POST /auth/register backend route not yet
-            // implemented (see docs/client-sdk-plan.md). The endpoint 404s
-            // today; the inline fetch preserves the page's existing
-            // graceful-failure behavior until the route lands.
-            const res = await fetch('/api/v1/auth/register', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-csrf-token': getCsrfToken(),
-                },
-                body: JSON.stringify({
-                    name: name(),
-                    email: email(),
-                    password: password(),
-                },),
+            await cms.auth.register({
+                name: name(),
+                email: email(),
+                password: password(),
             },);
-            const response = await res.json() as {
-                success?: boolean;
-                error?: { message?: string; };
-            };
-            if (response.success) {
-                setSuccess(true,);
-            } else {
-                setError(response.error?.message || 'Registration failed',);
-            }
+            setSuccess(true,);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Registration failed',);
         } finally {
