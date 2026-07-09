@@ -80,9 +80,12 @@ export class CmsClientCore {
         };
         try { return await send(); }
         catch (err) {
-            // One automatic refresh+retry on an expired bearer token.
-            if (err instanceof UnauthorizedError && this.config.authMode === 'bearer'
-                && this.auth.getTokens() && /expired/i.test(err.message,)) {
+            // One automatic refresh+retry on an expired token. Bearer mode
+            // needs an in-memory refresh token; cookie mode refreshes from
+            // the httpOnly refresh cookie (server-side), so it always may.
+            const canRefresh = this.config.authMode === 'cookie'
+                || (this.config.authMode === 'bearer' && this.auth.getTokens() != null);
+            if (err instanceof UnauthorizedError && /expired/i.test(err.message,) && canRefresh) {
                 await this.auth.refresh();
                 return send();
             }

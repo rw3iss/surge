@@ -115,6 +115,27 @@ export class AuthManager implements AuthRuntime {
 
     async refresh(): Promise<AuthResponse> {
         if (this.refreshInFlight) return this.refreshInFlight;
+        // Cookie mode: the refresh token is an httpOnly cookie, not in
+        // memory. POST /auth/refresh with an empty body — the server reads
+        // the cookie and sets fresh access/refresh cookies on the response.
+        // This is what keeps a cookie-mode session (incl. "remember me")
+        // alive past access-token expiry; without it every session died at
+        // the access-token TTL. Single-flighted so a burst of concurrent
+        // 401s triggers one refresh.
+        if (this.mode === 'cookie') {
+            this.refreshInFlight = (async () => {
+                try {
+                    return await performRequest<AuthResponse>({
+                        fetchImpl: this.fetchImpl, method: 'POST', url: `${this.apiBase}/auth/refresh`,
+                        headers: await this.authHeaders('POST',), body: {}, timeoutMs: 30_000,
+                    },);
+                } catch (err) {
+                    this.emitter.emit('expired', undefined,);
+                    throw err;
+                } finally { this.refreshInFlight = null; }
+            })();
+            return this.refreshInFlight;
+        }
         if (!this.tokens) throw new UnauthorizedError('No refresh token', { code: 'UNAUTHORIZED', status: 401, },);
         this.refreshInFlight = (async () => {
             try {

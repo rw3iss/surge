@@ -49,6 +49,27 @@ describe('AuthManager', () => {
         expect((loginCall![1] as RequestInit).headers,).toMatchObject({ 'x-csrf-token': 'tok123', },);
         (globalThis as { document?: unknown; }).document = prevDoc;
     },);
+    it('cookie-mode refresh POSTs /auth/refresh with an empty body + CSRF (no in-memory token)', async () => {
+        // The refresh token is an httpOnly cookie, not in memory — refresh
+        // must still hit the endpoint (old code threw "No refresh token"),
+        // which is what keeps a cookie-mode session alive past access expiry.
+        const prevDoc = (globalThis as { document?: unknown; }).document;
+        (globalThis as { document?: unknown; }).document = { cookie: 'csrf-token=tok', };
+        const body = JSON.stringify({
+            success: true, data: { user: { id: 'u', }, accessToken: 'A2', refreshToken: 'R2', expiresAt: 'l', },
+        },);
+        const fetchImpl = vi.fn().mockResolvedValue(
+            new Response(body, { status: 200, headers: { 'content-type': 'application/json', }, },),
+        );
+        const mgr = new AuthManager({ mode: 'cookie', apiBase: 'http://x/api/v1', fetchImpl, },);
+        const res = await mgr.refresh();
+        expect(res.accessToken,).toBe('A2',);
+        const call = fetchImpl.mock.calls.find((c,) => String(c[0],).endsWith('/auth/refresh',),);
+        expect(call,).toBeTruthy();
+        expect(JSON.parse((call![1] as RequestInit).body as string,),).toEqual({},);
+        expect((call![1] as RequestInit).headers,).toMatchObject({ 'x-csrf-token': 'tok', },);
+        (globalThis as { document?: unknown; }).document = prevDoc;
+    },);
     it('refresh is single-flight across concurrent callers', async () => {
         const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({
             success: true, data: { user: { id: 'u', }, accessToken: 'A2', refreshToken: 'R2', expiresAt: 'l', },
