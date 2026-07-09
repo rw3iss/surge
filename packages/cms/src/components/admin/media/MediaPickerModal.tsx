@@ -1,4 +1,5 @@
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
+import { cms, } from '../../../services/cmsClient';
 
 export interface MediaItem {
     id: string;
@@ -26,12 +27,9 @@ const MIME_TYPE_MAP: Record<string, string> = {
 const MediaPickerModal: Component<MediaPickerModalProps> = (props,) => {
     const [selected, setSelected,] = createSignal<string | null>(null,);
 
-    const [media,] = createResource(() => props.type, async (type,) => {
-        const response = await fetch(`/api/v1/media?type=${MIME_TYPE_MAP[type]}&limit=100`, {
-            credentials: 'include',
-        },);
-        const data = await response.json();
-        return data.success ? data.data : [];
+    const [media,] = createResource(() => props.type, async (type,): Promise<MediaItem[]> => {
+        const result = await cms.media.list({ type: MIME_TYPE_MAP[type], limit: 100, },);
+        return (result.data || []) as unknown as MediaItem[];
     },);
 
     const formatSize = (bytes: number,) => {
