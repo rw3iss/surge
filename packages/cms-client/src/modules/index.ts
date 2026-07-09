@@ -9,6 +9,7 @@ import { UsersModule, } from './users';
 import { MessagesModule, } from './messages';
 import { SocialModule, } from './social';
 import { SearchModule, } from './search';
+import { UtilsModule, } from './utils';
 import { AuditModule, } from './audit';
 import { DashboardModule, } from './dashboard';
 import { AuthModule, } from './auth';
@@ -38,6 +39,7 @@ export interface CmsModules {
     messages: MessagesModule;
     social: SocialModule;
     search: SearchModule;
+    utils: UtilsModule;
     audit: AuditModule;
     dashboard: DashboardModule;
     auth: AuthModule;
@@ -71,6 +73,7 @@ export function assembleModules(core: CmsClientCore,): CmsClientCore & CmsModule
     c.messages = new MessagesModule(core,);
     c.social = new SocialModule(core,);
     c.search = new SearchModule(core,);
+    c.utils = new UtilsModule(core,);
     c.audit = new AuditModule(core,);
     c.dashboard = new DashboardModule(core,);
     // `core.auth` is typed AuthRuntime; AuthModule implements it and wraps
@@ -100,7 +103,7 @@ export { ROUTE_COVERAGE, INTENTIONALLY_UNEXPOSED, } from './coverage';
 
 export {
     PostsModule, PagesModule, CampaignsModule, FormsModule, MediaModule,
-    UsersModule, MessagesModule, SocialModule, SearchModule, AuditModule, DashboardModule,
+    UsersModule, MessagesModule, SocialModule, SearchModule, UtilsModule, AuditModule, DashboardModule,
     AuthModule, ApiKeysModule, ConnectionsModule, BlockStylesModule, FontsModule,
     DevModule, HealthModule, SetupModule,
     MailingListsModule, MailTemplatesModule, MailSendModule, PaymentsModule,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, } from 'vitest';
 import type {
     ApiKeyCreateResponse, ConnectionReorderResponse, FontUploadResponse,
-    HealthLiveResponse, AuthMeResponse,
+    HealthLiveResponse, AuthMeResponse, AuthRegisterResponse, UtilsUrlPreviewResponse,
 } from '@rw/cms-shared';
 import { createClient, } from '../index';
 
@@ -33,6 +33,30 @@ describe('access modules', () => {
         expect(String(meUrl,),).toBe('http://api/api/v1/auth/me',);
         const headers = new Headers((meInit as RequestInit).headers,);
         expect(headers.get('authorization',),).toBe('Bearer tok-A',);
+    },);
+
+    it('auth.register() POSTs /auth/register with the body (no auto-login)', async () => {
+        const created: AuthRegisterResponse = { userId: 'u9', email: 'new@b.c', };
+        const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(created, 200,),);
+        const cms = createClient({ baseUrl: 'http://api', fetch: fetchImpl as never, auth: { store: null, }, },);
+        const out: AuthRegisterResponse = await cms.auth.register({ name: 'New', email: 'new@b.c', password: 'password1', },);
+        expect(out.userId,).toBe('u9',);
+        const [url, init,] = fetchImpl.mock.calls[0];
+        expect(String(url,),).toBe('http://api/api/v1/auth/register',);
+        expect((init as RequestInit).method,).toBe('POST',);
+        expect(JSON.parse((init as RequestInit).body as string,),).toEqual({ name: 'New', email: 'new@b.c', password: 'password1', },);
+    },);
+
+    it('utils.urlPreview() POSTs /utils/url-preview with the url body', async () => {
+        const preview: UtilsUrlPreviewResponse = { title: 'Example', description: 'A page', image: 'https://x/i.png', };
+        const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(preview,),);
+        const cms = createClient({ baseUrl: 'http://api', fetch: fetchImpl as never, auth: { store: null, }, },);
+        const out: UtilsUrlPreviewResponse = await cms.utils.urlPreview({ url: 'https://example.com', },);
+        expect(out.title,).toBe('Example',);
+        const [url, init,] = fetchImpl.mock.calls[0];
+        expect(String(url,),).toBe('http://api/api/v1/utils/url-preview',);
+        expect((init as RequestInit).method,).toBe('POST',);
+        expect(JSON.parse((init as RequestInit).body as string,),).toEqual({ url: 'https://example.com', },);
     },);
 
     it('auth.me() is never cached (each call hits the network)', async () => {

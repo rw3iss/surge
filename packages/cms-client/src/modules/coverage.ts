@@ -122,6 +122,9 @@ export const ROUTE_COVERAGE: string[] = [
     'GET /api/v1/search',
     'GET /api/v1/search/admin',
 
+    // ── utils ──
+    'POST /api/v1/utils/url-preview',
+
     // ── audit ──
     'GET /api/v1/audit',
 
@@ -130,6 +133,7 @@ export const ROUTE_COVERAGE: string[] = [
 
     // ── auth ──
     'POST /api/v1/auth/login',
+    'POST /api/v1/auth/register',
     'POST /api/v1/auth/refresh',
     'POST /api/v1/auth/logout',
     'POST /api/v1/auth/logout-all',

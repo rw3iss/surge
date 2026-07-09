@@ -1,6 +1,7 @@
 import type {
     AuthResponse, LoginCredentials, AuthPatreonResponse,
     AuthLogoutAllResponse, AuthMeResponse, AuthPatreonSyncResponse, AuthAutologinResponse,
+    AuthRegisterBody, AuthRegisterResponse,
 } from '@rw/cms-shared';
 import type { CmsClientCore, } from '../core/client';
 import type { AuthRuntime, } from '../core/auth/authManager';
@@ -43,6 +44,14 @@ export class AuthModule extends ModuleBase implements AuthRuntime {
     /** POST /auth/logout — delegates to the AuthManager (clears tokens). */
     logout(): Promise<void> {
         return this.manager.logout();
+    }
+
+    /** POST /auth/register — public member self-registration. Does NOT
+     *  auto-login (no tokens minted); the caller signs in via login()
+     *  afterwards. 403 when the `users` feature is disabled; 409 on a
+     *  duplicate email. */
+    register(body: AuthRegisterBody,): Promise<AuthRegisterResponse> {
+        return this.mutate<AuthRegisterResponse>('POST', '/auth/register', { body, },);
     }
 
     /** POST /auth/refresh — delegates to the manager's single-flight refresh. */

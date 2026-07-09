@@ -16,7 +16,7 @@ describe('module assembly', () => {
         const cms = makeClient();
         const namespaces = [
             'posts', 'pages', 'campaigns', 'forms', 'media', 'users', 'messages',
-            'social', 'search', 'audit', 'dashboard', 'auth', 'apiKeys',
+            'social', 'search', 'utils', 'audit', 'dashboard', 'auth', 'apiKeys',
             'connections', 'blockStyles', 'fonts', 'dev', 'health', 'setup',
             'mailingLists', 'mailTemplates', 'mailSend', 'payments', 'settings',
             'feed', 'sitemap',
@@ -44,7 +44,9 @@ describe('module assembly', () => {
         expect(typeof cms.payments.adminTransactions,).toBe('function',);
         expect(typeof cms.payments.adminUserTransactions,).toBe('function',);
         expect(typeof cms.auth.login,).toBe('function',);
+        expect(typeof cms.auth.register,).toBe('function',);
         expect(typeof cms.auth.me,).toBe('function',);
+        expect(typeof cms.utils.urlPreview,).toBe('function',);
         expect(typeof cms.shop.products.list,).toBe('function',);
         expect(typeof cms.shop.categories.getBySlug,).toBe('function',);
         expect(typeof cms.shop.collections.list,).toBe('function',);
@@ -56,9 +58,9 @@ describe('module assembly', () => {
         expect(typeof cms.sitemap.regenerate,).toBe('function',);
     },);
 
-    it('exports a complete coverage registry (228 + 6 = 234 manifest routes)', () => {
+    it('exports a complete coverage registry (230 + 6 = 236 manifest routes)', () => {
         const unique = new Set(ROUTE_COVERAGE,);
         expect(unique.size,).toBe(ROUTE_COVERAGE.length,); // no duplicates
-        expect(ROUTE_COVERAGE.length + INTENTIONALLY_UNEXPOSED.length,).toBe(234,);
+        expect(ROUTE_COVERAGE.length + INTENTIONALLY_UNEXPOSED.length,).toBe(236,);
     },);
 },);

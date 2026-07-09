@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-08T20:45:11.805Z",
-  "totalModules": 29,
-  "totalRoutes": 234,
+  "generatedAt": "2026-07-09T03:23:27.243Z",
+  "totalModules": 30,
+  "totalRoutes": 236,
   "modules": [
     {
       "module": "api-keys",
@@ -67,6 +67,13 @@
           "absolutePath": "/api/v1/auth/login",
           "auth": "public",
           "summary": "Email/password login. Sets auth cookies, returns the auth response."
+        },
+        {
+          "method": "POST",
+          "path": "/register",
+          "absolutePath": "/api/v1/auth/register",
+          "auth": "public",
+          "summary": "Public member self-registration (gated behind the `users` feature). No auto-login."
         },
         {
           "method": "POST",
@@ -1812,6 +1819,19 @@
           "absolutePath": "/api/v1/users/:id",
           "auth": "admin",
           "summary": "Permanently delete a user (orphans authored content, audit-logged)."
+        }
+      ]
+    },
+    {
+      "module": "utils",
+      "mountPath": "/api/v1/utils",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/url-preview",
+          "absolutePath": "/api/v1/utils/url-preview",
+          "auth": "admin",
+          "summary": "SSRF-guarded link unfurl: fetch a URL and return its OpenGraph/basic meta."
         }
       ]
     }
