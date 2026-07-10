@@ -191,6 +191,26 @@
         gap: $spacing-lg;
     }
 
+    // A two-column row within the editor (details|settings, media|taxonomy).
+    // Collapses to a single column on narrow viewports.
+    &__cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: $spacing-lg;
+        align-items: start;
+
+        @media (max-width: #{$breakpoint-md - 1px}) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__col {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+        min-width: 0;
+    }
+
     &__option-row {
         display: flex;
         gap: $spacing-sm;
