@@ -411,6 +411,8 @@ export interface ShopOrderUpdateBody {
     fulfillmentStatus?: ShopFulfillmentStatus;
     trackingNumber?: string | null;
     notes?: string | null;
+    /** When true AND the status changes, email the buyer about the update. */
+    notifyCustomer?: boolean;
 }
 
 /** PATCH /shop/orders/:id — the updated order detail. */

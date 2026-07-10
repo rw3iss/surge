@@ -14,7 +14,7 @@ import { ForbiddenError, NotFoundError, ValidationError, } from '../../core/erro
 import { logAudit, } from '../audit';
 import { logger, } from '../../utils/logger';
 import * as repo from '../../repositories/shop/shopOrders.repo';
-import { sendOrderReceipt, } from './receipt';
+import { sendBuyerReceipt, sendOrderStatusEmail, } from './orderEmails';
 import type { AuditContext, ListResult, PaginationOpts, } from '../types';
 
 export type { OrderDetail, } from '../../repositories/shop/shopOrders.repo';
@@ -97,6 +97,8 @@ export interface OrderUpdatePatch {
     fulfillmentStatus?: string;
     trackingNumber?: string | null;
     notes?: string | null;
+    /** When true AND the status actually changes, email the buyer about it. */
+    notifyCustomer?: boolean;
 }
 
 /** Issue a Stripe refund for an order. Wrapped by the caller in try/catch —
@@ -141,13 +143,21 @@ export async function update(id: string, patch: OrderUpdatePatch, ctx: AuditCont
         userAgent: ctx.userAgent,
     },);
 
-    return repo.findOrderById(id,);
+    const updated = await repo.findOrderById(id,);
+
+    // Opt-in buyer status-update email: only when requested AND the status
+    // actually changed. Never throws (send helper swallows failures).
+    if (patch.notifyCustomer && patch.status && patch.status !== existing.status) {
+        await sendOrderStatusEmail(updated, existing.status,);
+    }
+
+    return updated;
 }
 
 /** Re-send the receipt email for an order (admin). */
 export async function resendReceipt(id: string, ctx: AuditContext,): Promise<{ message: string; }> {
     const order = await repo.findOrderById(id,);
-    await sendOrderReceipt(order,);
+    await sendBuyerReceipt(order,);
     await logAudit({
         userId: ctx.userId,
         action: 'update',

@@ -188,6 +188,7 @@ const orderUpdateSchema = z.object({
     fulfillmentStatus: z.enum(['unfulfilled', 'partial', 'fulfilled',],).optional(),
     trackingNumber: z.string().nullish(),
     notes: z.string().nullish(),
+    notifyCustomer: z.boolean().optional(),
 },) satisfies z.ZodType<ShopOrderUpdateBody>;
 
 // ── Settings ──

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi, } from 'vitest';
 
 // ── Mocks ──
-vi.mock('./receipt', () => ({ sendOrderReceipt: vi.fn(), }),);
+vi.mock('./orderEmails', () => ({ sendOrderPlacedEmails: vi.fn(), }),);
 
 const queryMock = vi.fn(async () => ({ rows: [], }));
 const fakeClient = { query: vi.fn(async () => ({ rows: [], rowCount: 0, })), };

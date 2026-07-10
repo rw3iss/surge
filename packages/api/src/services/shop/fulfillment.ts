@@ -13,7 +13,7 @@ import { transaction, query, } from '../../db';
 import { logger, } from '../../utils/logger';
 import { randomBytes, } from 'crypto';
 import * as ordersRepo from '../../repositories/shop/shopOrders.repo';
-import { sendOrderReceipt, } from './receipt';
+import { sendOrderPlacedEmails, } from './orderEmails';
 
 /**
  * Finalize a shop order from a succeeded PaymentIntent. Marks the order
@@ -94,7 +94,8 @@ export async function fulfillShopOrder(paymentIntent: Stripe.PaymentIntent,): Pr
 
     logger.info('Shop order fulfilled via webhook', { orderId, paymentIntentId: paymentIntent.id, },);
 
-    // Receipt email — after commit; never throw (payment already captured).
+    // Order-paid emails (buyer confirmation + seller notification) — after
+    // commit; the send helper never throws (payment already captured).
     try {
         const detail = await query(
             `SELECT * FROM shop_orders WHERE id = $1`,
@@ -102,9 +103,9 @@ export async function fulfillShopOrder(paymentIntent: Stripe.PaymentIntent,): Pr
         );
         if (detail.rows.length > 0) {
             const order = await ordersRepo.findOrderById(orderId,);
-            await sendOrderReceipt(order,);
+            await sendOrderPlacedEmails(order,);
         }
     } catch (err) {
-        logger.error('Failed to send shop order receipt', { orderId, error: err, },);
+        logger.error('Failed to send shop order emails', { orderId, error: err, },);
     }
 }

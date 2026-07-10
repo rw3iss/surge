@@ -65,7 +65,7 @@ const ShopOrderDetailInner: Component = () => {
         if (o) sync(o,);
     },);
 
-    const applyUpdate = async (extra?: Partial<{ status: ShopOrderStatus; }>,) => {
+    const applyUpdate = async (extra?: Partial<{ status: ShopOrderStatus; notifyCustomer: boolean; }>,) => {
         const o = order();
         if (!o) return;
         setBusy(true,);
@@ -75,6 +75,7 @@ const ShopOrderDetailInner: Component = () => {
                 fulfillmentStatus: fulfillment(),
                 trackingNumber: tracking() || null,
                 notes: notes() || null,
+                notifyCustomer: extra?.notifyCustomer,
             },);
             mutate(updated,);
             sync(updated,);
@@ -84,6 +85,19 @@ const ShopOrderDetailInner: Component = () => {
         } finally {
             setBusy(false,);
         }
+    };
+
+    // The "Save changes" button: prompt to notify the buyer only when the
+    // status is actually changing (tracking/notes/fulfillment-only saves
+    // don't prompt).
+    const saveChanges = () => {
+        const o = order();
+        if (!o) return;
+        const statusChanged = status() !== o.status;
+        const notifyCustomer = statusChanged
+            ? confirm('Email the customer about this status change?',)
+            : false;
+        void applyUpdate({ notifyCustomer, },);
     };
 
     const refund = async () => {
@@ -200,7 +214,7 @@ const ShopOrderDetailInner: Component = () => {
                                         <FormField label="Notes">
                                             <textarea rows={3} value={notes()} onInput={(e,) => setNotes(e.currentTarget.value,)} />
                                         </FormField>
-                                        <button class="btn btn--primary" onClick={() => applyUpdate()} disabled={busy()}>
+                                        <button class="btn btn--primary" onClick={saveChanges} disabled={busy()}>
                                             {busy() ? 'Saving...' : 'Save changes'}
                                         </button>
                                     </div>
