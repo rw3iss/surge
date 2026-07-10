@@ -5,9 +5,11 @@
  */
 import type { ToolDef, } from '../tool';
 import { metaTools, } from './meta';
+import { pageTools, } from './pages';
 
 export function allTools(): ToolDef[] {
     return [
         ...metaTools,
+        ...pageTools,
     ];
 }
