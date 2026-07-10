@@ -4,7 +4,7 @@
 
 SiteSurge (a.k.a. SiteSurge CMS) is a self-hosted, feature-based, block-based general-purpose CMS. Pages, posts, campaigns, forms, users, media, social connections, plus a custom header/footer editor and a global appearance system (swatches, fonts, block-style templates).
 
-Monorepo with four workspaces under `packages/*`: `api` (`@rw/cms-api`, Express/Node), `cms` (`@rw/cms-web`, SolidJS), `shared` (`@rw/cms-shared`, types/DTOs/utils consumed by all), `cms-client` (`@rw/cms-client`, headless TS client — **fully implemented**). All build/tool config lives in `./config`.
+Monorepo with five workspaces under `packages/*`: `api` (`@rw/cms-api`, Express/Node), `cms` (`@rw/cms-web`, SolidJS), `shared` (`@rw/cms-shared`, types/DTOs/utils consumed by all), `cms-client` (`@rw/cms-client`, headless TS client — **fully implemented**), `cms-mcp` (`@rw/cms-mcp`, MCP server wrapping the client — **implemented**; see `docs/MCP.md`). All build/tool config lives in `./config`.
 
 **Stack:** SolidJS + Vite | Express + PostgreSQL + Redis | Stripe | Patreon OAuth | S3/Local storage
 
@@ -261,10 +261,11 @@ npm run docker:up            # docker compose -f config/docker-compose.yml up -d
 - **dprint pre-existing drift:** ~250 files predate the formatter config, so `npm run format:check` currently FAILS (known/expected). Don't bulk-reformat as a side effect; format only files you touch.
 - **DTO convention + drift:** request/response DTOs for all 29 modules live in `packages/shared/src/api/routes/` — conventions in the barrel header (`packages/shared/src/api/index.ts`). Backend zod binds to them (`satisfies z.ZodType<X>` / `AssertCompatible`), so a DTO mismatch is a compile error.
 - **cms-client — IMPLEMENTED:** `packages/cms-client` (`@rw/cms-client`) is fully built: 27 module namespaces, all 234 API routes covered, SWR cache, token auto-load, typed error bus, SolidJS adapter. See `packages/cms-client/docs/Overview.md`.
-  - **Doctrine (realized):** All client-side requests route through `@rw/cms-client` (`createClient`). It exposes `cms.<module>.<method>()` for all 234 routes, with SWR caching, token auto-load, and a typed error bus. **`@rw/cms-web` is fully migrated** — `services/api.ts` is deleted and the `cms` singleton (`packages/cms/src/services/cmsClient.ts`, cookie mode) is the sole networking path. Two endpoints remain on inline `fetch` as known follow-ups: Join's `POST /auth/register` and UrlLinkBlock's `GET /utils/url-preview`.
+  - **Doctrine (realized):** All client-side requests route through `@rw/cms-client` (`createClient`). It exposes `cms.<module>.<method>()` for all routes, with SWR caching, token auto-load, and a typed error bus. **`@rw/cms-web` is fully migrated** — `services/api.ts` is deleted and the `cms` singleton (`packages/cms/src/services/cmsClient.ts`, cookie mode) is the sole networking path. (`POST /auth/register` and `GET /utils/url-preview` now exist and are exposed as `cms.auth.register` / `cms.utils.urlPreview`.)
   - Usage: `const cms = createClient({ baseUrl: 'https://cms.example.com', auth: { apiKey: 'ssk_…' } }); const posts = await cms.posts.list();`
   - `npm run check:drift -w packages/cms-client` — guards client↔API coverage against `docs/api-manifest.json`.
   - `npm run test:integration -w packages/cms-client` — manual live-API smoke test (requires `SMOKE_API_KEY` env + running server).
+- **cms-mcp — IMPLEMENTED:** `packages/cms-mcp` (`@rw/cms-mcp`) is an MCP server (stdio) wrapping `@rw/cms-client` in apiKey mode, exposing the whole authoring surface (pages/posts/blocks/every block type/block styles/appearance/swatches/fonts/header/footer/settings/features/media/nav/reference) as **66 tools** so an AI agent can build a site. Config via env (`CMS_BASE_URL`, `CMS_API_KEY`, `CMS_MCP_READONLY`). Adds the block-type catalog (`describe_block_types`), group-nesting + single-post-block ergonomics, and media-from-path/URL. Full reference: `docs/MCP.md`. Design + deficiency audit: `docs/superpowers/specs/2026-07-09-cms-mcp-server-design.md`, `docs/mcp-sdk-deficiencies.md`.
 
 ## External Services
 - **PostgreSQL** - Primary database

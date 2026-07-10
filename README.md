@@ -442,9 +442,10 @@ pattern** until the client lands. The client wraps the documented REST surface
 ([`docs/API.md`](docs/API.md) + [`docs/api-manifest.json`](docs/api-manifest.json))
 with the shared DTOs, so a single typed change propagates to every caller.
 
-`packages/cms-client` currently holds only a scaffold (structure + charter
-pointer, no implementation — it's the next project). The full plan lives in
-[`docs/client-sdk-plan.md`](docs/client-sdk-plan.md).
+`packages/cms-client` is **fully implemented** — `createClient({ baseUrl, auth })`
+exposes `cms.<module>.<method>()` for the entire route surface, with SWR caching,
+token auto-load, a typed error bus, and an optional SolidJS adapter. See
+[`packages/cms-client/docs/Overview.md`](packages/cms-client/docs/Overview.md).
 
 **Shared DTOs:** every module's request and response types live in
 `@rw/cms-shared` under [`packages/shared/src/api/routes/`](packages/shared/src/api/routes/).
@@ -502,6 +503,38 @@ curl -s -X POST https://yoursite.com/api/v1/posts \
 # 4. Public list — no auth (published posts only)
 curl -s 'https://yoursite.com/api/v1/posts'
 ```
+
+### MCP server (`@rw/cms-mcp`) — build the site with an AI agent
+
+`@rw/cms-mcp` (`packages/cms-mcp`) is a [Model Context Protocol](https://modelcontextprotocol.io)
+server that exposes the **entire authoring surface** — pages, posts, every
+content-block type (and the content inside them), block styles + shared style
+templates, appearance (colors/swatches/fonts/layout), the site header, the site
+footer, navigation, media, and every setting/feature — as **66 MCP tools** over
+the typed client. Point an MCP-capable agent (e.g. Claude) at it with a scoped
+`ssk_` API key and it can design and build a complete site.
+
+It adds what the raw API cannot: authoritative, machine-readable **block-type
+schemas** (`describe_block_types`), workflow ergonomics for the hard parts (group
+nesting, single-post-block edits, media-from-path/URL, applying style templates),
+and structured errors.
+
+```jsonc
+// MCP client config (e.g. Claude Desktop / Claude Code "mcpServers")
+{
+  "cms": {
+    "command": "node",
+    "args": ["packages/cms-mcp/dist/index.js"],
+    "env": {
+      "CMS_BASE_URL": "https://yoursite.com",
+      "CMS_API_KEY": "ssk_…"          // Settings → API Keys; write/admin scope to author
+    }
+  }
+}
+```
+
+Full tool reference, setup, and the authoring guide: [`docs/MCP.md`](docs/MCP.md).
+Set `CMS_MCP_READONLY=true` for a safe read-only server.
 
 ---
 

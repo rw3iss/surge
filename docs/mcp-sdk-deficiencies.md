@@ -94,6 +94,24 @@ All present on `cms.settings.*` (`getAppearance`/`appearance`,
 
 ---
 
+### D10 — Post content-block ids are not stable across writes — **INTENTIONAL** (handled FIX-MCP) ✅
+Found during Phase C implementation. Because post blocks are saved by whole-array
+replace (`DELETE … + INSERT …`), the backend assigns **new** ids on every write,
+so a block id from one `get_post` is invalid after the next post write. (Page
+block ids ARE stable — pages use granular per-block rows.)
+- **Decision: not changed** (inherent to the delete-all/insert-all model; a fix
+  would mean the granular post-block endpoints rejected in D4).
+- **Handled in MCP:** every ergonomic post-block tool re-fetches inside its own
+  read-modify-write, so it is self-consistent. The `MCP.md` authoring guide tells
+  agents to re-`get_post` after any post write before referencing a block id.
+
+### D11 — `PUT /settings/appearance` is a whole-object replace — **FIX-MCP** ✅
+Found during Phase D. A partial appearance PUT clobbers unspecified fields.
+- **Done:** `update_appearance` now does get → merge → put, giving the tool true
+  partial-update semantics. (`update_site_header`/`update_site_footer`/`set_swatches`
+  remain intentional whole-object replaces — documented in `MCP.md`; their configs
+  are lists/trees where a merge would be ambiguous.)
+
 ## Net
 
 The SDK is **comprehensive** for the MCP's needs — no route is missing for the
