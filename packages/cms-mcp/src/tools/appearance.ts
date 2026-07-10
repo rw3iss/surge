@@ -83,11 +83,16 @@ const tools = [
     defineTool({
         name: 'update_appearance',
         description:
-            'Update the public appearance settings (partial — only provided fields change). Colors accept hex or `swatch:{id}`. These map to the site-wide `--site-*` CSS variables. GLOBAL site state — read get_appearance first if you intend to preserve/restore. Returns a confirmation message.',
+            'Update the public appearance settings (partial — only the fields you provide change; the rest are preserved). Colors accept hex or `swatch:{id}`. These map to the site-wide `--site-*` CSS variables. Returns a confirmation message.',
         write: true,
         inputSchema: appearanceShape,
         handler: async (args, ctx: ToolContext,) => {
-            return ctx.cms.settings.appearance(args as AppearanceSettings,);
+            // The backend PUT /settings/appearance is a whole-object replace, so
+            // merge the provided fields over the current appearance to give the
+            // tool true partial-update semantics.
+            const current = await ctx.cms.settings.getAppearance();
+            const merged = { ...current, ...(args as AppearanceSettings), };
+            return ctx.cms.settings.appearance(merged,);
         },
     },),
     defineTool({
