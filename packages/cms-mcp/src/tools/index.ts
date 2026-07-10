@@ -6,10 +6,12 @@
 import type { ToolDef, } from '../tool';
 import { metaTools, } from './meta';
 import { pageTools, } from './pages';
+import { postTools, } from './posts';
 
 export function allTools(): ToolDef[] {
     return [
         ...metaTools,
         ...pageTools,
+        ...postTools,
     ];
 }
