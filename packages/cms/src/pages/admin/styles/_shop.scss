@@ -330,6 +330,32 @@
         min-width: 0;
     }
 
+    // Tags, Options, and Variant inputs live outside the FormField primitive
+    // (whose `> input` styling reaches only *direct* children), so they fell
+    // back to the raw browser input — a hard black border with square corners.
+    // Give them the same look as the standard admin inputs (e.g. Title).
+    &__tags input,
+    &__option-row input,
+    &__variants input:not([type="checkbox"]):not([type="radio"]) {
+        padding: 6px 10px;
+        border: 1px solid var(--admin-border, $border-color);
+        border-radius: $border-radius-sm;
+        font-size: $font-size-sm;
+        background-color: var(--admin-input-bg, #fff);
+        color: var(--admin-input-text, var(--admin-page-text, #{$text-color}));
+        transition: border-color $transition-fast;
+
+        &::placeholder {
+            color: var(--admin-input-text, #{$text-light});
+            opacity: 0.5;
+        }
+
+        &:focus {
+            outline: none;
+            border-color: var(--site-primary, #{$primary-color});
+        }
+    }
+
     &__option-row {
         display: flex;
         gap: $spacing-sm;
