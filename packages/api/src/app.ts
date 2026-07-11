@@ -83,7 +83,13 @@ export function createApp(mode: AppMode = 'running',): Express {
         standardHeaders: true,
         legacyHeaders: false,
         skip: (req,) => {
+            // Only rate-limit the API. Static assets and SPA routes are served
+            // by the same Node process, and a single page load pulls in dozens
+            // of files (the PWA precaches ~130) — counting those would exhaust
+            // the window on the first visit. Behind a proxy every client also
+            // shares a small set of upstream IPs, so keep the ceiling generous.
             return config.isDevelopment
+                || !req.path.startsWith('/api/',)
                 || req.path.startsWith('/api/v1/health',)
                 || req.path.startsWith('/api/v1/setup',);
         },

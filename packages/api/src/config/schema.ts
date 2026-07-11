@@ -86,7 +86,9 @@ export const envSchema = z.object({
     SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().optional(),
 
     RATE_LIMIT_WINDOW_MS: z.string().transform(Number,).prefault('900000',),
-    RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number,).prefault('100',),
+    // Applies to /api/* only (static assets are exempt). Generous by default so
+    // proxied deployments where clients share upstream IPs aren't throttled.
+    RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number,).prefault('1000',),
 
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug',],).default('info',),
     LOG_FORMAT: z.string().default('combined',),

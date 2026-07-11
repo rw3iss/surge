@@ -75,12 +75,12 @@ const ACCESS_COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour (keep in sync with JW
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // 10 attempts per window
+    max: 50, // attempts per window — relaxed; behind a proxy many users share an IP
     message: {
         success: false,
         error: {
             code: 'RATE_LIMITED',
-            message: 'Too many login attempts. Please try again in 15 minutes.',
+            message: 'Too many login attempts. Please try again in a few minutes.',
         },
     },
     standardHeaders: true,
