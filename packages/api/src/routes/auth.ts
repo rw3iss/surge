@@ -12,7 +12,7 @@
  * byte-for-byte from the pre-framework implementation — this is the auth
  * system, so behaviour preservation beats normalization.
  */
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator, } from 'express-rate-limit';
 import { z, } from 'zod';
 import type {
     AuthLoginBody,
@@ -85,7 +85,10 @@ const loginLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req,) => req.ip || 'unknown',
+    // ipKeyGenerator normalizes IPv6 addresses to a /64 subnet so v6 clients
+    // can't sidestep the limit by varying low-order bits (required by
+    // express-rate-limit v8); keep the 'unknown' fallback for missing IPs.
+    keyGenerator: (req,) => (req.ip ? ipKeyGenerator(req.ip,) : 'unknown'),
 },);
 
 // ─── Routes ───────────────────────────────────────────────────────
