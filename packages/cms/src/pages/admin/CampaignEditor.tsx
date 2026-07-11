@@ -11,7 +11,7 @@ import { invalidateCampaignsCache, } from '../../services/adminData';
 import { cms, } from '../../services/cmsClient';
 
 const CampaignEditor: Component = () => {
-    const params = useParams();
+    const params = useParams<{ id: string, }>();
     const navigate = useNavigate();
     const isNew = () => !params.id || params.id === 'new';
     const { markDirty, markClean, } = useUnsavedChanges();

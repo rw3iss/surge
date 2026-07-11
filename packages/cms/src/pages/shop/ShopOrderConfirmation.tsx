@@ -8,7 +8,7 @@ import { money, } from './shopFormat';
 import './shop.scss';
 
 const ShopOrderConfirmationInner: Component = () => {
-    const params = useParams();
+    const params = useParams<{ number: string, }>();
 
     const [order] = createResource(
         () => params.number,

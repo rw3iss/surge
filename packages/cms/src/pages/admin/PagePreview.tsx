@@ -7,7 +7,7 @@ import { Layout, } from '../../components/layout/Layout';
 import { blockDataToRenderBlock, } from '../../utils/blockData';
 
 const PagePreview: Component = () => {
-    const params = useParams();
+    const params = useParams<{ id: string, }>();
     const navigate = useNavigate();
 
     const previewData = createMemo(() => {

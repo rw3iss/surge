@@ -14,7 +14,7 @@ const PROVIDER_NAMES: Record<string, string> = {
 };
 
 const AdminConnectionEditor: Component = () => {
-    const params = useParams();
+    const params = useParams<{ provider: string, }>();
     const navigate = useNavigate();
     const provider = () => params.provider;
     const providerName = () => PROVIDER_NAMES[provider()] || provider();

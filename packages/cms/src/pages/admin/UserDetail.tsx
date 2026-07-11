@@ -7,7 +7,7 @@ import { getRoleBadgeClass, } from '../../utils/badges';
 import './UserDetail.scss';
 
 const AdminUserDetail: Component = () => {
-    const params = useParams();
+    const params = useParams<{ id: string, }>();
     const navigate = useNavigate();
 
     const [userData, { refetch, },] = createResource(() => params.id, async (id,) => {

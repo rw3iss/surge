@@ -5,7 +5,7 @@ import { cms, } from '../services/cmsClient';
 import { siteName, } from '../stores/siteSettings';
 
 const SearchPage: Component = () => {
-    const [searchParams, setSearchParams,] = useSearchParams();
+    const [searchParams, setSearchParams,] = useSearchParams<{ q: string, }>();
     const [query, setQuery,] = createSignal(searchParams.q || '',);
 
     const [results,] = createResource(() => searchParams.q, async (q,) => {

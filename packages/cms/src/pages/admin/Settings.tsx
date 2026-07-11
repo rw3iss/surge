@@ -61,7 +61,7 @@ const PROVIDERS = [
 // `components/admin/features/`.)
 
 function ConnectionsPanel() {
-    const [searchParams, setSearchParams,] = useSearchParams();  // eslint-disable-line
+    const [searchParams, setSearchParams,] = useSearchParams<{ oauth_success: string, oauth_error: string, }>();  // eslint-disable-line
     const [connections, { refetch, },] = createResource(async () => {
         try {
             return await cms.connections.list() as any[];
@@ -92,7 +92,7 @@ function ConnectionsPanel() {
             setSearchParams({ oauth_success: undefined, },);
         }
         if (searchParams.oauth_error) {
-            setConnError(decodeURIComponent(searchParams.oauth_error,),);
+            setConnError(decodeURIComponent(searchParams.oauth_error ?? '',),);
             setSearchParams({ oauth_error: undefined, },);
         }
     },);
@@ -1401,7 +1401,7 @@ function AdminAppearancePanel() {
 // ─── Main Settings Page ───
 
 const AdminSettings: Component = () => {
-    const [searchParams, setSearchParams,] = useSearchParams();
+    const [searchParams, setSearchParams,] = useSearchParams<{ tab: string, oauth_success: string, oauth_error: string, }>();
     const [activeTab, setActiveTab,] = createSignal<TabId>(
         (searchParams.tab as TabId) || 'general',
     );

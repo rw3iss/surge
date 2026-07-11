@@ -4,7 +4,7 @@ import { Component, createResource, Show, } from 'solid-js';
 import { cms, } from '../../services/cmsClient';
 
 const AdminMessageView: Component = () => {
-    const params = useParams();
+    const params = useParams<{ id: string, }>();
 
     const [message,] = createResource(() => params.id, async (id,) => {
         try {

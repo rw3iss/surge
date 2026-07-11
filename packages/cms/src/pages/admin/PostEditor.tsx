@@ -27,7 +27,7 @@ let blockIdCounter = 0;
 const generateBlockId = () => `block-${Date.now()}-${++blockIdCounter}`;
 
 const AdminPostEditor: Component = () => {
-    const params = useParams();
+    const params = useParams<{ id: string, }>();
     const navigate = useNavigate();
     const toast = useToast();
     const isNew = () => !params.id || params.id === 'new';

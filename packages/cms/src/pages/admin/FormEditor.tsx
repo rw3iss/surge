@@ -22,7 +22,7 @@ interface FormQuestion {
 }
 
 const FormEditor: Component = () => {
-    const params = useParams();
+    const params = useParams<{ id: string, }>();
     const navigate = useNavigate();
     const isNew = () => !params.id || params.id === 'new';
     const { markDirty, markClean, } = useUnsavedChanges();
