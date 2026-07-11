@@ -144,14 +144,16 @@ export const campaignsRoutes = [
         handler: ({ body, },) => campaigns.bulk(body,),
     },),
 
-    // Fetch by id (admin).
+    // Fetch by id. Admins (JWT or key) see any status; anonymous callers see
+    // published campaigns only — lets public pages embed a campaign block by id.
     defineRoute({
-        method: 'get', path: '/:id', auth: 'admin',
-        summary: 'Fetch a campaign by id (any status).',
+        method: 'get', path: '/:id', auth: 'optional',
+        summary: 'Fetch a campaign by id. Admins see any status; anonymous callers see published campaigns only.',
         input: { params: idParams, },
-        handler: async ({ params, },) => {
+        handler: async ({ params, user, apiKey, },) => {
+            const isAdmin = isAdminRole(user?.role,) || Boolean(apiKey,);
             const campaign = await campaigns.getById(params.id,);
-            if (!campaign) throw new NotFoundError('Campaign',);
+            if (!campaign || (!isAdmin && !campaign.isPublished)) throw new NotFoundError('Campaign',);
             return campaign;
         },
     },),

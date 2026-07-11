@@ -171,14 +171,16 @@ export const formsRoutes = [
         handler: ({ body, },) => forms.bulk(body,),
     },),
 
-    // Form by id (admin).
+    // Form by id. Admins (JWT or key) see any status; anonymous callers see
+    // published forms only — lets public pages embed a form block by id.
     defineRoute({
-        method: 'get', path: '/:id', auth: 'admin',
-        summary: 'Fetch a form by id (with questions).',
+        method: 'get', path: '/:id', auth: 'optional',
+        summary: 'Fetch a form by id (with questions). Admins see any status; anonymous callers see published forms only.',
         input: { params: idParams, },
-        handler: async ({ params, },) => {
+        handler: async ({ params, user, apiKey, },) => {
+            const isAdmin = isAdminRole(user?.role,) || Boolean(apiKey,);
             const form = await forms.getById(params.id,);
-            if (!form) throw new NotFoundError('Form',);
+            if (!form || (!isAdmin && form.status !== 'published')) throw new NotFoundError('Form',);
             return form;
         },
     },),
