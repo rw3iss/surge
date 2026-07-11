@@ -321,6 +321,14 @@ with `meta = { page, limit, total, totalPages }`.
 | `update_site_header` | W | `header` | **WHOLE-OBJECT replace** — get first, modify, put back. |
 | `update_site_footer` | W | `footer` | **WHOLE-OBJECT replace** — get first, modify, put back. |
 
+**Header dropdown menus.** A header item of `type: "menu"` renders as a hover/focus
+dropdown when given a `children: SiteHeaderItem[]` array (each child is itself a
+header item, typically `text_link`, with its own `text`/`url`/`order`). The menu's
+own `url` stays clickable (top-level nav), and the children appear beneath it
+(desktop dropdown / mobile indented sub-links). Example:
+`{ type: "menu", text: "About", url: "/about", children: [ { type: "text_link", text: "Our Mission", url: "/about/our-mission", order: 0 }, … ] }`.
+Footer items do not support `children` (footer links are flat).
+
 ### Settings / Features (9)
 
 | Tool | R/W | Key params | Does |
