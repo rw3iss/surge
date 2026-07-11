@@ -27,3 +27,6 @@ packages/api/data/
 
 .env*
 *.env
+# ...but example templates carry no secrets and should be committed.
+!.env.example
+!*.env.example
