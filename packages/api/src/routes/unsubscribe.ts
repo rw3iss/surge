@@ -21,7 +21,7 @@ export const unsubscribeRoutes = [
         method: 'get', path: '/u/:token', auth: 'public', raw: true,
         summary: 'Unsubscribe from a mailing list (raw HTML page).',
         handler: async ({ req, res, },) => {
-            const result = await unsubscribe.unsubscribe(req.params.token,);
+            const result = await unsubscribe.unsubscribe((req.params.token as string),);
             res.status(result.status,).type('html',).send(result.html,);
         },
     },),
@@ -30,7 +30,7 @@ export const unsubscribeRoutes = [
         method: 'get', path: '/u/:token/resubscribe', auth: 'public', raw: true,
         summary: 'Resubscribe to a mailing list (raw HTML page).',
         handler: async ({ req, res, },) => {
-            const result = await unsubscribe.resubscribe(req.params.token,);
+            const result = await unsubscribe.resubscribe((req.params.token as string),);
             res.status(result.status,).type('html',).send(result.html,);
         },
     },),
@@ -39,7 +39,7 @@ export const unsubscribeRoutes = [
         method: 'get', path: '/lists/:slug/confirm/:token', auth: 'public', raw: true,
         summary: 'Confirm a double-opt-in subscription (raw HTML page).',
         handler: async ({ req, res, },) => {
-            const result = await unsubscribe.confirm(req.params.slug, req.params.token,);
+            const result = await unsubscribe.confirm((req.params.slug as string), (req.params.token as string),);
             res.status(result.status,).type('html',).send(result.html,);
         },
     },),

@@ -72,7 +72,7 @@ export const connectionsRoutes = [
         summary: 'OAuth provider callback. Persists tokens, then redirects to admin settings.',
         input: { params: providerParams, },
         handler: async ({ req, res, },) => {
-            const provider = req.params.provider;
+            const provider = req.params.provider as string;
             const { code, state, error: oauthError, error_description, } = req.query;
             const frontendUrl = `${config.frontendUrl}/admin/settings`;
 

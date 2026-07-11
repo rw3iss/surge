@@ -153,7 +153,9 @@ export function createApp(mode: AppMode = 'running',): Express {
     const distDir = path.resolve(process.cwd(), '../cms/dist',);
     app.use(createSsrMiddleware(distDir,),);
     app.use(express.static(distDir, { index: false, },),);
-    app.get('*', async (req, res, next,) => {
+    // Express 5 / path-to-regexp 8 no longer accept the bare '*' string route;
+    // a RegExp catch-all matches every GET path with identical behavior.
+    app.get(/.*/, async (req, res, next,) => {
         if (req.path.startsWith('/api/',)) return next();
         try {
             const fs = await import('fs');
