@@ -52,7 +52,7 @@ export function errorHandler(
                 code: 'VALIDATION_ERROR',
                 message: 'Invalid request data',
                 details: {
-                    errors: err.errors.map((e,) => ({
+                    errors: err.issues.map((e,) => ({
                         field: e.path.join('.',),
                         message: e.message,
                         code: e.code,

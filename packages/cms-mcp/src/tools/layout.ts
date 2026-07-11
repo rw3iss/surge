@@ -34,7 +34,7 @@ const layoutItemSchema = z.object({
     margin: z.string().optional().describe('CSS margin.',),
     padding: z.string().optional().describe('CSS padding.',),
     order: z.number().describe('Sort order within its container.',),
-    children: z.array(z.record(z.unknown(),),).optional().describe('Sub-items for a `menu` item (same item shape).',),
+    children: z.array(z.record(z.string(), z.unknown(),),).optional().describe('Sub-items for a `menu` item (same item shape).',),
 },);
 
 const headerSchema = z.object({

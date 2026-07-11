@@ -267,8 +267,8 @@ const tools = [
             blockId: z.string().describe('Content-block id (from get_post).',),
             title: z.string().optional().describe('New block title.',),
             content: z.string().optional().describe('New HTML body (rich_text/text/html).',),
-            settings: z.record(z.unknown(),).optional().describe('Type-specific fields to shallow-merge into data (only provided keys change).',),
-            style: z.union([z.record(z.unknown(),), z.null(),],).optional().describe('Inline BlockStyle fields, { "id": "<blockStyleId>" } template ref, or null to clear.',),
+            settings: z.record(z.string(), z.unknown(),).optional().describe('Type-specific fields to shallow-merge into data (only provided keys change).',),
+            style: z.union([z.record(z.string(), z.unknown(),), z.null(),],).optional().describe('Inline BlockStyle fields, { "id": "<blockStyleId>" } template ref, or null to clear.',),
         },
         handler: async (args, ctx: ToolContext,) => {
             const post = await ctx.cms.posts.getById(args.id,) as PostWithBlocks;

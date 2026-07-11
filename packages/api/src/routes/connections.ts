@@ -35,7 +35,7 @@ const upsertSchema = z.object({
     enabled: z.boolean().optional(),
     autoPublish: z.boolean().optional(),
     autoPublishCount: z.number().nullable().optional(),
-    credentials: z.record(z.unknown(),).optional(),
+    credentials: z.record(z.string(), z.unknown(),).optional(),
 },) satisfies z.ZodType<ConnectionUpsertBody>;
 
 // ─── Routes ───────────────────────────────────────────────────────

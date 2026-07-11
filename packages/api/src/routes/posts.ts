@@ -20,7 +20,7 @@ const contentBlockSchema = z.object({
         'gallery', 'carousel', 'spacer',
     ],),
     sort_order: z.number().int().min(0,),
-    data: z.record(z.unknown(),).default({},),
+    data: z.record(z.string(), z.unknown(),).default({},),
 },);
 
 const postSchema = z.object({

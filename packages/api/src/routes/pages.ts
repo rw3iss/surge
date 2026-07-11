@@ -47,10 +47,10 @@ const blockSchema = z.object({
     ],),
     title: z.string().max(255,).optional(),
     content: z.string().optional(),
-    settings: z.record(z.unknown(),).optional(),
+    settings: z.record(z.string(), z.unknown(),).optional(),
     order: z.number().int().optional(),
     isVisible: z.boolean().optional(),
-    style: z.record(z.unknown(),).nullable().optional(),
+    style: z.record(z.string(), z.unknown(),).nullable().optional(),
 },) satisfies z.ZodType<PageBlockBody>;
 
 const reorderBlocksBody = z.object({

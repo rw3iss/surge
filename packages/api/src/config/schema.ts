@@ -12,17 +12,17 @@ import { z, } from 'zod';
  */
 export const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test',],).default('development',),
-    PORT: z.string().transform(Number,).default('3001',),
+    PORT: z.string().transform(Number,).prefault('3001',),
     API_VERSION: z.string().default('v1',),
     FRONTEND_URL: z.string().url().default('http://localhost:3000',),
-    CORS_ORIGINS: z.string().transform((s,) => s.split(',',)).default('http://localhost:3000',),
+    CORS_ORIGINS: z.string().transform((s,) => s.split(',',)).prefault('http://localhost:3000',),
 
     DATABASE_URL: z.string().optional(),
-    DATABASE_POOL_MIN: z.string().transform(Number,).default('2',),
-    DATABASE_POOL_MAX: z.string().transform(Number,).default('10',),
+    DATABASE_POOL_MIN: z.string().transform(Number,).prefault('2',),
+    DATABASE_POOL_MAX: z.string().transform(Number,).prefault('10',),
 
     REDIS_URL: z.string().optional(),
-    CACHE_TTL_SECONDS: z.string().transform(Number,).default('300',),
+    CACHE_TTL_SECONDS: z.string().transform(Number,).prefault('300',),
 
     JWT_SECRET: z.string().min(32,).optional(),
     JWT_ACCESS_TOKEN_EXPIRES: z.string().default('1h',),
@@ -46,15 +46,15 @@ export const envSchema = z.object({
     EMAIL_FROM: z.string().optional(),
 
     MAIL_PROVIDER: z.enum(['smtp', 'mailgun', 'sendgrid', 'postmark',]).default('smtp',),
-    MAIL_SEND_CONCURRENCY: z.string().transform(Number,).default('10',),
-    MAIL_SEND_DELAY_MS: z.string().transform(Number,).default('50',),
+    MAIL_SEND_CONCURRENCY: z.string().transform(Number,).prefault('10',),
+    MAIL_SEND_DELAY_MS: z.string().transform(Number,).prefault('50',),
     MAIL_UNSUBSCRIBE_SECRET: z.string().optional(),
 
     DATA_DIR: z.string().default('./data',),
-    UPLOAD_MAX_SIZE_MB: z.string().transform(Number,).default('500',),
+    UPLOAD_MAX_SIZE_MB: z.string().transform(Number,).prefault('500',),
     UPLOAD_DIR: z.string().default('./uploads',),
     STORAGE_PROVIDER: z.enum(['local', 's3',],).default('local',),
-    ALLOWED_FILE_TYPES: z.string().transform((s,) => s.split(',',)).default(
+    ALLOWED_FILE_TYPES: z.string().transform((s,) => s.split(',',)).prefault(
         'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip',
     ),
 
@@ -85,14 +85,14 @@ export const envSchema = z.object({
     SHOPIFY_STORE_DOMAIN: z.string().optional(),
     SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().optional(),
 
-    RATE_LIMIT_WINDOW_MS: z.string().transform(Number,).default('900000',),
-    RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number,).default('100',),
+    RATE_LIMIT_WINDOW_MS: z.string().transform(Number,).prefault('900000',),
+    RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number,).prefault('100',),
 
     LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug',],).default('info',),
     LOG_FORMAT: z.string().default('combined',),
 
-    ADMIN_EMAILS: z.string().transform((s,) => s.split(',',).filter(Boolean,),).default('',),
-    AUTOLOGIN_ADMIN_LOCALHOST: z.string().transform((s,) => s === 'true').default('false',),
+    ADMIN_EMAILS: z.string().transform((s,) => s.split(',',).filter(Boolean,),).prefault('',),
+    AUTOLOGIN_ADMIN_LOCALHOST: z.string().transform((s,) => s === 'true').prefault('false',),
 },);
 
 export type EnvVars = z.infer<typeof envSchema>;

@@ -21,7 +21,8 @@
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@rw/cms-client": "file:../cms-client",
-        "@rw/cms-shared": "file:../shared"
+        "@rw/cms-shared": "file:../shared",
+        "zod": "^4.4.3"
     },
     "devDependencies": {
         "@types/node": "^26.1.1",

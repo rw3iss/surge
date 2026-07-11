@@ -15,8 +15,8 @@ export const blockInputShape = {
     type: z.string().describe('Block type key. Call describe_block_types for the full list + each type\'s fields.',),
     title: z.string().optional().describe('Optional block title/label.',),
     content: z.string().optional().describe('HTML body — used by rich_text, text, and html blocks.',),
-    settings: z.record(z.unknown(),).optional().describe('Type-specific fields (see describe_block_types). Merged over the type defaults.',),
-    style: z.union([z.record(z.unknown(),), z.null(),],).optional().describe('Block style: inline BlockStyle fields, a template ref { "id": "<blockStyleId>" }, or null to clear.',),
+    settings: z.record(z.string(), z.unknown(),).optional().describe('Type-specific fields (see describe_block_types). Merged over the type defaults.',),
+    style: z.union([z.record(z.string(), z.unknown(),), z.null(),],).optional().describe('Block style: inline BlockStyle fields, a template ref { "id": "<blockStyleId>" }, or null to clear.',),
 };
 
 export interface UnifiedBlock {

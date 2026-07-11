@@ -39,7 +39,7 @@
     "sharp": "^0.33.2",
     "stripe": "^14.12.0",
     "winston": "^3.11.0",
-    "zod": "^3.22.4"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/compression": "^1.7.5",

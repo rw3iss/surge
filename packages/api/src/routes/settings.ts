@@ -12,7 +12,7 @@ const settingsSchema = z.object({
     siteDescription: z.string().optional(),
     logo: z.string().url().optional().nullable(),
     favicon: z.string().url().optional().nullable(),
-    socialLinks: z.record(z.string(),).optional(),
+    socialLinks: z.record(z.string(), z.string(),).optional(),
     contactEmail: z.string().email().optional(),
     analytics: z.object({
         googleAnalyticsId: z.string().optional(),
@@ -167,7 +167,7 @@ export const settingsRoutes = [
     defineRoute({
         method: 'put', path: '/site-colors', auth: 'admin',
         summary: 'Replace the site color swatch palette.',
-        input: { body: z.array(z.record(z.unknown(),),), },
+        input: { body: z.array(z.record(z.string(), z.unknown(),),), },
         handler: ({ body, audit, },) => swatches.replace(body, audit(),),
     },),
 

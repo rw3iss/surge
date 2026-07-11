@@ -132,7 +132,7 @@ const tools = [
             target: z.enum(['page', 'post',],).describe("Which block system the block lives in: 'page' (structured) or 'post' (flat).",),
             pageOrPostId: z.string().describe('The page id (target=page) or post id (target=post).',),
             blockId: z.string().describe('The block id to style (from get_page / get_post).',),
-            style: z.union([z.record(z.unknown(),), z.null(),],).describe('Template ref { "id": "<blockStyleId>" }, inline BlockStyle fields object, or null to clear.',),
+            style: z.union([z.record(z.string(), z.unknown(),), z.null(),],).describe('Template ref { "id": "<blockStyleId>" }, inline BlockStyle fields object, or null to clear.',),
         },
         handler: async (args, ctx: ToolContext,) => {
             const { target, pageOrPostId, blockId, style, } = args;
