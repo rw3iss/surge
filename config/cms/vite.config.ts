@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 import solidPlugin from 'vite-plugin-solid';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -8,7 +8,17 @@ import { VitePWA } from 'vite-plugin-pwa';
 // package; outDir/envDir are pinned explicitly to the package as well.
 const CMS_ROOT = resolve(__dirname, '../../packages/cms');
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Dev server + API proxy are env-driven so multiple sites built from this
+  // same codebase can run side by side without colliding. Defaults preserve the
+  // original single-site setup (frontend :3000 → backend :3001). Override per
+  // site in packages/cms/.env: CMS_PORT (frontend port) and CMS_API_TARGET
+  // (backend origin to proxy /api, /uploads, etc. to).
+  const env = loadEnv(mode, CMS_ROOT, '');
+  const apiTarget = env.CMS_API_TARGET ?? 'http://localhost:3001';
+  const proxyEntry = { target: apiTarget, changeOrigin: true };
+
+  return {
   root: CMS_ROOT,
   envDir: CMS_ROOT,
   publicDir: resolve(CMS_ROOT, 'public'),
@@ -92,38 +102,24 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    port: 3000,
+    port: Number(env.CMS_PORT ?? 3000),
+    // Fail loudly if the port is taken instead of silently bumping to the next
+    // free port — a silent bump is what makes a second site look like it works
+    // while actually proxying to the first site's backend.
+    strictPort: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/uploads': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/avatars': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
+      '/api': proxyEntry,
+      '/uploads': proxyEntry,
+      '/avatars': proxyEntry,
       // Public-discoverable backend artifacts. In production the
       // backend serves these from the same origin as the SPA, so
       // relative links like `/sitemap.xml` work either way. In dev
       // the vite server holds the SPA's origin; without these proxy
       // entries, `<a href="/sitemap.xml">` lands on vite's SPA shell
       // (or a 404) instead of the backend route.
-      '/sitemap.xml': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/feed.xml': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/robots.txt': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
+      '/sitemap.xml': proxyEntry,
+      '/feed.xml': proxyEntry,
+      '/robots.txt': proxyEntry,
     },
   },
   optimizeDeps: { exclude: ['@pageloop/client', '@pageloop/vanilla'] },
@@ -145,4 +141,5 @@ export default defineConfig({
       },
     },
   },
+  };
 });

@@ -18,6 +18,7 @@ import { query, } from '../../db';
 import { logger, } from '../../utils/logger';
 import { getProvider, } from './providers/factory';
 import { buildVariableContext, substituteVariables, } from './variables';
+import { isFeatureEnabledServer, } from '../settings';
 import { generateUnsubscribeToken, } from './unsubscribe';
 import type { MailingListSubscriber, } from '@rw/cms-shared';
 
@@ -142,6 +143,10 @@ export async function kickJob(jobId: string,): Promise<void> {
  */
 export async function resumeRunningJobs(): Promise<void> {
     try {
+        // `mail_send_jobs` only exists when the mailing_lists feature is
+        // installed. On a site with the feature disabled the table is absent,
+        // so skip the resumer entirely rather than error on a missing relation.
+        if (!(await isFeatureEnabledServer('mailing_lists',))) return;
         const running = await jobs.findRunning();
         for (const j of running) {
             logger.info(`Resuming send job ${j.id} (left running from a previous boot)`,);
