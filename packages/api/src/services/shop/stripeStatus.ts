@@ -48,7 +48,9 @@ async function computeStatus(): Promise<ShopStripeStatus> {
     }
 
     try {
-        const account = await client.accounts.retrieve();
+        // Stripe v22 dropped the zero-arg retrieve() overload; passing an
+        // explicit null id resolves the account tied to the API key.
+        const account = await client.accounts.retrieve(null,);
         return {
             ...base,
             configured: true,

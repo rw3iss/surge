@@ -13,6 +13,7 @@ import { query, } from '../db';
 import { AppError, NotFoundError, ValidationError, } from '../core/errors';
 import { cache, } from './cache';
 import { getPaymentProvider, } from './payment';
+import { invoicePaymentIntentId, invoiceSubscriptionId, subscriptionPeriod, } from './payment/stripeCompat';
 import { logger, } from '../utils/logger';
 import { uuidOrNull, } from '../utils/uuid';
 
@@ -664,8 +665,8 @@ async function dispatchWebhookEvent(event: Stripe.Event,): Promise<void> {
                  WHERE stripe_subscription_id = $4`,
                 [
                     subscription.status === 'incomplete' ? 'active' : subscription.status,
-                    new Date(subscription.current_period_start * 1000,),
-                    new Date(subscription.current_period_end * 1000,),
+                    new Date(subscriptionPeriod(subscription,).start * 1000,),
+                    new Date(subscriptionPeriod(subscription,).end * 1000,),
                     subscription.id,
                 ],
             );
@@ -696,8 +697,8 @@ async function dispatchWebhookEvent(event: Stripe.Event,): Promise<void> {
                  WHERE stripe_subscription_id = $5`,
                 [
                     localStatus,
-                    new Date(subscription.current_period_start * 1000,),
-                    new Date(subscription.current_period_end * 1000,),
+                    new Date(subscriptionPeriod(subscription,).start * 1000,),
+                    new Date(subscriptionPeriod(subscription,).end * 1000,),
                     subscription.cancel_at_period_end,
                     subscription.id,
                 ],
@@ -726,7 +727,7 @@ async function dispatchWebhookEvent(event: Stripe.Event,): Promise<void> {
 
         case 'invoice.payment_succeeded': {
             const invoice = event.data.object as Stripe.Invoice;
-            const subscriptionId = invoice.subscription as string;
+            const subscriptionId = invoiceSubscriptionId(invoice,);
 
             if (subscriptionId) {
                 const subResult = await query(
@@ -740,7 +741,7 @@ async function dispatchWebhookEvent(event: Stripe.Event,): Promise<void> {
                         `INSERT INTO transactions (user_id, type, amount_cents, status, stripe_payment_intent_id,
                                                    subscription_id, description)
                          VALUES ($1, 'subscription_payment', $2, 'completed', $3, $4, 'Subscription payment')`,
-                        [sub.user_id, invoice.amount_paid, invoice.payment_intent, sub.id,],
+                        [sub.user_id, invoice.amount_paid, invoicePaymentIntentId(invoice,), sub.id,],
                     );
                 }
             }
@@ -751,7 +752,7 @@ async function dispatchWebhookEvent(event: Stripe.Event,): Promise<void> {
 
         case 'invoice.payment_failed': {
             const invoice = event.data.object as Stripe.Invoice;
-            const subscriptionId = invoice.subscription as string;
+            const subscriptionId = invoiceSubscriptionId(invoice,);
 
             if (subscriptionId) {
                 await query(

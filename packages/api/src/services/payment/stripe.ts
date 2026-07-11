@@ -10,6 +10,7 @@ import {
     PaymentProvider,
     SubscriptionResult,
 } from './types';
+import { invoiceClientSecret, subscriptionPeriod, } from './stripeCompat';
 
 // Stripe client is lazy so the backend can boot in setup mode without
 // a Stripe secret. Any first use after install will pick up the value
@@ -76,15 +77,15 @@ export class StripePaymentProvider implements PaymentProvider {
         },);
 
         const invoice = subscription.latest_invoice as Stripe.Invoice;
-        const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent | null;
+        const period = subscriptionPeriod(subscription,);
 
         return {
             id: subscription.id,
             status: subscription.status,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000,),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000,),
+            currentPeriodStart: new Date(period.start * 1000,),
+            currentPeriodEnd: new Date(period.end * 1000,),
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
-            clientSecret: paymentIntent?.client_secret || undefined,
+            clientSecret: invoice ? invoiceClientSecret(invoice,) : undefined,
         };
     }
 
@@ -96,12 +97,13 @@ export class StripePaymentProvider implements PaymentProvider {
 
     async getSubscription(subscriptionId: string,): Promise<SubscriptionResult> {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId,);
+        const period = subscriptionPeriod(subscription,);
 
         return {
             id: subscription.id,
             status: subscription.status,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000,),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000,),
+            currentPeriodStart: new Date(period.start * 1000,),
+            currentPeriodEnd: new Date(period.end * 1000,),
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
         };
     }
