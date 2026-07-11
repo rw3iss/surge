@@ -10,11 +10,12 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
     );
 }
 
-// Remove the app shell loading indicator
-const appShellLoading = root?.querySelector('.app-shell-loading',);
-if (appShellLoading) {
-    appShellLoading.remove();
-}
+// Clear any pre-mount content inside #root before the SPA renders: the static
+// app-shell loader AND any server-rendered body (the SEO/progressive-enhancement
+// markup the backend injects between the SSR_BODY markers). Solid's render()
+// APPENDS to #root rather than replacing it, so leftover children would stack
+// above the app (visible as unstyled SSR text above the header in production).
+root?.replaceChildren();
 
 // Strip the static fallback <title> and <meta name="description"> from index.html
 // so that @solidjs/meta's injected equivalents become the only ones in <head>.
