@@ -229,8 +229,8 @@ importers:
         version: link:../shared
     devDependencies:
       fake-indexeddb:
-        specifier: ^5.0.2
-        version: 5.0.2
+        specifier: ^6.2.5
+        version: 6.2.5
       solid-js:
         specifier: ^1.8.0
         version: 1.9.14
@@ -2923,8 +2923,8 @@ packages:
     resolution: {integrity: sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==}
     engines: {node: '>= 18'}
 
-  fake-indexeddb@5.0.2:
-    resolution: {integrity: sha512-cB507r5T3D55DfclY01GLkninZLfU7HXV/mhVRTnTRm5k2u+fY7Fof2dBkr80p5t7G7dlA/G5dI87QiMdPpMCQ==}
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
     engines: {node: '>=18'}
 
   fast-deep-equal@3.1.3:
@@ -7460,7 +7460,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fake-indexeddb@5.0.2: {}
+  fake-indexeddb@6.2.5: {}
 
   fast-deep-equal@3.1.3: {}
 

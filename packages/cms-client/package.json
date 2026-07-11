@@ -42,7 +42,7 @@
         }
     },
     "devDependencies": {
-        "fake-indexeddb": "^5.0.2",
+        "fake-indexeddb": "^6.2.5",
         "solid-js": "^1.8.0",
         "tsup": "^8.5.1",
         "typescript": "^7.0.2",
