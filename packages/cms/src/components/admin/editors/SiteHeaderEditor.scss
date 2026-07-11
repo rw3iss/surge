@@ -344,3 +344,40 @@
         flex-wrap: wrap;
     }
 }
+
+// ─── Sub-menu (menu children) editor ───
+.site-header-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--admin-border, #e5e7eb);
+    border-radius: 6px;
+
+    .site-header-edit-panel__input {
+      flex: 1 1 110px;
+      min-width: 0;
+    }
+  }
+
+  &__newtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--admin-text-muted, #6b7280);
+  }
+
+  &__actions {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+}

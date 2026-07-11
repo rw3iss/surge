@@ -31,6 +31,8 @@ interface SiteHeaderItem {
     margin?: string;
     padding?: string;
     order: number;
+    /** Sub-items for a 'menu' item — rendered as a hover/focus dropdown. */
+    children?: SiteHeaderItem[];
 }
 
 const genId = () => 'hdr-' + Date.now() + '-' + Math.random().toString(36,).slice(2, 7,);
@@ -411,9 +413,29 @@ const SiteHeaderEditor: Component = () => {
 
     const needsText = (type: HeaderItemType,) => ['text', 'text_link', 'button', 'menu',].includes(type,);
 
-    const needsUrl = (type: HeaderItemType,) => ['text_link', 'button', 'image_link',].includes(type,);
+    const needsUrl = (type: HeaderItemType,) => ['text_link', 'button', 'image_link', 'menu',].includes(type,);
 
     const needsImage = (type: HeaderItemType,) => ['image', 'image_link',].includes(type,);
+
+    // ─── Sub-menu (children) helpers for 'menu' items ───
+    const currentChildren = (): SiteHeaderItem[] => editItem()?.children ?? [];
+    const setChildren = (children: SiteHeaderItem[],) =>
+        updateEditField('children', children.map((c, i,) => ({ ...c, order: i, })),);
+    const addChild = () =>
+        setChildren([...currentChildren(), {
+            id: genId(), type: 'text_link', text: 'New Link', url: '/', order: currentChildren().length,
+        },]);
+    const updateChild = (idx: number, patch: Partial<SiteHeaderItem>,) =>
+        setChildren(currentChildren().map((c, i,) => i === idx ? { ...c, ...patch, } : c));
+    const removeChild = (idx: number,) =>
+        setChildren(currentChildren().filter((_, i,) => i !== idx));
+    const moveChild = (idx: number, dir: -1 | 1,) => {
+        const arr = [...currentChildren(),];
+        const j = idx + dir;
+        if (j < 0 || j >= arr.length) return;
+        [arr[idx], arr[j],] = [arr[j], arr[idx],];
+        setChildren(arr,);
+    };
 
     const needsButtonColor = (type: HeaderItemType,) => type === 'button';
 
@@ -830,6 +852,74 @@ const SiteHeaderEditor: Component = () => {
                                             />
                                             <span>Open in new tab</span>
                                         </label>
+                                    </div>
+                                </Show>
+
+                                {/* Sub-menu items (dropdown children) — 'menu' type only */}
+                                <Show when={currentType() === 'menu'}>
+                                    <div class="site-header-edit-panel__field">
+                                        <label class="site-header-edit-panel__label">
+                                            Sub-menu items
+                                            <Tooltip content="Links shown in a dropdown under this menu. The menu's own URL stays clickable." />
+                                        </label>
+                                        <div class="site-header-submenu">
+                                            <For each={item().children ?? []}>
+                                                {(child, idx,) => (
+                                                    <div class="site-header-submenu__row">
+                                                        <input
+                                                            type="text"
+                                                            class="site-header-edit-panel__input"
+                                                            value={child.text || ''}
+                                                            onInput={(e,) => updateChild(idx(), { text: e.currentTarget.value, },)}
+                                                            placeholder="Label"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            class="site-header-edit-panel__input"
+                                                            value={child.url || ''}
+                                                            onInput={(e,) => updateChild(idx(), { url: e.currentTarget.value, },)}
+                                                            placeholder="/path"
+                                                        />
+                                                        <label class="site-header-submenu__newtab" title="Open in new tab">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={child.openInNewTab || false}
+                                                                onChange={(e,) => updateChild(idx(), { openInNewTab: e.currentTarget.checked, },)}
+                                                            />
+                                                            <span>New tab</span>
+                                                        </label>
+                                                        <div class="site-header-submenu__actions">
+                                                            <button
+                                                                class="btn btn--outline btn--small"
+                                                                disabled={idx() === 0}
+                                                                onClick={() => moveChild(idx(), -1,)}
+                                                                title="Move up"
+                                                            >
+                                                                &uarr;
+                                                            </button>
+                                                            <button
+                                                                class="btn btn--outline btn--small"
+                                                                disabled={idx() === (item().children?.length ?? 0) - 1}
+                                                                onClick={() => moveChild(idx(), 1,)}
+                                                                title="Move down"
+                                                            >
+                                                                &darr;
+                                                            </button>
+                                                            <button
+                                                                class="btn btn--danger btn--small"
+                                                                onClick={() => removeChild(idx(),)}
+                                                                title="Remove sub-item"
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </For>
+                                            <button class="btn btn--secondary btn--small" onClick={addChild}>
+                                                + Add sub-item
+                                            </button>
+                                        </div>
                                     </div>
                                 </Show>
 
