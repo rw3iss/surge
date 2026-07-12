@@ -1,45 +1,61 @@
-version: '3.8'
+# Turnkey SiteSurge stack — Postgres + Redis + the server (API + admin + public
+# SPA). One command:  docker compose -f config/docker-compose.yml up -d
+# Then open http://localhost:3001/setup (first run) to create the admin + schema.
+#
+# Override the defaults with a .env next to this file or shell env vars.
+# CHANGE JWT_SECRET before any real use.
+
+name: sitesurge
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: rw
-      POSTGRES_USER: rw
-      POSTGRES_PASSWORD: rw_dev_password
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME:-sitesurge}
+      POSTGRES_USER: ${DB_USER:-sitesurge}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sitesurge_dev}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sitesurge}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
     volumes:
       - redis_data:/data
 
-  app:
-    # This compose file lives in config/; build context is the repo root (..)
-    # so the Dockerfile's COPY paths (package*.json, packages/*) still resolve.
+  server:
+    # Build context is the repo root (..) so the Dockerfile sees the workspace.
     build:
       context: ..
       dockerfile: config/Dockerfile
+    restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:3001"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: postgresql://rw:rw_dev_password@postgres:5432/rw
+      DATABASE_URL: postgresql://${DB_USER:-sitesurge}:${DB_PASSWORD:-sitesurge_dev}@postgres:5432/${DB_NAME:-sitesurge}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-jwt-secret-change-in-production-32chars
-      FRONTEND_URL: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-characters-long}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001}
     volumes:
-      - ../uploads:/app/uploads
+      - uploads:/app/packages/api/uploads
+      - data:/app/packages/api/data
 
 volumes:
   postgres_data:
   redis_data:
+  uploads:
+  data:
