@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    // node16 (with no "type":"module" in package.json) emits CommonJS, which
+    // resolves the barrel's directory re-exports (`export * from './api'`)
+    // natively under raw Node — so @sitesurge/types is Node-loadable, not just
+    // bundler-loadable, and the CJS api server can run `node dist` (no tsx).
+    "module": "node16",
+    "moduleResolution": "node16",
     "lib": ["ES2022"],
     "declaration": true,
     "declarationMap": true,
