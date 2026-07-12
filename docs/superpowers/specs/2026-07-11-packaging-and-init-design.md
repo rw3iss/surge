@@ -1,7 +1,14 @@
 # SiteSurge — Packaging, Distribution & Initialization Design
 
 Date: 2026-07-11
-Status: **Approved — implementing** (Phases 1–3 done; Phase 4 next)
+Status: **Approved — implementing** (Phases 1–4 done; Phase 5 next)
+
+Phase 4 shipped: multi-stage Dockerfile (builds admin + runs `node dist`) +
+turnkey compose (verified: image builds, runs, serves the bundled SPA); native
+path documented (systemd/`node dist`); `@sitesurge/server` now exports
+`createApp`/`startServer`/`runMigrations`/`runInstallation` for embedding; see
+`docs/DEPLOYMENT.md`. Deferred: npm-publishing the server (needs the admin bundled
+into the package + a smaller image).
 Author: architecture pass
 
 ### Locked decisions (2026-07-11)
