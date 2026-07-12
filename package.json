@@ -1,7 +1,7 @@
 {
-	"name": "rw-cms",
+	"name": "surge-cms",
 	"version": "1.0.0",
-	"description": "RW portfolio site CMS",
+	"description": "SiteSurge — self-hosted, block-based headless CMS (monorepo)",
 	"private": true,
 	"packageManager": "pnpm@10.28.0",
 	"scripts": {
@@ -25,6 +25,9 @@
 		"lint:fix": "oxlint -c config/.oxlintrc.json --fix packages/cms/src packages/api/src packages/shared/src",
 		"lint:all": "pnpm run lint && pnpm run build",
 		"test": "pnpm -r run test",
+		"changeset": "changeset",
+		"version-packages": "changeset version",
+		"release": "pnpm run build && changeset publish",
 		"docker:up": "docker compose -f config/docker-compose.yml up -d",
 		"docker:down": "docker compose -f config/docker-compose.yml down",
 		"docker:build": "docker compose -f config/docker-compose.yml build",
@@ -33,6 +36,7 @@
 		"prepare": "[ -d .git ] && ln -sf ../../scripts/pre-push-check.sh .git/hooks/pre-push || true"
 	},
 	"devDependencies": {
+		"@changesets/cli": "^2.31.0",
 		"concurrently": "^10.0.3",
 		"oxlint": "^1.58.0",
 		"typescript": "^7.0.2"

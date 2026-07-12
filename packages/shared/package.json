@@ -1,6 +1,6 @@
 {
   "name": "@sitesurge/types",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -9,5 +9,24 @@
   },
   "devDependencies": {
     "typescript": "^7.0.2"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "description": "Shared TypeScript types, API DTOs, and utilities for the SiteSurge CMS.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rw3iss/surge-cms.git",
+    "directory": "packages/shared"
+  },
+  "homepage": "https://github.com/rw3iss/surge-cms#readme",
+  "bugs": "https://github.com/rw3iss/surge-cms/issues",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

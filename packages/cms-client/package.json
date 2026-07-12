@@ -1,7 +1,6 @@
 {
     "name": "@sitesurge/client",
     "version": "0.2.0",
-    "private": true,
     "type": "module",
     "sideEffects": false,
     "main": "dist/index.cjs",
@@ -31,7 +30,7 @@
         "check:drift": "tsx scripts/check-drift.ts"
     },
     "dependencies": {
-        "@sitesurge/types": "file:../shared"
+        "@sitesurge/types": "workspace:*"
     },
     "peerDependencies": {
         "solid-js": ">=1.8.0"
@@ -47,5 +46,20 @@
         "tsup": "^8.5.1",
         "typescript": "^7.0.2",
         "vitest": "^4.1.10"
+    },
+    "description": "Typed headless HTTP client (SDK) for the SiteSurge CMS API.",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rw3iss/surge-cms.git",
+        "directory": "packages/cms-client"
+    },
+    "homepage": "https://github.com/rw3iss/surge-cms#readme",
+    "bugs": "https://github.com/rw3iss/surge-cms/issues",
+    "engines": {
+        "node": ">=20"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

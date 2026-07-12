@@ -1,7 +1,7 @@
 # SiteSurge — Packaging, Distribution & Initialization Design
 
 Date: 2026-07-11
-Status: **Approved — implementing** (Phase 1 in progress)
+Status: **Approved — implementing** (Phases 1–2 done; Phase 3 next)
 Author: architecture pass
 
 ### Locked decisions (2026-07-11)
