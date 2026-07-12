@@ -1,0 +1,13 @@
+{
+  "name": "sitesurge-example-headless-node",
+  "private": true,
+  "type": "module",
+  "description": "Minimal headless consumer — fetch SiteSurge content with @sitesurge/client.",
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts"
+  },
+  "dependencies": {
+    "@sitesurge/client": "^0.2.0",
+    "@sitesurge/types": "^0.1.0"
+  }
+}

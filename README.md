@@ -30,27 +30,80 @@ SiteSurge (a.k.a. SiteSurge CMS) is a self-hosted, customizable content platform
 
 ---
 
-## Quickstart
+## Getting Started
+
+SiteSurge ships as installable packages under the **`@sitesurge`** scope. The
+**server** (`@sitesurge/server`) serves the REST API, the public site, **and** the
+admin UI in one process; the **client** (`@sitesurge/client`) + **types**
+(`@sitesurge/types`) let any frontend consume it. Pick a path:
+
+**Prerequisites:** Node 20+, PostgreSQL 14+, Redis 6+ (Redis optional).
+
+### A. Turnkey site (fastest — Docker)
 
 ```bash
-git clone <repo>
-cd <project>
-npm install
-npm run dev
+npm create sitesurge@latest my-site      # scaffolds compose + .env + README
+cd my-site && docker compose up -d       # Postgres + Redis + server
+open http://localhost:3001/setup         # first-run wizard (or: docker compose exec server sitesurge setup --from-env)
 ```
 
-Then open <http://localhost:3000/setup> and follow the wizard. It will detect what's already configured, validate inputs live, run migrations, seed defaults, create the first admin, and write `.env`.
+Configure appearance/content in the admin at `/admin`. Done.
 
-Manual install (CI / scripted):
+### B. Native (no Docker)
+
+Run the server on any host with Node + Postgres — build once, then run `node dist`
+under systemd/pm2. See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for a complete
+systemd + nginx setup, and initialize with the wizard or the CLI:
 
 ```bash
-cp packages/api/.env.example packages/api/.env   # fill in values
-npm run db:migrate                                # → packages/api
-npm run db:seed                                   # add --demo for sample content
-npm run dev
+sitesurge setup     # interactive; or --config <file> / --from-env for CI
+sitesurge start     # = node packages/api/dist/index.js
 ```
 
-**Prerequisites:** Node 20+, PostgreSQL 14+, Redis 6+.
+The **`sitesurge` CLI** (`@sitesurge/cli`) also does `migrate`, `seed`, `doctor`
+(DB/Redis probes), and `status`.
+
+### C. Headless — your frontend, our content API
+
+```bash
+npm i @sitesurge/client @sitesurge/types
+```
+```ts
+import { createClient } from '@sitesurge/client';
+const cms = createClient({ baseUrl: process.env.CMS_URL, auth: { apiKey: process.env.CMS_KEY } });
+const { data: posts } = await cms.posts.list({ limit: 12 });
+```
+
+Issue a scoped key in **admin → Settings → API Keys**. Prefer your own client?
+Everything is typed in `@sitesurge/types` and documented in
+[`docs/API.md`](docs/API.md). A runnable example lives in
+[`examples/headless-node`](examples/headless-node).
+
+### D. Embed the server in your own Node app
+
+```ts
+import { createApp, startServer } from '@sitesurge/server';
+const app = createApp('running');
+app.use('/webhooks/custom', myRouter);
+app.listen(3001);        // or: await startServer();
+```
+
+### E. AI-assisted authoring (MCP)
+
+```bash
+CMS_BASE_URL=http://localhost:3001 CMS_API_KEY=ssk_… npx @sitesurge/mcp
+```
+See [`docs/MCP.md`](docs/MCP.md).
+
+### Contributing to SiteSurge itself
+
+```bash
+git clone https://github.com/rw3iss/surge-cms && cd surge-cms
+pnpm install && pnpm dev      # api :3001 + admin :3000, wizard at /setup
+```
+
+> Distribution + release details: **[docs/PUBLISHING.md](docs/PUBLISHING.md)**.
+> Architecture of the package split: `docs/superpowers/specs/2026-07-11-packaging-and-init-design.md`.
 
 ---
 

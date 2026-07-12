@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "node16",
+    "moduleResolution": "node16",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "outDir": "../../packages/create-sitesurge/dist",
+    "rootDir": "../../packages/create-sitesurge/src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["../../packages/create-sitesurge/src/**/*"],
+  "exclude": ["../../packages/create-sitesurge/node_modules", "../../packages/create-sitesurge/dist"]
+}

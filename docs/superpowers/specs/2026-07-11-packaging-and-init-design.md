@@ -1,7 +1,13 @@
 # SiteSurge — Packaging, Distribution & Initialization Design
 
 Date: 2026-07-11
-Status: **Approved — implementing** (Phases 1–4 done; Phase 5 next)
+Status: **Approved — implementing** (Phases 1–6 done; only Phase 7 remains)
+
+Phase 5: `@sitesurge/cli` (`sitesurge setup/migrate/seed/doctor/status/start`)
+over the installer — interactive + `--config`/`--from-env`. Phase 6:
+`create-sitesurge` scaffolder (`npm create sitesurge`), `examples/headless-node`,
+and the README "Getting Started" (turnkey/native/headless/embed/MCP/contrib).
+Only **Phase 7 (extract RW/Surge into their own repos)** is left.
 
 Phase 4 shipped: multi-stage Dockerfile (builds admin + runs `node dist`) +
 turnkey compose (verified: image builds, runs, serves the bundled SPA); native
