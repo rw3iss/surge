@@ -16,4 +16,16 @@ ALTER TYPE block_type ADD VALUE IF NOT EXISTS 'social';
 -- Need a separate transaction for the value to be visible.
 COMMIT;
 
-UPDATE blocks SET type = 'social' WHERE type = 'social_feed';
+-- Migrate legacy rows — but only if the old `social_feed` enum value ever
+-- existed. A fresh install's base schema never had it, so referencing the
+-- literal directly would raise "invalid input value for enum". Guard it.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_enum e
+        JOIN pg_type t ON t.oid = e.enumtypid
+        WHERE t.typname = 'block_type' AND e.enumlabel = 'social_feed'
+    ) THEN
+        UPDATE blocks SET type = 'social' WHERE type = 'social_feed';
+    END IF;
+END $$;

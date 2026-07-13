@@ -5,6 +5,8 @@ import express, { Express, json, raw, urlencoded, } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import path from 'path';
+import { existsSync, } from 'fs';
+import { adminDistPath, } from '@sitesurge/admin';
 import { config, } from './config';
 import { csrfProtection, csrfToken, } from './middleware/csrf';
 import { errorHandler, notFoundHandler, } from './middleware/error';
@@ -17,6 +19,21 @@ import { sitemapRoutes, } from './routes/sitemap';
 import { feedRoutes, } from './routes/feed';
 import { unsubscribeRoutes, } from './routes/unsubscribe';
 import { logger, } from './utils/logger';
+
+/**
+ * Resolve the built admin/public SPA directory.
+ * - Installed: the `@sitesurge/admin` static-asset package ships the built SPA.
+ * - Monorepo dev/build: fall back to the sibling package's `dist/`.
+ */
+function resolveAdminDist(): string {
+    try {
+        const p = adminDistPath();
+        if (existsSync(path.join(p, 'index.html',),)) return p;
+    } catch {
+        // @sitesurge/admin not resolvable — fall through to the monorepo path.
+    }
+    return path.resolve(process.cwd(), '../cms/dist',);
+}
 
 /**
  * Mode-aware app factory.
@@ -156,7 +173,7 @@ export function createApp(mode: AppMode = 'running',): Express {
 
     // SSR + frontend serving. Same in both modes; the SPA handles its
     // own redirect to /setup based on the status endpoint.
-    const distDir = path.resolve(process.cwd(), '../cms/dist',);
+    const distDir = resolveAdminDist();
     app.use(createSsrMiddleware(distDir,),);
     app.use(express.static(distDir, { index: false, },),);
     // Express 5 / path-to-regexp 8 no longer accept the bare '*' string route;

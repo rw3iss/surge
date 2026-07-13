@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sitesurge/server": "workspace:*",
+    "@sitesurge/server": "workspace:^",
     "commander": "^12.1.0",
     "prompts": "^2.4.2"
   },

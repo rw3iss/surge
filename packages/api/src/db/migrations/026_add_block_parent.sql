@@ -8,9 +8,9 @@
 -- wrapper). group_item is the only valid direct child of a group.
 
 ALTER TABLE blocks
-    ADD COLUMN parent_block_id UUID REFERENCES blocks(id) ON DELETE CASCADE;
+    ADD COLUMN IF NOT EXISTS parent_block_id UUID REFERENCES blocks(id) ON DELETE CASCADE;
 
-CREATE INDEX idx_blocks_parent_order ON blocks(parent_block_id, "order");
+CREATE INDEX IF NOT EXISTS idx_blocks_parent_order ON blocks(parent_block_id, "order");
 
 ALTER TYPE block_type ADD VALUE IF NOT EXISTS 'group';
 ALTER TYPE block_type ADD VALUE IF NOT EXISTS 'group_item';

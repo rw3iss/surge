@@ -1,10 +1,11 @@
 {
   "name": "@sitesurge/server",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "license": "GPL-2.0-only",
   "main": "dist/lib.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-assets.mjs",
     "start": "node dist/index.js",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:migrate:status": "tsx src/db/migrate.ts --status",
@@ -18,7 +19,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",
-    "@sitesurge/types": "workspace:*",
+    "@sitesurge/admin": "workspace:^",
+    "@sitesurge/types": "workspace:^",
     "bcryptjs": "^3.0.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -62,6 +64,9 @@
   "private": true,
   "description": "SiteSurge CMS backend — Express API + SSR + admin UI. Run standalone (Docker/native) or embed via createApp/startServer.",
   "types": "dist/lib.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
@@ -70,6 +75,9 @@
   },
   "bin": {
     "sitesurge-server": "dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=20"

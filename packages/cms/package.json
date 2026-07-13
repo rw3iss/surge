@@ -1,7 +1,41 @@
 {
   "name": "@sitesurge/admin",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "description": "SiteSurge CMS admin + public SPA — built static assets, served by @sitesurge/server.",
+  "license": "GPL-2.0-only",
+  "main": "./asset-entry/index.cjs",
+  "types": "./asset-entry/index.d.cts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./asset-entry/index.d.mts",
+        "default": "./asset-entry/index.mjs"
+      },
+      "require": {
+        "types": "./asset-entry/index.d.cts",
+        "default": "./asset-entry/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "asset-entry"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rw3iss/surge-cms.git",
+    "directory": "packages/cms"
+  },
+  "homepage": "https://github.com/rw3iss/surge-cms#readme",
+  "bugs": "https://github.com/rw3iss/surge-cms/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite --config ../../config/cms/vite.config.ts",
     "build": "vite build --config ../../config/cms/vite.config.ts",
@@ -9,7 +43,7 @@
     "lint": "oxlint -c ../../config/.oxlintrc.json src",
     "test": "vitest --passWithNoTests"
   },
-  "dependencies": {
+  "devDependencies": {
     "@codemirror/lang-html": "^6.4.11",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.1",
@@ -18,15 +52,13 @@
     "@solidjs/meta": "^0.29.2",
     "@solidjs/router": "^0.16.1",
     "@stripe/stripe-js": "^9.9.0",
-    "codemirror": "^6.0.2",
-    "plyr": "^3.8.4",
-    "solid-js": "^1.8.11"
-  },
-  "devDependencies": {
     "@types/node": "^26.1.1",
     "autoprefixer": "^10.4.16",
+    "codemirror": "^6.0.2",
+    "plyr": "^3.8.4",
     "postcss": "^8.4.33",
     "sass": "^1.69.7",
+    "solid-js": "^1.8.11",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
     "vite-plugin-pwa": "^1.3.0",
