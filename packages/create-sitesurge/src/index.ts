@@ -2,12 +2,15 @@
 /**
  * `npm create sitesurge` — scaffold a new SiteSurge CMS project.
  *
- * Generates a turnkey Docker Compose project (Postgres + Redis + the SiteSurge
- * server) with a ready `.env`, and — with `--headless` — a starter frontend that
- * pulls content via @sitesurge/client. Zero runtime deps for a fast create.
+ * Generates one of:
+ *   (default)   turnkey Docker Compose project (Postgres + Redis + server image)
+ *   --node      thin npm-server repo (@sitesurge/server + cli, no Docker)
+ *   --headless  also add a starter frontend that pulls content via @sitesurge/client
+ * Zero runtime deps for a fast create.
  *
  *   npm create sitesurge@latest my-site
- *   npm create sitesurge@latest my-site -- --headless
+ *   npm create sitesurge@latest my-site -- --node
+ *   npm create sitesurge@latest my-site -- --node --headless
  */
 import { randomBytes, } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, writeFileSync, } from 'node:fs';
@@ -16,6 +19,7 @@ import path from 'node:path';
 
 const args = process.argv.slice(2,);
 const headless = args.includes('--headless',);
+const nodeMode = args.includes('--node',);
 let target = args.find((a: string,) => !a.startsWith('-',),);
 
 function ask(q: string, def: string,): Promise<string> {
@@ -133,8 +137,75 @@ const HEADLESS_PKG = `{
   "private": true,
   "type": "module",
   "scripts": { "start": "node --experimental-strip-types src/index.ts" },
-  "dependencies": { "@sitesurge/client": "^0.2.0", "@sitesurge/types": "^0.1.0" }
+  "dependencies": { "@sitesurge/client": "^0.2.1", "@sitesurge/types": "^0.1.1" }
 }
+`;
+
+// ── --node: thin npm-server repo (backend from npm, no Docker) ──
+const NODE_PKG = `{
+  "name": "__NAME__",
+  "private": true,
+  "scripts": {
+    "setup": "sitesurge setup",
+    "migrate": "sitesurge migrate",
+    "seed": "sitesurge seed",
+    "doctor": "sitesurge doctor",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@sitesurge/server": "^0.1.0",
+    "@sitesurge/cli": "^0.1.0"
+  }
+}
+`;
+
+const NODE_INDEX = `// Your SiteSurge server (API + public site + admin) — booted from npm.
+//
+// Extend it with your own routes instead of the one-liner below:
+//
+//   const { createApp } = require('@sitesurge/server');
+//   const app = createApp('running');
+//   app.use('/webhooks/custom', myRouter);
+//   app.listen(process.env.PORT || 3001);
+//
+const { startServer } = require('@sitesurge/server');
+startServer();
+`;
+
+const NODE_ENV = `# SiteSurge (native / npm) config. Keep JWT_SECRET secret.
+NODE_ENV=production
+PORT=3001
+DATABASE_URL=postgresql://__NAME__:__DBPASS__@localhost:5432/__NAME__
+# REDIS_URL=redis://localhost:6379   # optional
+JWT_SECRET=__JWT__
+FRONTEND_URL=http://localhost:3001
+CORS_ORIGINS=http://localhost:3001
+# Non-interactive setup (npm run setup -- --from-env):
+SITE_NAME=__TITLE__
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=__ADMINPASS__
+`;
+
+const NODE_README = (name: string,) =>
+    `# ${name}
+
+A [SiteSurge CMS](https://github.com/rw3iss/surge-cms) site — the server runs
+from the \`@sitesurge/server\` npm package (no CMS source in this repo).
+
+## Run
+
+Requires Node 20+ and a PostgreSQL database (set \`DATABASE_URL\` in \`.env\`).
+
+\`\`\`bash
+npm install
+npm run setup          # create schema + admin (interactive)
+# or non-interactively:  npm run setup -- --from-env
+npm start              # API + public site + admin at http://localhost:3001
+\`\`\`
+
+Admin at \`/admin\`. Extend the server with your own routes in \`src/index.js\`
+via \`createApp()\`. Upgrade the CMS by bumping \`@sitesurge/server\` +
+\`npm run migrate\`.
 `;
 const HEADLESS_SRC = `import { createClient } from '@sitesurge/client';
 
@@ -167,10 +238,17 @@ async function main() {
             .replaceAll('__ADMINPASS__', secret(12,),)
             .replaceAll('__JWT__', secret(32,),);
 
-    write(dir, 'docker-compose.yml', subst(COMPOSE,),);
-    write(dir, '.env', subst(ENV,),);
     write(dir, '.gitignore', GITIGNORE,);
-    write(dir, 'README.md', README(title,),);
+    if (nodeMode) {
+        write(dir, 'package.json', subst(NODE_PKG,),);
+        write(dir, 'src/index.js', NODE_INDEX,);
+        write(dir, '.env', subst(NODE_ENV,),);
+        write(dir, 'README.md', NODE_README(title,),);
+    } else {
+        write(dir, 'docker-compose.yml', subst(COMPOSE,),);
+        write(dir, '.env', subst(ENV,),);
+        write(dir, 'README.md', README(title,),);
+    }
     if (headless) {
         write(dir, 'frontend/package.json', subst(HEADLESS_PKG,),);
         write(dir, 'frontend/src/index.ts', HEADLESS_SRC,);
@@ -179,8 +257,13 @@ async function main() {
     console.log(`  ✓ Scaffolded ${name} in ${dir}\\n`,);
     console.log('  Next:',);
     console.log(`    cd ${target}`,);
-    console.log('    docker compose up -d',);
-    console.log('    open http://localhost:3001/setup   # or: docker compose exec server sitesurge setup --from-env\\n',);
+    if (nodeMode) {
+        console.log('    npm install',);
+        console.log('    npm run setup     # then: npm start  → http://localhost:3001\\n',);
+    } else {
+        console.log('    docker compose up -d',);
+        console.log('    open http://localhost:3001/setup   # or: docker compose exec server sitesurge setup --from-env\\n',);
+    }
 }
 
 main().catch((e,) => { console.error(e,); process.exit(1,); },);
