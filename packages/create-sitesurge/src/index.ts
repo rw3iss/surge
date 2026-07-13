@@ -58,9 +58,8 @@ services:
     volumes: [redis_data:/data]
 
   server:
-    # Build the image from the SiteSurge repo, or use a published image once
-    # available:  image: sitesurge/server:latest
-    image: sitesurge/server:latest
+    # Prebuilt image from GHCR. Pin a version tag (e.g. :0.1) for production.
+    image: ghcr.io/rw3iss/sitesurge-server:latest
     restart: unless-stopped
     ports: ["\${PORT}:3001"]
     depends_on:
@@ -112,9 +111,8 @@ docker compose exec server sitesurge setup --from-env
 Admin at \`/admin\`. The server serves the API, the public site, and the admin UI.
 Config lives in \`.env\` — **keep \`JWT_SECRET\` secret**.
 
-> The compose file expects the \`sitesurge/server\` image. Until it's on a
-> registry, build it from the SiteSurge repo:
-> \`docker build -f config/Dockerfile -t sitesurge/server:latest .\`
+> The compose file pulls \`ghcr.io/rw3iss/sitesurge-server\`. Pin a version tag
+> (e.g. \`:0.1\`) for production instead of \`:latest\`.
 
 ## Prefer native (no Docker)?
 

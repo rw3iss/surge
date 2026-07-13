@@ -39,29 +39,36 @@ admin UI in one process; the **client** (`@sitesurge/client`) + **types**
 
 **Prerequisites:** Node 20+, PostgreSQL 14+, Redis 6+ (Redis optional).
 
+Both turnkey paths (A, B) give you a **source-free, versioned site repo** — you
+never clone this monorepo.
+
 ### A. Turnkey site (fastest — Docker)
 
 ```bash
 npm create sitesurge@latest my-site      # scaffolds compose + .env + README
-cd my-site && docker compose up -d       # Postgres + Redis + server
+cd my-site && docker compose up -d       # Postgres + Redis + prebuilt server image
 open http://localhost:3001/setup         # first-run wizard (or: docker compose exec server sitesurge setup --from-env)
 ```
 
+The compose file pulls the prebuilt **`ghcr.io/rw3iss/sitesurge-server`** image.
 Configure appearance/content in the admin at `/admin`. Done.
 
-### B. Native (no Docker)
+### B. Node / native (no Docker) — server from npm
 
-Run the server on any host with Node + Postgres — build once, then run `node dist`
-under systemd/pm2. See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for a complete
-systemd + nginx setup, and initialize with the wizard or the CLI:
+Scaffold a **thin npm-server repo** — your own git repo with `@sitesurge/server`
+as a dependency (no CMS source):
 
 ```bash
-sitesurge setup     # interactive; or --config <file> / --from-env for CI
-sitesurge start     # = node packages/api/dist/index.js
+npm create sitesurge@latest my-site -- --node
+cd my-site && npm install
+npm run setup       # create schema + admin (interactive; or -- --from-env)
+npm start           # API + public site + admin at http://localhost:3001
 ```
 
-The **`sitesurge` CLI** (`@sitesurge/cli`) also does `migrate`, `seed`, `doctor`
-(DB/Redis probes), and `status`.
+The generated `src/index.js` is a one-line `startServer()` you can extend with
+your own routes via `createApp()`. The **`sitesurge` CLI** (`@sitesurge/cli`)
+provides `setup/migrate/seed/doctor/status/start`. See
+**[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for a systemd + nginx production setup.
 
 ### C. Headless — your frontend, our content API
 
@@ -81,6 +88,9 @@ Everything is typed in `@sitesurge/types` and documented in
 
 ### D. Embed the server in your own Node app
 
+```bash
+npm i @sitesurge/server
+```
 ```ts
 import { createApp, startServer } from '@sitesurge/server';
 const app = createApp('running');

@@ -1,18 +1,25 @@
 # Publishing SiteSurge packages
 
-The monorepo publishes three public libraries to npm under the **`@sitesurge`**
-scope, using [Changesets](https://github.com/changesets/changesets):
+The monorepo publishes to npm under the **`@sitesurge`** scope, using
+[Changesets](https://github.com/changesets/changesets):
 
 | Package | Published | Notes |
 |---|---|---|
 | `@sitesurge/types` | ✅ npm | types + API DTOs + utils (`packages/shared`) |
 | `@sitesurge/client` | ✅ npm | headless HTTP SDK (`packages/cms-client`) |
 | `@sitesurge/mcp` | ✅ npm | MCP server, bin `sitesurge-mcp` (`packages/cms-mcp`) |
-| `@sitesurge/server` | ❌ private (Phase 4) | ships as a Docker image; npm later |
-| `@sitesurge/admin` | ❌ private | app, bundled into the server |
+| `@sitesurge/server` | ✅ npm | backend (API + SSR); serves the admin (`packages/api`) |
+| `@sitesurge/admin` | ✅ npm | built admin SPA static assets (`packages/cms`) |
+| `@sitesurge/cli` | ✅ npm | `sitesurge` ops CLI (`packages/cli`) |
+| `create-sitesurge` | ✅ npm | `npm create sitesurge` scaffolder |
 
-Server/admin are marked `private: true` and are in the Changesets `ignore` list,
-so they're never pushed to npm.
+Also shipped: the server Docker image at **`ghcr.io/rw3iss/sitesurge-server`**
+(built + pushed by `.github/workflows/image.yml` on release).
+
+**Versioning:** `server` + `admin` + `cli` are a Changesets **fixed group** (they
+move together — `server@x` always pairs with `admin@x`). `types`, `client`, `mcp`,
+and `create-sitesurge` version independently. `@sitesurge/server` depends on
+`types`/`admin` via `workspace:^`, published as `^` ranges.
 
 ## Day-to-day: adding a change
 
