@@ -8,6 +8,7 @@ import { loadSwatches, swatches as swatchesSignal, } from '../../services/siteCo
 import { DEFAULT_SITE_NAME, loadSiteSettings, } from '../../stores/siteSettings';
 import { appearanceCssVars, } from '../../utils/appearanceStyle';
 import { Footer, } from './Footer';
+import PluginWidgetHost from '../plugins/PluginWidgetHost';
 import { Header, } from './Header';
 import type { SiteHeaderSettings, } from './Header';
 import './Layout.scss';
@@ -169,6 +170,7 @@ export const Layout: ParentComponent = (props,) => {
                 footer={footerSettings()}
                 gutterWidth={appearance()?.gutterWidth}
             />
+            <PluginWidgetHost />
         </div>
     );
 };

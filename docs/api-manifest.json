@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-11T19:53:26.341Z",
-  "totalModules": 30,
-  "totalRoutes": 237,
+  "generatedAt": "2026-07-13T19:45:06.328Z",
+  "totalModules": 31,
+  "totalRoutes": 252,
   "modules": [
     {
       "module": "api-keys",
@@ -1051,6 +1051,117 @@
           "absolutePath": "/api/v1/payments/plans",
           "auth": "public",
           "summary": "List active subscription plans (public subscribe page)."
+        }
+      ]
+    },
+    {
+      "module": "plugins",
+      "mountPath": "/api/v1/plugins",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/enabled",
+          "absolutePath": "/api/v1/plugins/enabled",
+          "auth": "public",
+          "summary": "List enabled plugins + client bundle URLs (the running site self-loads these)."
+        },
+        {
+          "method": "GET",
+          "path": "/:name/client.js",
+          "absolutePath": "/api/v1/plugins/:name/client.js",
+          "auth": "public",
+          "summary": "Serve a plugin's browser ESM bundle (same-origin)."
+        },
+        {
+          "method": "GET",
+          "path": "/:name/assets/:file",
+          "absolutePath": "/api/v1/plugins/:name/assets/:file",
+          "auth": "public",
+          "summary": "Serve a plugin static asset from its client/ folder."
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "absolutePath": "/api/v1/plugins",
+          "auth": "admin",
+          "summary": "List all installed/discovered plugins (admin table view)."
+        },
+        {
+          "method": "GET",
+          "path": "/marketplace",
+          "absolutePath": "/api/v1/plugins/marketplace",
+          "auth": "admin",
+          "summary": "Search the plugin marketplace (stubbed)."
+        },
+        {
+          "method": "GET",
+          "path": "/:name",
+          "absolutePath": "/api/v1/plugins/:name",
+          "auth": "admin",
+          "summary": "Get one plugin (detail + config + manifest)."
+        },
+        {
+          "method": "POST",
+          "path": "/rescan",
+          "absolutePath": "/api/v1/plugins/rescan",
+          "auth": "admin",
+          "summary": "Re-scan PLUGINS_DIR and reconcile with the DB."
+        },
+        {
+          "method": "POST",
+          "path": "/upload",
+          "absolutePath": "/api/v1/plugins/upload",
+          "auth": "admin",
+          "summary": "Upload a plugin .zip (unzipped into PLUGINS_DIR, registered disabled)."
+        },
+        {
+          "method": "POST",
+          "path": "/marketplace/:id/install",
+          "absolutePath": "/api/v1/plugins/marketplace/:id/install",
+          "auth": "admin",
+          "summary": "Install a plugin from the marketplace (stubbed)."
+        },
+        {
+          "method": "POST",
+          "path": "/:name/install",
+          "absolutePath": "/api/v1/plugins/:name/install",
+          "auth": "admin",
+          "summary": "Run the plugin's install() hook."
+        },
+        {
+          "method": "PUT",
+          "path": "/:name/config",
+          "absolutePath": "/api/v1/plugins/:name/config",
+          "auth": "admin",
+          "summary": "Save (merge) a plugin's config."
+        },
+        {
+          "method": "POST",
+          "path": "/:name/enable",
+          "absolutePath": "/api/v1/plugins/:name/enable",
+          "auth": "admin",
+          "summary": "Enable a plugin."
+        },
+        {
+          "method": "POST",
+          "path": "/:name/disable",
+          "absolutePath": "/api/v1/plugins/:name/disable",
+          "auth": "admin",
+          "summary": "Disable a plugin (data preserved)."
+        },
+        {
+          "method": "POST",
+          "path": "/:name/update",
+          "absolutePath": "/api/v1/plugins/:name/update",
+          "auth": "admin",
+          "summary": "Run the plugin's update() hook."
+        },
+        {
+          "method": "POST",
+          "path": "/:name/uninstall",
+          "absolutePath": "/api/v1/plugins/:name/uninstall",
+          "auth": "admin",
+          "summary": "Uninstall a plugin: run uninstall(), drop owned tables, remove folder."
         }
       ]
     },

@@ -84,6 +84,18 @@ async function bootRunningMode(): Promise<void> {
     cronRegistry.startAll();
     logger.info('Cron jobs started',);
 
+    // Load enabled plugins (only when the plugins feature is on — else the
+    // `plugins` table doesn't exist yet). Isolated: a bad plugin never crashes boot.
+    try {
+        const { isFeatureEnabledServer, } = await import('./services/settings.js');
+        if (await isFeatureEnabledServer('plugins',)) {
+            const { bootPlugins, } = await import('./services/plugins.js');
+            await bootPlugins();
+        }
+    } catch (err) {
+        logger.warn('Plugin boot skipped', { error: err, },);
+    }
+
     // Resume any send jobs left 'running' by a previous crash (idempotent).
     try {
         const { resumeRunningJobs, } = await import('./services/mail/sendWorker.js');

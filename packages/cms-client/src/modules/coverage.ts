@@ -302,6 +302,20 @@ export const ROUTE_COVERAGE: string[] = [
     'GET /api/v1/shop/settings/admin',
     'GET /api/v1/shop/settings/stripe-status',
     'PUT /api/v1/shop/settings',
+    // plugins
+    'GET /api/v1/plugins/enabled',
+    'GET /api/v1/plugins',
+    'GET /api/v1/plugins/marketplace',
+    'GET /api/v1/plugins/:name',
+    'POST /api/v1/plugins/rescan',
+    'POST /api/v1/plugins/upload',
+    'POST /api/v1/plugins/marketplace/:id/install',
+    'POST /api/v1/plugins/:name/install',
+    'PUT /api/v1/plugins/:name/config',
+    'POST /api/v1/plugins/:name/enable',
+    'POST /api/v1/plugins/:name/disable',
+    'POST /api/v1/plugins/:name/update',
+    'POST /api/v1/plugins/:name/uninstall',
 
     // ── feed / sitemap (raw, root-mounted) ──
     'GET /feed.xml',
@@ -315,6 +329,9 @@ export const ROUTE_COVERAGE: string[] = [
  * no consumer-facing client surface.
  */
 export const INTENTIONALLY_UNEXPOSED: string[] = [
+    // Plugin browser bundles: loaded via dynamic import() by the SPA, not the SDK.
+    'GET /api/v1/plugins/:name/client.js',
+    'GET /api/v1/plugins/:name/assets/:file',
     // Stripe webhook: raw body, signature-verified server-side.
     'POST /api/v1/payments/webhook',
     // OAuth callbacks: browser redirects that set cookies, not client calls.

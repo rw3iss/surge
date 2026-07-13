@@ -51,6 +51,7 @@ export const envSchema = z.object({
     MAIL_UNSUBSCRIBE_SECRET: z.string().optional(),
 
     DATA_DIR: z.string().default('./data',),
+    PLUGINS_DIR: z.string().default('./plugins',),
     UPLOAD_MAX_SIZE_MB: z.string().transform(Number,).prefault('500',),
     UPLOAD_DIR: z.string().default('./uploads',),
     STORAGE_PROVIDER: z.enum(['local', 's3',],).default('local',),

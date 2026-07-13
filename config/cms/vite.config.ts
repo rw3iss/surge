@@ -122,7 +122,6 @@ export default defineConfig(({ mode }) => {
       '/robots.txt': proxyEntry,
     },
   },
-  optimizeDeps: { exclude: ['@pageloop/client', '@pageloop/vanilla'] },
   build: {
     outDir: resolve(CMS_ROOT, 'dist'),
     emptyOutDir: true,

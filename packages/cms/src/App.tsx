@@ -5,8 +5,6 @@ import { AppErrorBoundary, } from './components/common/ErrorBoundary';
 import { Layout, } from './components/layout';
 import { ToastProvider, } from './components/common/toast';
 import { AuthProvider, } from './stores/auth';
-import { PageLoopProvider, usePageLoop } from '@pageloop/client/solid';
-import '@pageloop/client/solid/style.css';
 import './styles/global.scss';
 
 // Lazy load pages for code splitting
@@ -64,6 +62,8 @@ const AdminShopOrders = lazy(() => import('./pages/admin/shop/ShopOrders'));
 const AdminShopOrderDetail = lazy(() => import('./pages/admin/shop/ShopOrderDetail'));
 const AdminShopReviews = lazy(() => import('./pages/admin/shop/ShopReviews'));
 const AdminShopSettings = lazy(() => import('./pages/admin/shop/ShopSettings'));
+const AdminPlugins = lazy(() => import('./pages/admin/Plugins'));
+const AdminPluginConfig = lazy(() => import('./pages/admin/PluginConfig'));
 const AdminPagePreview = lazy(() => import('./pages/admin/PagePreview'));
 const AdminPostPreview = lazy(() => import('./pages/admin/PostPreview'));
 
@@ -78,7 +78,6 @@ const App: Component = () => {
         <MetaProvider>
             <AuthProvider>
                 <ToastProvider>
-					<PageLoopProvider config={{ endpoint: 'https://pageloop.dev', projectId: 'cms' }}>
 						<Suspense fallback={<PageLoading />}>
 							<Router>
 								<AppErrorBoundary>
@@ -150,6 +149,8 @@ const App: Component = () => {
 										<Route path="/shop/orders/:id" component={AdminShopOrderDetail} />
 										<Route path="/shop/reviews" component={AdminShopReviews} />
 										<Route path="/shop/settings" component={AdminShopSettings} />
+										<Route path="/plugins" component={AdminPlugins} />
+										<Route path="/plugins/:name" component={AdminPluginConfig} />
 										<Route path="/settings" component={AdminSettings} />
 									</Route>
 
@@ -158,7 +159,6 @@ const App: Component = () => {
 								</AppErrorBoundary>
 							</Router>
                     </Suspense>
-					</PageLoopProvider>
                 </ToastProvider>
             </AuthProvider>
         </MetaProvider>

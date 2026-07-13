@@ -1,0 +1,408 @@
+/**
+ * Plugins service — canonical business logic for the plugin system.
+ * Reconciles the on-disk PLUGINS_DIR with the `plugins` table, runs the
+ * lifecycle hooks (install/enable/disable/update/uninstall) transactionally
+ * with an advisory lock, serves client bundles, and exposes the inherent
+ * public projection the running site loads. Admin-gated at the route layer.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import AdmZip from 'adm-zip';
+import type {
+    MarketplacePlugin,
+    Plugin,
+    PluginUpdateResult,
+    PublicPlugin,
+} from '@sitesurge/types';
+import * as repo from '../repositories/plugins.repo';
+import { logAudit } from './audit';
+import type { AuditContext } from './types';
+import { AppError, NotFoundError, ValidationError } from '../middleware/error';
+import { logger } from '../utils/logger';
+import {
+    buildContext,
+    discoverOnDisk,
+    getServerModule,
+    pluginsRootDir,
+    readManifestAt,
+    withPluginTxn,
+    type DiscoveredPlugin,
+} from '../plugins/loader';
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+function withUpdateFlag(p: Plugin): Plugin {
+    return {
+        ...p,
+        updateAvailable: Boolean(p.installed && p.installedVersion && p.installedVersion !== p.version),
+    };
+}
+
+function diskMap(): Map<string, DiscoveredPlugin> {
+    return new Map(discoverOnDisk().map((d) => [d.name, d]));
+}
+
+function mustFindOnDisk(name: string): DiscoveredPlugin {
+    const d = diskMap().get(name);
+    if (!d) throw new NotFoundError(`Plugin "${name}" on disk`);
+    return d;
+}
+
+async function mustGetRow(name: string): Promise<Plugin> {
+    const p = await repo.getByName(name);
+    if (!p) throw new NotFoundError(`Plugin "${name}"`);
+    return p;
+}
+
+async function audit(action: string, name: string, ctx: AuditContext): Promise<void> {
+    await logAudit({
+        userId: ctx.userId,
+        action,
+        entityType: 'plugin',
+        entityId: name,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+    });
+}
+
+// ── discovery / reconciliation ──────────────────────────────────────────────────
+/** Reconcile PLUGINS_DIR with the DB: insert new folders, refresh manifests. */
+export async function rescan(): Promise<Plugin[]> {
+    const onDisk = diskMap();
+    const rows = await repo.listPlugins();
+    const byName = new Map(rows.map((r) => [r.name, r]));
+
+    for (const [name, d] of onDisk) {
+        const existing = byName.get(name);
+        if (!existing) {
+            await repo.insertDiscovered({
+                name,
+                label: d.manifest.label,
+                version: d.manifest.version,
+                source: 'manual',
+                location: name,
+                manifest: d.manifest,
+            });
+        } else if (existing.version !== d.manifest.version || existing.label !== d.manifest.label) {
+            await repo.reconcileManifest(name, {
+                version: d.manifest.version,
+                label: d.manifest.label,
+                manifest: d.manifest,
+            });
+        }
+    }
+    // Flag rows whose folder vanished (keep the row; surface an error).
+    for (const row of rows) {
+        if (!onDisk.has(row.name) && !row.error) {
+            await repo.setError(row.name, 'Plugin folder missing from disk');
+        }
+    }
+    return list();
+}
+
+export async function list(): Promise<Plugin[]> {
+    return (await repo.listPlugins()).map(withUpdateFlag);
+}
+
+export async function getOne(name: string): Promise<Plugin> {
+    return withUpdateFlag(await mustGetRow(name));
+}
+
+// ── inherent public projection ──────────────────────────────────────────────────
+export async function listEnabledPublic(): Promise<PublicPlugin[]> {
+    const rows = (await repo.listPlugins()).filter((p) => p.enabled && p.installed && !p.error);
+    return rows.map((p) => {
+        const secretKeys = new Set(
+            (p.manifest.configSchema ?? []).filter((f) => f.secret || f.type === 'secret').map((f) => f.key),
+        );
+        const publicConfig: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(p.config)) {
+            if (!secretKeys.has(k)) publicConfig[k] = v;
+        }
+        return {
+            name: p.name,
+            label: p.label,
+            version: p.version,
+            capabilities: p.manifest.capabilities ?? [],
+            clientUrl: p.manifest.client ? `/api/v1/plugins/${p.name}/client.js` : null,
+            config: publicConfig,
+            adminOnly: p.config.adminOnly === true,
+        };
+    });
+}
+
+// ── serving client bundle + assets (traversal-guarded) ──────────────────────────
+export function clientBundlePath(name: string): string | null {
+    const d = diskMap().get(name);
+    if (!d?.manifest.client) return null;
+    const p = path.resolve(d.dir, d.manifest.client);
+    if (!p.startsWith(path.resolve(d.dir)) || !fs.existsSync(p)) return null;
+    return p;
+}
+
+export function assetPath(name: string, rel: string): string | null {
+    const d = diskMap().get(name);
+    if (!d) return null;
+    const base = path.resolve(d.dir, 'client');
+    const p = path.resolve(base, rel);
+    if (!p.startsWith(base) || !fs.existsSync(p) || !fs.statSync(p).isFile()) return null;
+    return p;
+}
+
+// ── lifecycle ─────────────────────────────────────────────────────────────────
+export async function install(name: string, ctx: AuditContext): Promise<Plugin> {
+    const row = await mustGetRow(name);
+    const disk = mustFindOnDisk(name);
+    const mod = getServerModule(disk.dir, disk.manifest);
+    try {
+        await withPluginTxn(name, async (client) => {
+            const pctx = buildContext({
+                name, dir: disk.dir, manifest: disk.manifest,
+                config: row.config, installedVersion: row.installedVersion, client,
+            });
+            await pctx.db.migrate();
+            await mod?.install?.(pctx);
+        });
+    } catch (err) {
+        await repo.setError(name, (err as Error).message);
+        throw new AppError(500, 'PLUGIN_INSTALL_FAILED', `Install failed: ${(err as Error).message}`);
+    }
+    const updated = await repo.setInstalled(name, disk.manifest.version);
+    await audit('plugin.install', name, ctx);
+    return withUpdateFlag(updated);
+}
+
+export async function saveConfig(name: string, cfg: Record<string, unknown>, ctx: AuditContext): Promise<Plugin> {
+    const row = await mustGetRow(name);
+    const disk = diskMap().get(name);
+    const mod = disk ? getServerModule(disk.dir, disk.manifest) : null;
+    if (mod?.validateConfig) {
+        const res = mod.validateConfig(cfg);
+        if (!res.ok) throw new ValidationError('Invalid plugin config', res.errors);
+    }
+    const merged = { ...row.config, ...cfg };
+    const updated = await repo.setConfig(name, merged);
+    await audit('plugin.configure', name, ctx);
+    return withUpdateFlag(updated);
+}
+
+export async function enable(name: string, ctx: AuditContext): Promise<Plugin> {
+    const row = await mustGetRow(name);
+    if (!row.installed) throw new ValidationError('Install the plugin before enabling it');
+    const disk = mustFindOnDisk(name);
+    const mod = getServerModule(disk.dir, disk.manifest);
+    try {
+        await withPluginTxn(name, async (client) => {
+            const pctx = buildContext({
+                name, dir: disk.dir, manifest: disk.manifest,
+                config: row.config, installedVersion: row.installedVersion, client,
+            });
+            await mod?.onEnable?.(pctx);
+            await mod?.onLoad?.(pctx);
+        });
+    } catch (err) {
+        await repo.setError(name, (err as Error).message);
+        throw new AppError(500, 'PLUGIN_ENABLE_FAILED', `Enable failed: ${(err as Error).message}`);
+    }
+    const updated = await repo.setEnabled(name, true);
+    await audit('plugin.enable', name, ctx);
+    return withUpdateFlag(updated);
+}
+
+export async function disable(name: string, ctx: AuditContext): Promise<Plugin> {
+    const row = await mustGetRow(name);
+    const disk = diskMap().get(name);
+    if (disk) {
+        const mod = getServerModule(disk.dir, disk.manifest);
+        try {
+            await withPluginTxn(name, async (client) => {
+                const pctx = buildContext({
+                    name, dir: disk.dir, manifest: disk.manifest,
+                    config: row.config, installedVersion: row.installedVersion, client,
+                });
+                await mod?.onDisable?.(pctx);
+            });
+        } catch (err) {
+            logger.warn(`Plugin ${name} onDisable failed`, { error: (err as Error).message });
+        }
+    }
+    const updated = await repo.setEnabled(name, false);
+    await audit('plugin.disable', name, ctx);
+    return withUpdateFlag(updated);
+}
+
+export async function update(name: string, ctx: AuditContext): Promise<{ plugin: Plugin; result: PluginUpdateResult }> {
+    const row = await mustGetRow(name);
+    if (!row.installed) throw new ValidationError('Install the plugin before updating it');
+    const disk = mustFindOnDisk(name);
+    const mod = getServerModule(disk.dir, disk.manifest, /* reload */ true);
+    let result: PluginUpdateResult = {
+        fromVersion: row.installedVersion ?? row.version,
+        toVersion: disk.manifest.version,
+        migrated: false,
+    };
+    try {
+        await withPluginTxn(name, async (client) => {
+            const pctx = buildContext({
+                name, dir: disk.dir, manifest: disk.manifest,
+                config: row.config, installedVersion: row.installedVersion, client,
+            });
+            const ran = await pctx.db.migrate();
+            if (mod?.update) {
+                result = await mod.update(pctx);
+            } else {
+                result.migrated = ran.length > 0;
+            }
+        });
+    } catch (err) {
+        await repo.setError(name, (err as Error).message);
+        throw new AppError(500, 'PLUGIN_UPDATE_FAILED', `Update failed: ${(err as Error).message}`);
+    }
+    const updated = await repo.setInstalled(name, disk.manifest.version);
+    await audit('plugin.update', name, ctx);
+    return { plugin: withUpdateFlag(updated), result };
+}
+
+export async function uninstall(name: string, ctx: AuditContext): Promise<{ droppedTables: string[] }> {
+    const row = await mustGetRow(name);
+    const disk = diskMap().get(name);
+    let droppedTables: string[] = [];
+    await withPluginTxn(name, async (client) => {
+        if (disk) {
+            const mod = getServerModule(disk.dir, disk.manifest);
+            const pctx = buildContext({
+                name, dir: disk.dir, manifest: disk.manifest,
+                config: row.config, installedVersion: row.installedVersion, client,
+            });
+            await mod?.uninstall?.(pctx);
+        }
+        // Drop this plugin's owned tables (catalog-sourced, prefix-validated).
+        const tables = await client.query<{ tablename: string }>(
+            `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE $1`,
+            [`plugin_${name}_%`],
+        );
+        for (const t of tables.rows) {
+            if (!/^plugin_[a-z0-9_]+$/.test(t.tablename)) continue;
+            await client.query(`DROP TABLE IF EXISTS ${t.tablename} CASCADE`);
+        }
+        droppedTables = tables.rows.map((t) => t.tablename);
+        await client.query('DELETE FROM plugin_migrations WHERE plugin = $1', [name]);
+    });
+    await repo.deleteByName(name);
+    // Remove the folder (guarded to PLUGINS_DIR).
+    if (disk) {
+        const root = pluginsRootDir();
+        const abs = path.resolve(disk.dir);
+        if (abs.startsWith(path.resolve(root) + path.sep)) {
+            try { fs.rmSync(abs, { recursive: true, force: true }); } catch (err) {
+                logger.warn(`Could not remove plugin folder ${abs}`, { error: (err as Error).message });
+            }
+        }
+    }
+    await audit('plugin.uninstall', name, ctx);
+    return { droppedTables };
+}
+
+// ── upload (zip) ────────────────────────────────────────────────────────────────
+export async function installFromZip(buffer: Buffer, ctx: AuditContext): Promise<Plugin> {
+    const root = pluginsRootDir();
+    fs.mkdirSync(root, { recursive: true });
+    const zip = new AdmZip(buffer);
+    // Guard against zip-slip: reject entries escaping the root.
+    for (const e of zip.getEntries()) {
+        const target = path.resolve(root, e.entryName);
+        if (!target.startsWith(path.resolve(root) + path.sep)) {
+            throw new ValidationError('Unsafe zip: entry escapes the plugins directory');
+        }
+    }
+    // Extract into a temp dir first to read the manifest and learn the plugin name.
+    const tmp = path.join(root, `.upload-${Date.now()}`);
+    zip.extractAllTo(tmp, true);
+    try {
+        // Manifest may be at the root of the zip or one level down.
+        let manifestDir = tmp;
+        if (!fs.existsSync(path.join(tmp, 'plugin.json'))) {
+            const sub = fs.readdirSync(tmp, { withFileTypes: true }).find((d) => d.isDirectory());
+            if (sub && fs.existsSync(path.join(tmp, sub.name, 'plugin.json'))) {
+                manifestDir = path.join(tmp, sub.name);
+            }
+        }
+        const manifestPath = path.join(manifestDir, 'plugin.json');
+        if (!fs.existsSync(manifestPath)) throw new ValidationError('Zip has no plugin.json');
+        const manifest = readManifestAt(manifestDir);
+        const dest = path.join(root, manifest.name);
+        if (fs.existsSync(dest)) {
+            throw new ValidationError(`Plugin "${manifest.name}" already exists — uninstall it first`);
+        }
+        fs.renameSync(manifestDir, dest);
+        // Register as discovered + disabled.
+        const existing = await repo.getByName(manifest.name);
+        const plugin = existing
+            ? await repo.reconcileManifest(manifest.name, { version: manifest.version, label: manifest.label, manifest })
+            : await repo.insertDiscovered({
+                name: manifest.name, label: manifest.label, version: manifest.version,
+                source: 'upload', location: manifest.name, manifest,
+            });
+        await audit('plugin.upload', manifest.name, ctx);
+        return withUpdateFlag(plugin);
+    } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+    }
+}
+
+// ── marketplace (stub) ──────────────────────────────────────────────────────────
+export async function marketplaceSearch(q?: string): Promise<MarketplacePlugin[]> {
+    const installed = new Set((await repo.listPlugins()).map((p) => p.name));
+    const catalog: MarketplacePlugin[] = [
+        {
+            id: 'pageloop', name: 'pageloop', label: 'PageLoop Comments',
+            description: 'Drop-in commenting / annotation layer for your site.',
+            version: '0.1.0', author: 'SiteSurge', homepage: 'https://pageloop.dev',
+            installed: installed.has('pageloop'),
+        },
+    ];
+    const needle = (q ?? '').trim().toLowerCase();
+    return needle
+        ? catalog.filter((c) => `${c.name} ${c.label} ${c.description}`.toLowerCase().includes(needle))
+        : catalog;
+}
+
+export async function marketplaceInstall(_id: string, _ctx: AuditContext): Promise<Plugin> {
+    // v1 stub: no live registry yet. Upload a .zip or drop the folder into
+    // PLUGINS_DIR and rescan instead.
+    throw new AppError(
+        501, 'NOT_IMPLEMENTED',
+        'Marketplace install is not yet available. Upload a .zip or add the plugin to the plugins folder, then rescan.',
+    );
+}
+
+// ── boot ────────────────────────────────────────────────────────────────────────
+/** Called at server boot: reconcile disk, then onLoad each enabled plugin. Isolated. */
+export async function bootPlugins(): Promise<void> {
+    try {
+        await rescan();
+    } catch (err) {
+        logger.warn('Plugin rescan at boot failed', { error: (err as Error).message });
+        return;
+    }
+    const rows = await repo.listPlugins();
+    for (const row of rows) {
+        if (!row.enabled || !row.installed) continue;
+        const disk = diskMap().get(row.name);
+        if (!disk) continue;
+        try {
+            const mod = getServerModule(disk.dir, disk.manifest);
+            if (!mod?.onLoad) continue;
+            await withPluginTxn(row.name, async (client) => {
+                const pctx = buildContext({
+                    name: row.name, dir: disk.dir, manifest: disk.manifest,
+                    config: row.config, installedVersion: row.installedVersion, client,
+                });
+                await mod.onLoad!(pctx);
+            });
+            logger.info(`Plugin loaded: ${row.name}@${row.version}`);
+        } catch (err) {
+            logger.error(`Plugin ${row.name} onLoad failed`, { error: (err as Error).message });
+            await repo.setError(row.name, (err as Error).message);
+        }
+    }
+}

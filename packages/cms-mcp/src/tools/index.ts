@@ -14,6 +14,7 @@ import { settingsTools, } from './settings';
 import { mediaTools, } from './media';
 import { navigationTools, } from './navigation';
 import { referenceTools, } from './reference';
+import { pluginTools, } from './plugins';
 
 export function allTools(): ToolDef[] {
     return [
@@ -27,5 +28,6 @@ export function allTools(): ToolDef[] {
         ...mediaTools,
         ...navigationTools,
         ...referenceTools,
+        ...pluginTools,
     ];
 }

@@ -26,6 +26,7 @@ import * as fonts from './fonts';
 import * as forms from './forms';
 import * as messages from './messages';
 import * as pages from './pages';
+import * as plugins from './plugins';
 import * as posts from './posts';
 import * as settings from './settings';
 import * as shop from './shop';
@@ -39,6 +40,7 @@ export const cms = {
     forms,
     messages,
     pages,
+    plugins,
     posts,
     settings,
     shop,

@@ -8,12 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@pageloop/client':
-        specifier: ^0.7.1
-        version: 0.7.1(@pageloop/vanilla@0.7.1(solid-js@1.9.14))(solid-js@1.9.14)
-      '@pageloop/vanilla':
-        specifier: ^0.7.1
-        version: 0.7.1(solid-js@1.9.14)
       solid-js:
         specifier: ^1.9.14
         version: 1.9.14
@@ -42,6 +36,9 @@ importers:
       '@sitesurge/types':
         specifier: workspace:^
         version: link:../shared
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.18
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -1687,32 +1684,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@pageloop/anchor@0.7.1':
-    resolution: {integrity: sha512-mXCUcJoKsY4Ba8zpydGBshrY2IFKMAk4PHZ/4rmA1pRqecE0J7hPdqKBZN9dBUN+MEoGuSJ97X5evQD+otFtKw==}
-
-  '@pageloop/client@0.7.1':
-    resolution: {integrity: sha512-6pxHBx7jp+hPDYZO/MUkTMMBPi1H6h5HKmybuSe1b48x7EkfYE5Yb7c/U+L+c+SSjz7UNW+khFR9xDJ/89deww==}
-    peerDependencies:
-      '@pageloop/vanilla': '>=0.6.0'
-      preact: '>=10'
-      react: '>=18'
-      solid-js: '>=1.8'
-    peerDependenciesMeta:
-      '@pageloop/vanilla':
-        optional: true
-      preact:
-        optional: true
-      react:
-        optional: true
-      solid-js:
-        optional: true
-
-  '@pageloop/shared@0.7.1':
-    resolution: {integrity: sha512-bQFdFml6w8CScEDOtdqc9ZRB57ay1R2tHtDK/BHZqRvRvBglOmQS3QFA2i2WAwgvH5eHYVWZuO3/MBRx7NMMrQ==}
-
-  '@pageloop/vanilla@0.7.1':
-    resolution: {integrity: sha512-Wr3Q+rpEoO1OoBRIX/Y5X2hs2uKRlJgNYtQE8Zf8io34wv4ZFzLIEtl0t1eHuOjqdx4XGUxhG7OPZmgJ0PIbsg==}
-
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
 
@@ -2382,6 +2353,10 @@ packages:
     resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  adm-zip@0.5.18:
+    resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
+    engines: {node: '>=12.0'}
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -3206,9 +3181,6 @@ packages:
 
   idb@7.1.1:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
-
-  idb@8.0.3:
-    resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
 
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
@@ -4766,9 +4738,6 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -6314,33 +6283,6 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.73.0':
     optional: true
 
-  '@pageloop/anchor@0.7.1':
-    dependencies:
-      '@pageloop/shared': 0.7.1
-
-  '@pageloop/client@0.7.1(@pageloop/vanilla@0.7.1(solid-js@1.9.14))(solid-js@1.9.14)':
-    dependencies:
-      '@pageloop/anchor': 0.7.1
-      '@pageloop/shared': 0.7.1
-      idb: 8.0.3
-    optionalDependencies:
-      '@pageloop/vanilla': 0.7.1(solid-js@1.9.14)
-      solid-js: 1.9.14
-
-  '@pageloop/shared@0.7.1':
-    dependencies:
-      zod: 3.25.76
-
-  '@pageloop/vanilla@0.7.1(solid-js@1.9.14)':
-    dependencies:
-      '@pageloop/anchor': 0.7.1
-      '@pageloop/client': 0.7.1(@pageloop/vanilla@0.7.1(solid-js@1.9.14))(solid-js@1.9.14)
-      '@pageloop/shared': 0.7.1
-    transitivePeerDependencies:
-      - preact
-      - react
-      - solid-js
-
   '@paralleldrive/cuid2@2.3.1':
     dependencies:
       '@noble/hashes': 1.8.0
@@ -6893,6 +6835,8 @@ snapshots:
       negotiator: 1.0.0
 
   acorn@8.17.0: {}
+
+  adm-zip@0.5.18: {}
 
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
@@ -7835,8 +7779,6 @@ snapshots:
       safer-buffer: 2.1.2
 
   idb@7.1.1: {}
-
-  idb@8.0.3: {}
 
   ignore@5.3.2: {}
 
@@ -9544,7 +9486,5 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
       zod: 4.4.3
-
-  zod@3.25.76: {}
 
   zod@4.4.3: {}

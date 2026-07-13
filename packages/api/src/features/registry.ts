@@ -11,7 +11,7 @@
 
 export type FeatureKey =
     | 'patreon' | 'posts' | 'campaigns' | 'forms' | 'messages' | 'users'
-    | 'mailing_lists' | 'shop';
+    | 'mailing_lists' | 'shop' | 'plugins';
 
 export interface FeatureConfig {
     key: FeatureKey;
@@ -150,6 +150,20 @@ export const FEATURE_REGISTRY: Record<FeatureKey, FeatureConfig> = {
         // Cache invalidation is handled by the uninstall service after the
         // txn commits (cache.invalidateSettingsCache()); keep this hook a
         // no-op so registry.ts stays import-light.
+        onUninstall: async () => {},
+    },
+    plugins: {
+        key: 'plugins',
+        label: 'Plugins',
+        description: 'Install and manage external plugins & extensions.',
+        defaultEnabled: false,
+        migrations: [
+            '050_create_plugins.sql',
+        ],
+        tables: [
+            'plugins',
+            'plugin_migrations',
+        ],
         onUninstall: async () => {},
     },
 };

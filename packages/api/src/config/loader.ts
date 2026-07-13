@@ -68,6 +68,7 @@ export interface Config {
     };
 
     dataDir: string;
+    pluginsDir: string;
 
     upload: {
         maxSizeMb: number;
@@ -184,6 +185,7 @@ function build(parsed: EnvVars,): Config {
         },
 
         dataDir: parsed.DATA_DIR,
+        pluginsDir: parsed.PLUGINS_DIR,
 
         upload: {
             maxSizeMb: parsed.UPLOAD_MAX_SIZE_MB,

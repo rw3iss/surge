@@ -1,0 +1,23 @@
+{
+  "name": "pageloop",
+  "label": "PageLoop Comments",
+  "description": "Drop-in commenting / annotation layer (PageLoop) for your public site.",
+  "version": "0.1.0",
+  "author": "SiteSurge",
+  "homepage": "https://pageloop.dev",
+  "apiVersion": 1,
+  "server": "server.js",
+  "client": "client.js",
+  "capabilities": ["public-widget", "config-page"],
+  "adminOnlyToggle": true,
+  "configSchema": [
+    { "key": "installType", "label": "Storage mode", "type": "select", "options": ["remote", "local-sqlite"], "default": "remote", "help": "remote: connect to a hosted/self-hosted PageLoop server. local-sqlite: point at a locally-run PageLoop server (pageloop go) using SQLite." },
+    { "key": "endpoint", "label": "PageLoop server endpoint", "type": "url", "required": true, "default": "https://pageloop.dev", "help": "The PageLoop backend that stores comments and serves data + the widget bundle." },
+    { "key": "projectId", "label": "Project ID / slug", "type": "string", "required": true, "help": "The PageLoop project this site's comments belong to." },
+    { "key": "publicComments", "label": "Allow public commenting", "type": "boolean", "default": false, "help": "If off, only signed-in users may comment (enforced by your PageLoop project)." },
+    { "key": "adminOnly", "label": "Show only to signed-in admins", "type": "boolean", "default": false, "help": "When on, the widget renders only for logged-in admins; otherwise it shows for all visitors." },
+    { "key": "theme", "label": "Theme", "type": "select", "options": ["auto", "light", "dark"], "default": "auto" },
+    { "key": "toolbarPosition", "label": "Toolbar position", "type": "select", "options": ["top", "bottom"], "default": "top" },
+    { "key": "sidebarPosition", "label": "Sidebar position", "type": "select", "options": ["right", "left"], "default": "right" }
+  ]
+}

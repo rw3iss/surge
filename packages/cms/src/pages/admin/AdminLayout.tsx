@@ -56,7 +56,7 @@ interface NavItem {
      * without a feature (Dashboard, Pages, Media, Users, Settings)
      * always render — they're core CMS surfaces.
      */
-    feature?: 'posts' | 'campaigns' | 'forms' | 'messages' | 'users' | 'mailing_lists' | 'shop';
+    feature?: 'posts' | 'campaigns' | 'forms' | 'messages' | 'users' | 'mailing_lists' | 'shop' | 'plugins';
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -70,6 +70,7 @@ const NAV_ITEMS: NavItem[] = [
     { path: '/admin/messages', label: 'Messages', icon: 'messages', feature: 'messages', },
     { path: '/admin/mailing-lists', label: 'Mailing Lists', icon: 'mail', feature: 'mailing_lists', },
     { path: '/admin/shop', label: 'Shop', icon: 'shop', feature: 'shop', },
+    { path: '/admin/plugins', label: 'Plugins', icon: 'developer', feature: 'plugins', },
     { path: '/admin/settings', label: 'Settings', icon: 'settings', },
 ];
 

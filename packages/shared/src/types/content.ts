@@ -261,6 +261,12 @@ export interface SiteFeatures {
      * activate. Requires `users`. Disabled by default.
      */
     shop: { enabled: boolean; };
+    /**
+     * Plugins system. When enabled, the admin sidebar exposes the Plugins
+     * area (install / enable / configure external plugins) and the running
+     * site loads enabled plugins' public widgets. Disabled by default.
+     */
+    plugins: { enabled: boolean; };
 }
 
 /** The keys that correspond to a `<x>_enabled` row in `site_settings`. */

@@ -22,6 +22,7 @@ import { postsRoutes, } from './posts';
 import { searchRoutes, } from './search';
 import { settingsRoutes, } from './settings';
 import { shopRoutes, } from './shop';
+import { pluginsRoutes, } from './plugins';
 import { sitemapRoutes, } from './sitemap';
 import { socialRoutes, } from './social';
 import { usersRoutes, } from './users';
@@ -59,5 +60,6 @@ router.use('/mail-templates', registerModule('mail-templates', mailTemplatesRout
 router.use('/mail', registerModule('mail', mailSendRoutes, { mountPath: '/api/v1/mail', },),);
 router.use('/lists', registerModule('lists', listsPublicRoutes, { mountPath: '/api/v1/lists', },),);
 router.use('/shop', registerModule('shop', shopRoutes, { mountPath: '/api/v1/shop', feature: 'shop', },),);
+router.use('/plugins', registerModule('plugins', pluginsRoutes, { mountPath: '/api/v1/plugins', feature: 'plugins', },),);
 
 export default router;
