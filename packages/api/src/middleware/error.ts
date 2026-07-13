@@ -27,12 +27,34 @@ export function errorHandler(
     res: Response,
     _next: NextFunction,
 ) {
-    logger.error('Error handling request', {
-        error: err.message,
-        stack: err.stack,
-        path: req.path,
-        method: req.method,
-    },);
+    // Resolve the HTTP status this error maps to, so we can log by severity.
+    let statusCode = 500;
+    if (err instanceof AppError) statusCode = err.statusCode;
+    else if (err instanceof ZodError) statusCode = 400;
+    else if ((err as NodeJS.ErrnoException).code === '23505') statusCode = 409;
+    else if ((err as NodeJS.ErrnoException).code === '23503') statusCode = 400;
+
+    // Server faults (5xx) are real problems — log as errors with a stack.
+    // Client errors (4xx: not-found, unauthorized, validation, …) are expected
+    // and usually handled by the caller, so log them at debug (hidden at the
+    // default level) to avoid noise like the dev-autologin 404 the admin UI
+    // already handles gracefully.
+    if (statusCode >= 500) {
+        logger.error('Error handling request', {
+            error: err.message,
+            stack: err.stack,
+            path: req.path,
+            method: req.method,
+        },);
+    } else {
+        logger.debug('Request error', {
+            error: err.message,
+            code: err instanceof AppError ? err.code : undefined,
+            status: statusCode,
+            path: req.path,
+            method: req.method,
+        },);
+    }
 
     if (err instanceof AppError) {
         return res.status(err.statusCode,).json({
@@ -83,8 +105,7 @@ export function errorHandler(
         },);
     }
 
-    // Generic error
-    const statusCode = 500;
+    // Generic error (statusCode is already 500 from above)
     const message = config.isProduction ?
         'Internal server error' :
         err.message || 'Internal server error';
