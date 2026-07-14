@@ -277,11 +277,21 @@ export function useAuth(): AuthContextValue {
 }
 
 export function useUser() {
-    const { user, isAuthenticated, } = useAuth();
-    return { user, isAuthenticated, };
+    // Don't destructure — `user`/`isAuthenticated` are reactive getters on the
+    // context, and destructuring would snapshot their value once (stale). Return
+    // getters so consumers stay reactive.
+    const auth = useAuth();
+    return {
+        get user() { return auth.user; },
+        get isAuthenticated() { return auth.isAuthenticated; },
+    };
 }
 
 export function useIsAdmin() {
-    const { user, } = useAuth();
-    return () => isAdminRole(user?.role,);
+    // Read `auth.user` fresh on every call (it's a reactive getter). The old
+    // `const { user } = useAuth()` destructure captured `user` ONCE — on a cold
+    // load that's `null`, so the returned accessor was permanently non-admin
+    // even after the session restored. Reading through `auth` keeps it reactive.
+    const auth = useAuth();
+    return () => isAdminRole(auth.user?.role,);
 }

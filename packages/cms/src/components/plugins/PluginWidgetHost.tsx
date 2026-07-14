@@ -53,12 +53,9 @@ const PluginWidgetHost: Component = () => {
     const auth = useAuth();
     const isAdmin = useIsAdmin();
 
-    // Fetch enabled plugins directly — DON'T gate on the settings store. On a
-    // fresh/hard load the public Layout loads settings asynchronously and the
-    // client SWR-caches /settings/public in localStorage, so gating on
-    // isFeatureEnabled('plugins') could stay false (stale/not-yet-loaded) and
-    // never fire. GET /plugins/enabled is itself feature-gated server-side:
-    // returns the plugins when the feature is on, 404s (→ []) when off.
+    // Fetch enabled plugins directly — the endpoint is feature-gated server-side
+    // (returns the plugins when the feature is on, 404 → [] when off), so this
+    // doesn't depend on the settings store's async load / client cache timing.
     const [plugins] = createResource(async () => {
         try {
             return await cms.plugins.listEnabled();
