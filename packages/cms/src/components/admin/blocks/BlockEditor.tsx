@@ -205,40 +205,14 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         setSelectedBlockId(null,);
     };
 
-    // ─── Click-outside-to-deselect + Escape ───
+    // ─── Escape-to-close ───
     //
-    // Closes the block edit panel when the user clicks outside the
-    // block editor (and outside any active popover or modal). Clicks
-    // inside .block-editor — the block list, the flyout panel, the
-    // AddBlockMenu trigger, etc. — keep the selection. Clicks inside
-    // portal-mounted popovers (block picker panel, recent-items
-    // submenu, entity-search dropdown, modals) also keep selection so
-    // they can do their work without yanking the panel shut.
-    //
-    // Anywhere else — admin header, page properties panel, page bg,
-    // sidebar nav — deselects.
-    const KEEP_SELECTION_SELECTORS = [
-        '.block-editor',
-        '.add-block-menu__panel',
-        '.add-block-menu__submenu',
-        '.entity-search__dropdown',
-        '.confirm-modal-overlay',
-        '.media-select-modal',
-        '.media-upload-modal',
-        '.social-post-modal-backdrop',
-        '.image-block-modal',
-        '[role="dialog"]',
-        '[data-keep-block-selection]',
-    ].join(', ');
-
-    const onDocumentMouseDown = (e: MouseEvent,) => {
-        if (!selectedBlockId()) return;
-        const target = e.target as HTMLElement | null;
-        if (!target || !target.closest) return;
-        if (target.closest(KEEP_SELECTION_SELECTORS,)) return;
-        deselectBlock();
-    };
-
+    // The block edit panel stays open once a block is selected. It only
+    // closes when the operator explicitly dismisses it: the panel's X
+    // button, selecting a different block, or pressing Escape (an
+    // X-equivalent keyboard gesture). Clicking elsewhere on the page no
+    // longer deselects — an incidental click outside the panel used to
+    // yank it shut mid-edit, which is what we're preventing here.
     const onDocumentKeyDown = (e: KeyboardEvent,) => {
         if (e.key !== 'Escape') return;
         if (!selectedBlockId()) return;
@@ -256,7 +230,6 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
     };
 
     onMount(() => {
-        document.addEventListener('mousedown', onDocumentMouseDown,);
         document.addEventListener('keydown', onDocumentKeyDown,);
         // Preload the block-style template cache so BlockPreview can
         // resolve `styleRef.templateId` references on the very first
@@ -267,7 +240,6 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         BlockStyleService.preload();
     },);
     onCleanup(() => {
-        document.removeEventListener('mousedown', onDocumentMouseDown,);
         document.removeEventListener('keydown', onDocumentKeyDown,);
     },);
 
