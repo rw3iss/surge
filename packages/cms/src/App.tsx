@@ -5,6 +5,7 @@ import { AppErrorBoundary, } from './components/common/ErrorBoundary';
 import { Layout, } from './components/layout';
 import { ToastProvider, } from './components/common/toast';
 import { AuthProvider, } from './stores/auth';
+import PluginWidgetHost from './components/plugins/PluginWidgetHost';
 import './styles/global.scss';
 
 // Lazy load pages for code splitting
@@ -159,6 +160,14 @@ const App: Component = () => {
 								</AppErrorBoundary>
 							</Router>
                     </Suspense>
+                    {/* Enabled plugins' public widgets mount ONCE here, above
+                        both the public Layout and the AdminLayout, so the
+                        widget (e.g. PageLoop) loads on every route — public
+                        AND admin — survives client-side navigation between
+                        them, and is restored after a hard refresh on either
+                        side. A single host also makes a duplicate mount /
+                        double script-load structurally impossible. */}
+                    <PluginWidgetHost />
                 </ToastProvider>
             </AuthProvider>
         </MetaProvider>

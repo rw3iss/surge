@@ -33,14 +33,23 @@ function loadBundle() {
     });
 }
 
+// At most one live PageLoop widget across the whole app. The bundle is a
+// singleton (window.PageLoop) and injects its UI into <body>, so a second
+// init() would spawn a duplicate toolbar. This module-scoped guard makes an
+// accidental second mount a no-op — belt-and-suspenders on top of the host
+// only rendering this widget once.
+let activeInstance = null;
+
 export default {
     async mountWidget(el, host) {
         const cfg = host.config || {};
         if (!cfg.endpoint || !cfg.projectId) return; // not configured yet
+        if (activeInstance) return;                   // already live — never duplicate
         let instance = null;
         try {
             const PageLoop = await loadBundle();
             if (!PageLoop || typeof PageLoop.init !== 'function') return;
+            if (activeInstance) return;                // lost an init race — bail
             instance = PageLoop.init({
                 endpoint: cfg.endpoint,
                 projectId: cfg.projectId,
@@ -51,11 +60,13 @@ export default {
                     sidebarPosition: cfg.sidebarPosition || 'right',
                 },
             });
+            activeInstance = instance;
         } catch (err) {
             console.warn('[pageloop] widget init failed:', err && err.message);
         }
         host.onCleanup(() => {
             try { if (instance && typeof instance.destroy === 'function') instance.destroy(); } catch (_) { /* noop */ }
+            if (activeInstance === instance) activeInstance = null;
         });
     },
 

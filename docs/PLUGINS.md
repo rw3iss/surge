@@ -74,6 +74,14 @@ dynamic `import()`, so they satisfy the admin SPA's `scriptSrc 'self'` CSP.
 transaction with a `pg_advisory_xact_lock('plugin:<name>')`. Enabling the widget
 respects the per-plugin `adminOnly` config (mounts only for signed-in admins).
 
+Public widgets mount from a **single host at the app root** (`App.tsx`), above
+both the public `Layout` and the `AdminLayout`. So a widget loads on every
+route — public *and* admin — persists across client-side navigation, and is
+restored after a hard refresh on either side. Because there is exactly one host
+(and `client.js` is dynamically imported once, cached by URL), a widget can
+never be mounted twice; plugins that inject global DOM (e.g. a floating toolbar)
+should still guard against a duplicate `init()` defensively.
+
 ## Install paths
 
 - **Manual:** drop a folder into `plugins/`, then Admin → Plugins → **Rescan**.
