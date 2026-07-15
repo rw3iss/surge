@@ -16,6 +16,7 @@ import type {
     PublicPlugin,
 } from '@sitesurge/types';
 import * as repo from '../repositories/plugins.repo';
+import { setPluginCspOrigins, type PluginCspOrigins } from '../middleware/csp';
 import { logAudit } from './audit';
 import type { AuditContext } from './types';
 import { AppError, NotFoundError, ValidationError } from '../middleware/error';
@@ -183,6 +184,7 @@ export async function saveConfig(name: string, cfg: Record<string, unknown>, ctx
     }
     const merged = { ...row.config, ...cfg };
     const updated = await repo.setConfig(name, merged);
+    await refreshPluginCsp();
     await audit('plugin.configure', name, ctx);
     return withUpdateFlag(updated);
 }
@@ -206,6 +208,7 @@ export async function enable(name: string, ctx: AuditContext): Promise<Plugin> {
         throw new AppError(500, 'PLUGIN_ENABLE_FAILED', `Enable failed: ${(err as Error).message}`);
     }
     const updated = await repo.setEnabled(name, true);
+    await refreshPluginCsp();
     await audit('plugin.enable', name, ctx);
     return withUpdateFlag(updated);
 }
@@ -228,6 +231,7 @@ export async function disable(name: string, ctx: AuditContext): Promise<Plugin> 
         }
     }
     const updated = await repo.setEnabled(name, false);
+    await refreshPluginCsp();
     await audit('plugin.disable', name, ctx);
     return withUpdateFlag(updated);
 }
@@ -300,6 +304,7 @@ export async function uninstall(name: string, ctx: AuditContext): Promise<{ drop
             }
         }
     }
+    await refreshPluginCsp();
     await audit('plugin.uninstall', name, ctx);
     return { droppedTables };
 }
@@ -439,4 +444,40 @@ export async function bootPlugins(): Promise<void> {
             await repo.setError(row.name, (err as Error).message);
         }
     }
+    await refreshPluginCsp();
+}
+
+// ── CSP ───────────────────────────────────────────────────────────────────────
+function toOrigin(v: unknown): string | null {
+    if (typeof v !== 'string' || !v.trim()) return null;
+    try { return new URL(v.trim()).origin; } catch { return null; }
+}
+
+/**
+ * Recompute the CSP origins contributed by ENABLED plugins and push them
+ * to the CSP middleware. Origins come from each plugin's `type:'url'`
+ * config values (→ connect-src) plus its manifest `csp` block. Called at
+ * boot and on every enable/disable/configure/uninstall so the browser can
+ * reach a widget's backend without loosening the base policy.
+ */
+export async function refreshPluginCsp(): Promise<void> {
+    const rows = (await repo.listPlugins()).filter((p) => p.enabled && p.installed && !p.error);
+    const origins: PluginCspOrigins = { connectSrc: [], scriptSrc: [], styleSrc: [], imgSrc: [], frameSrc: [] };
+    for (const p of rows) {
+        for (const f of p.manifest.configSchema ?? []) {
+            if (f.type === 'url') {
+                const o = toOrigin(p.config[f.key]);
+                if (o) origins.connectSrc.push(o);
+            }
+        }
+        const csp = p.manifest.csp;
+        if (csp) {
+            origins.connectSrc.push(...(csp.connectSrc ?? []));
+            origins.scriptSrc.push(...(csp.scriptSrc ?? []));
+            origins.styleSrc.push(...(csp.styleSrc ?? []));
+            origins.imgSrc.push(...(csp.imgSrc ?? []));
+            origins.frameSrc.push(...(csp.frameSrc ?? []));
+        }
+    }
+    setPluginCspOrigins(origins);
 }

@@ -46,6 +46,22 @@ export interface PluginManifest {
     /** Whether the plugin exposes the "admins only" visibility toggle. */
     adminOnlyToggle?: boolean;
     configSchema?: PluginConfigField[];
+    /**
+     * Extra Content-Security-Policy origins the plugin's widget needs, merged
+     * into the host CSP while the plugin is enabled. Origins of `type:'url'`
+     * config values are added to `connect-src` automatically — declare here
+     * only static origins the config doesn't cover (e.g. a CDN the widget
+     * pulls scripts / styles / images / iframes from).
+     */
+    csp?: PluginCsp;
+}
+
+export interface PluginCsp {
+    connectSrc?: string[];
+    scriptSrc?: string[];
+    styleSrc?: string[];
+    imgSrc?: string[];
+    frameSrc?: string[];
 }
 
 /** A plugin as stored + surfaced to the admin API. */

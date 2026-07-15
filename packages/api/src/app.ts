@@ -8,6 +8,7 @@ import path from 'path';
 import { existsSync, } from 'fs';
 import { adminDistPath, } from '@sitesurge/admin';
 import { config, } from './config';
+import { pluginAwareCsp, } from './middleware/csp';
 import { csrfProtection, csrfToken, } from './middleware/csrf';
 import { errorHandler, notFoundHandler, } from './middleware/error';
 import { setupGate, } from './middleware/setupGate';
@@ -55,20 +56,14 @@ export function createApp(mode: AppMode = 'running',): Express {
     app.use(
         helmet({
             crossOriginResourcePolicy: { policy: 'cross-origin', },
-            contentSecurityPolicy: config.isProduction ?
-                {
-                    directives: {
-                        defaultSrc: ["'self'",],
-                        styleSrc: ["'self'", "'unsafe-inline'",],
-                        scriptSrc: ["'self'",],
-                        imgSrc: ["'self'", 'data:', 'blob:', 'https:',],
-                        connectSrc: ["'self'", 'https://api.stripe.com',],
-                        frameSrc: ["'self'", 'https://js.stripe.com',],
-                    },
-                } :
-                false,
+            // CSP is handled separately (pluginAwareCsp) so enabled plugins can
+            // extend connect-src/etc. with the origins their widgets need.
+            contentSecurityPolicy: false,
         },),
     );
+    // Plugin-aware CSP — production only (matches the previous behavior:
+    // no CSP in dev). Extended at runtime by enabled plugins.
+    if (config.isProduction) app.use(pluginAwareCsp,);
 
     app.use(
         cors({

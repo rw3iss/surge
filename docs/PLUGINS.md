@@ -68,6 +68,15 @@ export default {
 Bundles are served **same-origin** (`/api/v1/plugins/<name>/client.js`) and loaded via
 dynamic `import()`, so they satisfy the admin SPA's `scriptSrc 'self'` CSP.
 
+### Content-Security-Policy
+The host CSP (production) is **extended while a plugin is enabled** so its widget
+can reach its backend. Origins of the plugin's `type:'url'` config values are
+added to `connect-src` automatically (e.g. PageLoop's `endpoint` →
+`https://pageloop.dev`); for anything the config doesn't cover — a CDN the widget
+loads scripts/styles/images/iframes from — declare static origins in the manifest
+`csp` block (`{ connectSrc?, scriptSrc?, styleSrc?, imgSrc?, frameSrc? }`). The
+policy is recomputed on every enable/disable/configure/uninstall + at boot.
+
 ## Lifecycle
 
 `discovered → installed → enabled ⇄ disabled → (uninstalled)`. Hooks run in a
