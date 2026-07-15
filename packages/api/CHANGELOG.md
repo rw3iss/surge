@@ -1,5 +1,12 @@
 # @sitesurge/server
 
+## 0.1.7
+
+### Patch Changes
+
+- CSP: allow Google Fonts stylesheets (style-src fonts.googleapis.com) so appearance-system fonts load instead of falling back.
+  - @sitesurge/admin@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes
