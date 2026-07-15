@@ -1,5 +1,12 @@
 # @sitesurge/server
 
+## 0.1.12
+
+### Patch Changes
+
+- PageLoop catalog plugin: pin widget bundle to `@pageloop/vanilla` 0.7.2 (OAuth-popup watchdog) and fetch it from jsdelivr instead of unpkg (unpkg lags minutes behind fresh publishes, stalling install-time downloads).
+  - @sitesurge/admin@0.1.12
+
 ## 0.1.11
 
 ### Patch Changes

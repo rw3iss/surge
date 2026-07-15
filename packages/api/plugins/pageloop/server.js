@@ -5,8 +5,12 @@
  * /api/v1/plugins/pageloop/assets/*), demonstrating a plugin that fetches its own
  * dependencies. All hooks are idempotent + self-detecting.
  */
-const PAGELOOP_VERSION = '0.7.1';
-const CDN = `https://unpkg.com/@pageloop/vanilla@${PAGELOOP_VERSION}/dist`;
+const PAGELOOP_VERSION = '0.7.2';
+// jsdelivr, not unpkg: unpkg can lag many minutes behind a fresh npm publish
+// (404 on the just-published version), which stalls the install-time bundle
+// download. jsdelivr serves new versions almost immediately and is generally
+// more reliable for programmatic fetches.
+const CDN = `https://cdn.jsdelivr.net/npm/@pageloop/vanilla@${PAGELOOP_VERSION}/dist`;
 
 async function ensureBundle(ctx, force) {
     // storage.download skips when the file already exists unless force=true.
