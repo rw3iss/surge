@@ -14,6 +14,7 @@
     "seed:fonts": "tsx scripts/seed-fonts.ts",
     "sitemap": "tsx scripts/generate-sitemap.ts",
     "docs:api": "tsx scripts/generate-api-docs.ts",
+    "plugin:pack": "node scripts/pack-plugin.mjs",
     "lint": "oxlint -c ../../config/.oxlintrc.json src",
     "test": "vitest --config ../../config/api/vitest.config.ts"
   },
