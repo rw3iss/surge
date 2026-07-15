@@ -1,5 +1,11 @@
 # @sitesurge/types
 
+## 0.1.3
+
+### Patch Changes
+
+- Plugin-aware Content-Security-Policy: enabled plugins' widgets can reach their backend. connect-src is extended with each enabled plugin's type:'url' config origins, plus an optional manifest `csp` block (connect/script/style/img/frame). Fixes PageLoop being blocked from https://pageloop.dev.
+
 ## 0.1.2
 
 ### Patch Changes
