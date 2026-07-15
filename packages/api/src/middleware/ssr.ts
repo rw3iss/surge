@@ -43,14 +43,21 @@ export function createSsrMiddleware(distDir: string,) {
 
             res.status(200,)
                 .setHeader('Content-Type', 'text/html; charset=utf-8',)
-                .setHeader('Cache-Control', 'public, max-age=300, s-maxage=300',)
+                // no-store: the HTML document carries the CSP header, which is
+                // extended per enabled plugin. A cached document would pin a
+                // stale CSP (blocking a plugin widget's backend), so the shell
+                // is always re-fetched. Hashed JS/CSS assets stay cacheable.
+                .setHeader('Cache-Control', 'no-store',)
                 .send(html,);
         } catch (error) {
             logger.error('SSR error', { path: pathname, error: (error as Error).message, },);
             // Fall back to SPA (serve raw index.html)
             try {
                 const fallback = fs.readFileSync(path.join(distDir, 'index.html',), 'utf-8',);
-                res.status(200,).setHeader('Content-Type', 'text/html',).send(fallback,);
+                res.status(200,)
+                    .setHeader('Content-Type', 'text/html',)
+                    .setHeader('Cache-Control', 'no-store',)
+                    .send(fallback,);
             } catch {
                 next();
             }

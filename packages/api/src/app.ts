@@ -179,7 +179,11 @@ export function createApp(mode: AppMode = 'running',): Express {
             const fs = await import('fs');
             const indexPath = path.join(distDir, 'index.html',);
             if (fs.existsSync(indexPath,)) {
-                return res.sendFile(indexPath,);
+                // no-store (+ no etag/lastModified so there's no 304 that could
+                // replay a stale CSP header): the SPA shell carries the
+                // per-plugin CSP and must always be fetched fresh.
+                res.setHeader('Cache-Control', 'no-store',);
+                return res.sendFile(indexPath, { cacheControl: false, etag: false, lastModified: false, },);
             }
         } catch {
             // Fall through
