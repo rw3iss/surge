@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-13T19:45:06.328Z",
+  "generatedAt": "2026-07-15T18:38:56.561Z",
   "totalModules": 31,
-  "totalRoutes": 252,
+  "totalRoutes": 253,
   "modules": [
     {
       "module": "api-keys",
@@ -182,14 +182,14 @@
           "method": "GET",
           "path": "/donations/summary",
           "absolutePath": "/api/v1/campaigns/donations/summary",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Dashboard donation summary."
         },
         {
           "method": "GET",
           "path": "/donations/all",
           "absolutePath": "/api/v1/campaigns/donations/all",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "List all donations with optional campaign/status filters."
         },
         {
@@ -203,7 +203,7 @@
           "method": "POST",
           "path": "/bulk",
           "absolutePath": "/api/v1/campaigns/bulk",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk status change / delete by id list."
         },
         {
@@ -217,21 +217,21 @@
           "method": "POST",
           "path": "/",
           "absolutePath": "/api/v1/campaigns",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Create a campaign."
         },
         {
           "method": "PUT",
           "path": "/:id",
           "absolutePath": "/api/v1/campaigns/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a campaign."
         },
         {
           "method": "DELETE",
           "path": "/:id",
           "absolutePath": "/api/v1/campaigns/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a campaign."
         }
       ]
@@ -407,14 +407,14 @@
           "method": "GET",
           "path": "/:id/submissions/export",
           "absolutePath": "/api/v1/forms/:id/submissions/export",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Export a form's submissions as CSV."
         },
         {
           "method": "POST",
           "path": "/bulk",
           "absolutePath": "/api/v1/forms/bulk",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk status change / delete by id list."
         },
         {
@@ -428,49 +428,49 @@
           "method": "GET",
           "path": "/:id/submissions",
           "absolutePath": "/api/v1/forms/:id/submissions",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "List a form's submissions."
         },
         {
           "method": "POST",
           "path": "/",
           "absolutePath": "/api/v1/forms",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Create a form (optionally with questions)."
         },
         {
           "method": "PUT",
           "path": "/:id",
           "absolutePath": "/api/v1/forms/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a form."
         },
         {
           "method": "POST",
           "path": "/:id/questions",
           "absolutePath": "/api/v1/forms/:id/questions",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Add a question to a form."
         },
         {
           "method": "PUT",
           "path": "/:formId/questions/:questionId",
           "absolutePath": "/api/v1/forms/:formId/questions/:questionId",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a form question."
         },
         {
           "method": "DELETE",
           "path": "/:formId/questions/:questionId",
           "absolutePath": "/api/v1/forms/:formId/questions/:questionId",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a form question."
         },
         {
           "method": "DELETE",
           "path": "/:id",
           "absolutePath": "/api/v1/forms/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a form."
         }
       ]
@@ -723,49 +723,49 @@
           "method": "POST",
           "path": "/",
           "absolutePath": "/api/v1/media",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Upload a single file (multipart, field \"file\"; optional alt/caption)."
         },
         {
           "method": "POST",
           "path": "/block-upload",
           "absolutePath": "/api/v1/media/block-upload",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Upload a file for a content block (multipart, field \"file\"; postId/blockId)."
         },
         {
           "method": "POST",
           "path": "/bulk",
           "absolutePath": "/api/v1/media/bulk",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Upload multiple files (multipart, field \"files\", max 10)."
         },
         {
           "method": "GET",
           "path": "/",
           "absolutePath": "/api/v1/media",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Paginated media list (type/types/search/sort filters)."
         },
         {
           "method": "GET",
           "path": "/:id",
           "absolutePath": "/api/v1/media/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Fetch a media item by id."
         },
         {
           "method": "PUT",
           "path": "/:id",
           "absolutePath": "/api/v1/media/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update media metadata (title/alt/caption)."
         },
         {
           "method": "DELETE",
           "path": "/:id",
           "absolutePath": "/api/v1/media/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a media item (removes files from storage)."
         }
       ]
@@ -785,49 +785,49 @@
           "method": "GET",
           "path": "/",
           "absolutePath": "/api/v1/messages",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "List contact messages with optional status/search filters."
         },
         {
           "method": "POST",
           "path": "/bulk",
           "absolutePath": "/api/v1/messages/bulk",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk status change / delete by id list."
         },
         {
           "method": "POST",
           "path": "/bulk-status",
           "absolutePath": "/api/v1/messages/bulk-status",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk update message status."
         },
         {
           "method": "POST",
           "path": "/bulk-delete",
           "absolutePath": "/api/v1/messages/bulk-delete",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk delete messages by id list."
         },
         {
           "method": "GET",
           "path": "/:id",
           "absolutePath": "/api/v1/messages/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Fetch a message by id (marks unread → read)."
         },
         {
           "method": "PUT",
           "path": "/:id/status",
           "absolutePath": "/api/v1/messages/:id/status",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a message's status."
         },
         {
           "method": "DELETE",
           "path": "/:id",
           "absolutePath": "/api/v1/messages/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a message."
         }
       ]
@@ -861,91 +861,91 @@
           "method": "GET",
           "path": "/",
           "absolutePath": "/api/v1/pages",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "List pages (any status) with filters."
         },
         {
           "method": "POST",
           "path": "/bulk",
           "absolutePath": "/api/v1/pages/bulk",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk status change / soft-delete by id list."
         },
         {
           "method": "GET",
           "path": "/:id/revisions",
           "absolutePath": "/api/v1/pages/:id/revisions",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "List a page's saved revisions."
         },
         {
           "method": "GET",
           "path": "/:id/revisions/:version",
           "absolutePath": "/api/v1/pages/:id/revisions/:version",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Fetch one revision snapshot."
         },
         {
           "method": "POST",
           "path": "/:id/revisions/:version/restore",
           "absolutePath": "/api/v1/pages/:id/revisions/:version/restore",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Restore a revision (snapshots current state first)."
         },
         {
           "method": "POST",
           "path": "/:pageId/blocks",
           "absolutePath": "/api/v1/pages/:pageId/blocks",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Create a page block."
         },
         {
           "method": "PUT",
           "path": "/:pageId/blocks/reorder",
           "absolutePath": "/api/v1/pages/:pageId/blocks/reorder",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Reorder a page's blocks within one parent."
         },
         {
           "method": "PUT",
           "path": "/:pageId/blocks/:blockId",
           "absolutePath": "/api/v1/pages/:pageId/blocks/:blockId",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a page block."
         },
         {
           "method": "DELETE",
           "path": "/:pageId/blocks/:blockId",
           "absolutePath": "/api/v1/pages/:pageId/blocks/:blockId",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a page block."
         },
         {
           "method": "GET",
           "path": "/:id",
           "absolutePath": "/api/v1/pages/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Fetch a page by id (any status, with blocks)."
         },
         {
           "method": "POST",
           "path": "/",
           "absolutePath": "/api/v1/pages",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Create a page."
         },
         {
           "method": "PUT",
           "path": "/:id",
           "absolutePath": "/api/v1/pages/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a page. Snapshots a revision first."
         },
         {
           "method": "DELETE",
           "path": "/:id",
           "absolutePath": "/api/v1/pages/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a page."
         }
       ]
@@ -1194,63 +1194,63 @@
           "method": "POST",
           "path": "/bulk",
           "absolutePath": "/api/v1/posts/bulk",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Bulk status change / soft-delete by id list."
         },
         {
           "method": "GET",
           "path": "/:id",
           "absolutePath": "/api/v1/posts/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Fetch a post by id (any status)."
         },
         {
           "method": "POST",
           "path": "/",
           "absolutePath": "/api/v1/posts",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Create a post."
         },
         {
           "method": "PUT",
           "path": "/:id",
           "absolutePath": "/api/v1/posts/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Update a post. Snapshots a revision first."
         },
         {
           "method": "DELETE",
           "path": "/:id",
           "absolutePath": "/api/v1/posts/:id",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Delete a post."
         },
         {
           "method": "GET",
           "path": "/:id/revisions",
           "absolutePath": "/api/v1/posts/:id/revisions",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "List a post's saved revisions."
         },
         {
           "method": "GET",
           "path": "/:id/revisions/:version",
           "absolutePath": "/api/v1/posts/:id/revisions/:version",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Fetch one revision snapshot."
         },
         {
           "method": "POST",
           "path": "/:id/revisions/:version/restore",
           "absolutePath": "/api/v1/posts/:id/revisions/:version/restore",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Restore a revision (snapshots current state first)."
         },
         {
           "method": "PUT",
           "path": "/:id/blocks/reorder",
           "absolutePath": "/api/v1/posts/:id/blocks/reorder",
-          "auth": "admin",
+          "auth": "staff",
           "summary": "Reorder a post's content blocks."
         }
       ]
@@ -1854,6 +1854,13 @@
       "module": "users",
       "mountPath": "/api/v1/users",
       "routes": [
+        {
+          "method": "GET",
+          "path": "/authors",
+          "absolutePath": "/api/v1/users/authors",
+          "auth": "staff",
+          "summary": "List staff users (admin/sysadmin/editor) for author attribution."
+        },
         {
           "method": "GET",
           "path": "/",

@@ -3,7 +3,7 @@ import type {
     UserCreateResponse, UserUpdateBody, UserUpdateResponse, UserAvatarUploadResponse,
     UserPasswordBody, UserPasswordResponse, UserBanBody, UserBanResponse,
     UserUnbanResponse, UserDeleteResponse, UserBanListQuery, UserBanListResponse,
-    UserBanIpBody, UserBanIpResponse, UserBanDeleteResponse,
+    UserBanIpBody, UserBanIpResponse, UserBanDeleteResponse, UserAuthorsResponse,
 } from '@sitesurge/types';
 import type { Paginated, } from '@sitesurge/types';
 import { ModuleBase, } from './base';
@@ -15,6 +15,11 @@ export class UsersModule extends ModuleBase {
     /** GET /users — paginated admin list with search/role/status/sort filters. */
     list(query?: UserListQuery,): Promise<Paginated<UserListResponse[number]>> {
         return this.getPaged<UserListResponse[number]>('/users', { query: query as Record<string, unknown>, },);
+    }
+
+    /** GET /users/authors — staff users (admin/sysadmin/editor) for post author attribution. */
+    authors(): Promise<UserAuthorsResponse> {
+        return this.get<UserAuthorsResponse>('/users/authors',);
     }
 
     /** GET /users/:id — user with their resolved Patreon membership (or null). */

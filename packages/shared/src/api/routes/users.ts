@@ -47,6 +47,16 @@ export interface UserListQuery {
 /** GET /users — list items. Page meta rides the ApiResponse envelope. */
 export type UserListResponse = User[];
 
+/** One entry in the author-attribution dropdown. */
+export interface UserAuthor {
+    id: string;
+    displayName: string;
+    role: string;
+}
+
+/** GET /users/authors — staff users for post author attribution. */
+export type UserAuthorsResponse = UserAuthor[];
+
 // ─── GET /users/banned/list ───────────────────────────────────────
 
 /** Query accepted by GET /users/banned/list. */
@@ -104,7 +114,7 @@ export interface UserCreateBody {
     email: string;
     password: string;
     displayName: string;
-    role?: Extract<UserRole, 'member' | 'admin' | 'sysadmin'>;
+    role?: Extract<UserRole, 'member' | 'editor' | 'admin' | 'sysadmin'>;
 }
 
 /** POST /users (201) — the created user. */

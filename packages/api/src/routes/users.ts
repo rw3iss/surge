@@ -41,7 +41,7 @@ const avatarUpload = multer({
 
 const updateUserSchema = z.object({
     displayName: z.string().min(1,).max(255,).optional(),
-    role: z.enum(['anonymous', 'member', 'admin', 'sysadmin',],).optional(),
+    role: z.enum(['anonymous', 'member', 'editor', 'admin', 'sysadmin',],).optional(),
     isActive: z.boolean().optional(),
     avatarUrl: z.string().optional().nullable(),
 },) satisfies z.ZodType<UserUpdateBody>;
@@ -50,7 +50,7 @@ const createUserSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8,),
     displayName: z.string().min(1,).max(255,),
-    role: z.enum(['member', 'admin', 'sysadmin',],).optional(),
+    role: z.enum(['member', 'editor', 'admin', 'sysadmin',],).optional(),
 },) satisfies z.ZodType<UserCreateBody>;
 
 // Shared by POST /ban-ip and POST /:id/ban. As a wire DTO it maps to the
@@ -87,6 +87,14 @@ const idParams = z.object({ id: z.string(), },);
 // Literal paths (/banned/list, /banned/:banId, /ban-ip) before /:id.
 
 export const usersRoutes = [
+
+    // Staff-accessible minimal list for the post-author dropdown — id /
+    // displayName / role only, no sensitive fields. Declared before /:id.
+    defineRoute({
+        method: 'get', path: '/authors', auth: 'staff',
+        summary: 'List staff users (admin/sysadmin/editor) for author attribution.',
+        handler: async () => reply(await users.listAuthors(),),
+    },),
 
     defineRoute({
         method: 'get', path: '/', auth: 'admin',

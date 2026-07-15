@@ -5,3 +5,10 @@
 export function isAdminRole(role?: string,): boolean {
     return role === 'admin' || role === 'sysadmin';
 }
+
+/** Content-editing staff: admins/sysadmins plus the `editor` role. These
+ *  users can sign into the admin, edit content, and be attributed as a
+ *  post author — but not manage plugins / settings / users. */
+export function isStaffRole(role?: string,): boolean {
+    return isAdminRole(role,) || role === 'editor';
+}

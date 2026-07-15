@@ -105,14 +105,14 @@ export const campaignsRoutes = [
 
     // Donation summary (admin, cached).
     defineRoute({
-        method: 'get', path: '/donations/summary', auth: 'admin',
+        method: 'get', path: '/donations/summary', auth: 'staff',
         summary: 'Dashboard donation summary.',
         handler: () => campaigns.donationSummary(),
     },),
 
     // All donations (admin).
     defineRoute({
-        method: 'get', path: '/donations/all', auth: 'admin',
+        method: 'get', path: '/donations/all', auth: 'staff',
         summary: 'List all donations with optional campaign/status filters.',
         input: { query: allDonationsQuery, },
         handler: async ({ query, },) => {
@@ -140,7 +140,7 @@ export const campaignsRoutes = [
 
     // Bulk actions (admin).
     defineRoute({
-        method: 'post', path: '/bulk', auth: 'admin',
+        method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Bulk status change / delete by id list.',
         handler: ({ body, },) => campaigns.bulk(body,),
     },),
@@ -161,7 +161,7 @@ export const campaignsRoutes = [
 
     // Create (admin).
     defineRoute({
-        method: 'post', path: '/', auth: 'admin',
+        method: 'post', path: '/', auth: 'staff',
         summary: 'Create a campaign.',
         input: { body: campaignSchema, },
         handler: async ({ body, audit, },) => {
@@ -172,7 +172,7 @@ export const campaignsRoutes = [
 
     // Update (admin).
     defineRoute({
-        method: 'put', path: '/:id', auth: 'admin',
+        method: 'put', path: '/:id', auth: 'staff',
         summary: 'Update a campaign.',
         input: { params: idParams, body: campaignSchema.partial(), },
         handler: ({ params, body, audit, },) => campaigns.update(params.id, body, audit(),),
@@ -180,7 +180,7 @@ export const campaignsRoutes = [
 
     // Delete (admin).
     defineRoute({
-        method: 'delete', path: '/:id', auth: 'admin',
+        method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a campaign.',
         input: { params: idParams, },
         handler: async ({ params, audit, },) => {

@@ -53,6 +53,15 @@ const AdminPostEditor: Component = () => {
         }
     },);
 
+    // Staff users (admin / sysadmin / editor) for the Author dropdown.
+    const [staffUsers,] = createResource(async () => {
+        try {
+            return await cms.users.authors();
+        } catch {
+            return [] as { id: string; displayName: string; role: string; }[];
+        }
+    },);
+
     /**
      * Inline styles applied to the block-preview container so the
      * WYSIWYG matches the live site. The mapping itself lives in
@@ -71,6 +80,7 @@ const AdminPostEditor: Component = () => {
     const [showImageSelect, setShowImageSelect,] = createSignal(false,);
     const [showImageUpload, setShowImageUpload,] = createSignal(false,);
     const [publishAt, setPublishAt,] = createSignal('',);
+    const [authorId, setAuthorId,] = createSignal('',);
     const [blocks, setBlocks,] = createSignal<BlockData[]>([],);
     const [savedBlocks, setSavedBlocks,] = createSignal<BlockData[]>([],);
     const { error, saving, beginSave, endSave, showError, setError, } = useEditorState();
@@ -97,6 +107,7 @@ const AdminPostEditor: Component = () => {
             tags: tags(),
             featuredImage: featuredImage(),
             publishAt: publishAt(),
+            authorId: authorId(),
             blocks: blocks(),
         }),
     },);
@@ -116,6 +127,7 @@ const AdminPostEditor: Component = () => {
             setTags(d.tags || '',);
             setFeaturedImage(d.featuredImage || '',);
             setPublishAt(d.publishAt || '',);
+            setAuthorId(d.authorId || '',);
             setBlocks(d.blocks || [],);
         }
     },);
@@ -130,6 +142,7 @@ const AdminPostEditor: Component = () => {
             setAccessLevel(p.accessLevel || 'public',);
             setTags((p.tags || []).join(', ',),);
             setFeaturedImage(p.featuredImage || '',);
+            setAuthorId((p as any).authorId || '',);
             if (p.publishAt) {
                 setPublishAt(new Date(p.publishAt,).toISOString().slice(0, 16,),);
             } else {
@@ -176,6 +189,7 @@ const AdminPostEditor: Component = () => {
             accessLevel: accessLevel(),
             tags: tagList,
             featuredImage: featuredImage() || null,
+            authorId: authorId() || null,
             publishAt: publishAt() ? new Date(publishAt(),).toISOString() : null,
             contentBlocks: blocks().map((b, i,) => ({
                 id: b.id.startsWith('block-',) ? undefined : b.id,
@@ -219,7 +233,7 @@ const AdminPostEditor: Component = () => {
                     <Show when={!isNew() && post()}>
                         <Show when={isDeleted()}>
                             <button
-                                class="btn btn--secondary"
+                                class="btn btn--secondary btn--small"
                                 onClick={() => setShowRestoreConfirm(true,)}
                                 disabled={restoring()}
                             >
@@ -227,17 +241,17 @@ const AdminPostEditor: Component = () => {
                             </button>
                         </Show>
                         <Show when={!isDeleted() && (isDirty() || status() === 'draft')}>
-                            <button class="btn btn--ghost" onClick={() => setShowPreview(true,)}>
+                            <button class="btn btn--ghost btn--small" onClick={() => setShowPreview(true,)}>
                                 Preview Changes
                             </button>
                         </Show>
                         <Show when={status() === 'published'}>
-                            <a href={`/posts/${post()?.slug}`} target="_blank" class="btn btn--secondary">
+                            <a href={`/posts/${post()?.slug}`} target="_blank" class="btn btn--secondary btn--small">
                                 View Post &nearr;
                             </a>
                         </Show>
                     </Show>
-                    <button class="btn btn--primary" onClick={handleSave} disabled={saving()}>
+                    <button class="btn btn--primary btn--small" onClick={handleSave} disabled={saving()}>
                         {saving() ? 'Saving...' : 'Save Post'}
                     </button>
                 </div>
@@ -382,6 +396,19 @@ const AdminPostEditor: Component = () => {
                                 <option value="member">Members Only</option>
                                 <option value="patron">Patrons Only</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Author</label>
+                            <select
+                                value={authorId()}
+                                onChange={(e,) => { setAuthorId(e.currentTarget.value,); markDirty(); }}
+                            >
+                                <option value="">—</option>
+                                <For each={staffUsers() || []}>
+                                    {(u,) => <option value={u.id}>{u.displayName}</option>}
+                                </For>
+                            </select>
+                            <small class="form-help">Staff user credited as the post's author.</small>
                         </div>
                     </div>
                 </div>

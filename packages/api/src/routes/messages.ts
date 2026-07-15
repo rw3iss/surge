@@ -68,7 +68,7 @@ export const messagesRoutes = [
 
     // List messages (admin)
     defineRoute({
-        method: 'get', path: '/', auth: 'admin',
+        method: 'get', path: '/', auth: 'staff',
         summary: 'List contact messages with optional status/search filters.',
         input: { query: listQuery, },
         handler: async ({ query, },) => {
@@ -82,14 +82,14 @@ export const messagesRoutes = [
 
     // Unified bulk endpoint ({ ids, action, value })
     defineRoute({
-        method: 'post', path: '/bulk', auth: 'admin',
+        method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Bulk status change / delete by id list.',
         handler: ({ body, },) => messages.bulk(body,),
     },),
 
     // Bulk update status (admin)
     defineRoute({
-        method: 'post', path: '/bulk-status', auth: 'admin',
+        method: 'post', path: '/bulk-status', auth: 'staff',
         summary: 'Bulk update message status.',
         input: { body: bulkStatusBody, },
         handler: async ({ body, audit, },) => {
@@ -100,7 +100,7 @@ export const messagesRoutes = [
 
     // Bulk delete (admin)
     defineRoute({
-        method: 'post', path: '/bulk-delete', auth: 'admin',
+        method: 'post', path: '/bulk-delete', auth: 'staff',
         summary: 'Bulk delete messages by id list.',
         input: {
             body: z.object({ messageIds: z.array(z.string().uuid(),), },) satisfies z.ZodType<MessageBulkDeleteBody>,
@@ -113,7 +113,7 @@ export const messagesRoutes = [
 
     // Get message by ID (admin)
     defineRoute({
-        method: 'get', path: '/:id', auth: 'admin',
+        method: 'get', path: '/:id', auth: 'staff',
         summary: 'Fetch a message by id (marks unread → read).',
         input: { params: idParams, },
         handler: async ({ params, },) => {
@@ -125,7 +125,7 @@ export const messagesRoutes = [
 
     // Update message status (admin)
     defineRoute({
-        method: 'put', path: '/:id/status', auth: 'admin',
+        method: 'put', path: '/:id/status', auth: 'staff',
         summary: 'Update a message\'s status.',
         input: { params: idParams, body: updateStatusSchema, },
         handler: ({ params, body, audit, },) => messages.updateStatus(params.id, body.status, audit(),),
@@ -133,7 +133,7 @@ export const messagesRoutes = [
 
     // Delete message (admin)
     defineRoute({
-        method: 'delete', path: '/:id', auth: 'admin',
+        method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a message.',
         input: { params: idParams, },
         handler: async ({ params, audit, },) => {

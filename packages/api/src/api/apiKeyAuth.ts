@@ -6,7 +6,7 @@
  * the synthetic actor `api-key:<name>`.
  */
 import type { NextFunction, RequestHandler, Response, } from 'express';
-import { authenticate, AuthenticatedRequest, requireAdmin, } from '../middleware/auth';
+import { authenticate, AuthenticatedRequest, requireAdmin, requireStaff, } from '../middleware/auth';
 import * as apiKeys from '../services/apiKeys';
 import type { ApiKeyRow, } from '../services/apiKeys';
 
@@ -14,8 +14,13 @@ export interface ApiKeyRequest extends AuthenticatedRequest {
     apiKey?: ApiKeyRow;
 }
 
-export function adminOrApiKey(): RequestHandler[] {
-    const jwtChain = [authenticate(), requireAdmin,];
+/** JWT-role-guard OR `ssk_` API key. Shared by the admin and staff tiers —
+ *  only the JWT role guard differs. API keys are admin-equivalent machine
+ *  clients, so they satisfy both tiers. */
+function jwtOrApiKey(
+    roleGuard: (req: AuthenticatedRequest, res: Response, next: NextFunction,) => void,
+): RequestHandler[] {
+    const jwtChain = [authenticate(), roleGuard,];
     const combined = async (req: ApiKeyRequest, res: Response, next: NextFunction,) => {
         try {
             const header = req.headers.authorization;
@@ -57,6 +62,14 @@ export function adminOrApiKey(): RequestHandler[] {
         }
     };
     return [combined as RequestHandler,];
+}
+
+export function adminOrApiKey(): RequestHandler[] {
+    return jwtOrApiKey(requireAdmin,);
+}
+
+export function staffOrApiKey(): RequestHandler[] {
+    return jwtOrApiKey(requireStaff,);
 }
 
 /** Optional-tier authenticator: a valid `ssk_` key authenticates the

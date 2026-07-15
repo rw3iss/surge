@@ -124,6 +124,9 @@ export interface PostCreateBody {
     content?: string;
     /** Banner/featured image URL. `null` clears it. */
     featuredImage?: string | null;
+    /** Post author = a staff user id. `null` clears; omitted on create
+     *  defaults to the creating user. */
+    authorId?: string | null;
     status?: 'draft' | 'published' | 'scheduled' | 'archived' | 'deleted';
     publishAt?: string | null;
     isPrivate?: boolean;

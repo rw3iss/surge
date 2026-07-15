@@ -87,7 +87,7 @@ function reqFiles(req: { files?: unknown; },): UploadFile[] | undefined {
 export const mediaRoutes = [
 
     defineRoute({
-        method: 'post', path: '/', auth: 'admin',
+        method: 'post', path: '/', auth: 'staff',
         summary: 'Upload a single file (multipart, field "file"; optional alt/caption).',
         pre: [upload.single('file',),],
         handler: async ({ req, userId, },) => {
@@ -98,7 +98,7 @@ export const mediaRoutes = [
     },),
 
     defineRoute({
-        method: 'post', path: '/block-upload', auth: 'admin',
+        method: 'post', path: '/block-upload', auth: 'staff',
         summary: 'Upload a file for a content block (multipart, field "file"; postId/blockId).',
         pre: [upload.single('file',),],
         handler: async ({ req, userId, },) => {
@@ -109,7 +109,7 @@ export const mediaRoutes = [
     },),
 
     defineRoute({
-        method: 'post', path: '/bulk', auth: 'admin',
+        method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Upload multiple files (multipart, field "files", max 10).',
         pre: [upload.array('files', 10,),],
         handler: async ({ req, userId, },) => {
@@ -119,7 +119,7 @@ export const mediaRoutes = [
     },),
 
     defineRoute({
-        method: 'get', path: '/', auth: 'admin',
+        method: 'get', path: '/', auth: 'staff',
         summary: 'Paginated media list (type/types/search/sort filters).',
         input: { query: listQuery, },
         handler: async ({ query, },) => {
@@ -136,21 +136,21 @@ export const mediaRoutes = [
     },),
 
     defineRoute({
-        method: 'get', path: '/:id', auth: 'admin',
+        method: 'get', path: '/:id', auth: 'staff',
         summary: 'Fetch a media item by id.',
         input: { params: idParams, },
         handler: ({ params, },) => media.getById(params.id,),
     },),
 
     defineRoute({
-        method: 'put', path: '/:id', auth: 'admin',
+        method: 'put', path: '/:id', auth: 'staff',
         summary: 'Update media metadata (title/alt/caption).',
         input: { params: idParams, body: updateMetaSchema, },
         handler: ({ params, body, },) => media.updateMeta(params.id, body,),
     },),
 
     defineRoute({
-        method: 'delete', path: '/:id', auth: 'admin',
+        method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a media item (removes files from storage).',
         input: { params: idParams, },
         handler: async ({ params, },) => {

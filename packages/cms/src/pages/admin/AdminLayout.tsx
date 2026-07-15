@@ -1,5 +1,5 @@
 import { A, useLocation, useNavigate, } from '@solidjs/router';
-import { isAdminRole, type AppearanceSettings, } from '@sitesurge/types';
+import { isAdminRole, isStaffRole, type AppearanceSettings, } from '@sitesurge/types';
 import { createEffect, createMemo, createResource, createSignal, For, ParentComponent, Show, } from 'solid-js';
 import GlobalSearch from '../../components/admin/common/GlobalSearch';
 import SessionExpiredModal from '../../components/auth/SessionExpiredModal';
@@ -50,6 +50,8 @@ interface NavItem {
     icon: string;
     end?: boolean;
     sysadminOnly?: boolean;
+    /** Only visible to admin/sysadmin — hidden from the `editor` role. */
+    adminOnly?: boolean;
     /**
      * Feature key from `SiteFeatures`. When set, the nav item is
      * rendered only when `features[feature].enabled` is true. Items
@@ -66,12 +68,12 @@ const NAV_ITEMS: NavItem[] = [
     { path: '/admin/campaigns', label: 'Campaigns', icon: 'campaigns', feature: 'campaigns', },
     { path: '/admin/forms', label: 'Forms', icon: 'forms', feature: 'forms', },
     { path: '/admin/media', label: 'Media', icon: 'media', },
-    { path: '/admin/users', label: 'Users', icon: 'users', feature: 'users', },
+    { path: '/admin/users', label: 'Users', icon: 'users', feature: 'users', adminOnly: true, },
     { path: '/admin/messages', label: 'Messages', icon: 'messages', feature: 'messages', },
-    { path: '/admin/mailing-lists', label: 'Mailing Lists', icon: 'mail', feature: 'mailing_lists', },
-    { path: '/admin/shop', label: 'Shop', icon: 'shop', feature: 'shop', },
-    { path: '/admin/plugins', label: 'Plugins', icon: 'developer', feature: 'plugins', },
-    { path: '/admin/settings', label: 'Settings', icon: 'settings', },
+    { path: '/admin/mailing-lists', label: 'Mailing Lists', icon: 'mail', feature: 'mailing_lists', adminOnly: true, },
+    { path: '/admin/shop', label: 'Shop', icon: 'shop', feature: 'shop', adminOnly: true, },
+    { path: '/admin/plugins', label: 'Plugins', icon: 'developer', feature: 'plugins', adminOnly: true, },
+    { path: '/admin/settings', label: 'Settings', icon: 'settings', adminOnly: true, },
 ];
 
 const COLLAPSED_KEY = 'admin-sidebar-collapsed';
@@ -88,8 +90,15 @@ const AdminLayout: ParentComponent = (props,) => {
     createEffect(() => {
         if (!auth.isLoading && !auth.isAuthenticated) {
             navigate(`/login?return=${location.pathname}`,);
-        } else if (!auth.isLoading && !isAdminRole(auth.user?.role,)) {
+        } else if (!auth.isLoading && !isStaffRole(auth.user?.role,)) {
             navigate('/',);
+        } else if (
+            !auth.isLoading
+            && !isAdminRole(auth.user?.role,)
+            && NAV_ITEMS.some((i,) => i.adminOnly && location.pathname.startsWith(i.path,))
+        ) {
+            // Editor reached an admin-only page by URL — send them home.
+            navigate('/admin',);
         }
     },);
 
@@ -168,7 +177,7 @@ const AdminLayout: ParentComponent = (props,) => {
     };
 
     return (
-        <Show when={!auth.isLoading && isAdminRole(auth.user?.role,)} fallback={<div>Loading...</div>}>
+        <Show when={!auth.isLoading && isStaffRole(auth.user?.role,)} fallback={<div>Loading...</div>}>
             <div
                 ref={(el,) => { rootRef = el; }}
                 class={`admin-layout ${collapsed() ? 'admin-layout--collapsed' : ''}`}
@@ -203,6 +212,7 @@ const AdminLayout: ParentComponent = (props,) => {
                                 <Show
                                     when={
                                         (!item.sysadminOnly || auth.user?.role === 'sysadmin')
+                                        && (!item.adminOnly || isAdminRole(auth.user?.role,))
                                         && (!item.feature || isFeatureEnabled(item.feature,))
                                     }
                                 >

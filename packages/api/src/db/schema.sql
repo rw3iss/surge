@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- USERS & AUTHENTICATION
 -- =====================================================
 
-CREATE TYPE user_role AS ENUM ('anonymous', 'member', 'admin');
+CREATE TYPE user_role AS ENUM ('anonymous', 'member', 'editor', 'admin', 'sysadmin');
 CREATE TYPE auth_provider AS ENUM ('patreon', 'email');
 
 CREATE TABLE users (

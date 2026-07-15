@@ -31,6 +31,9 @@ const postSchema = z.object({
     // Accepts a relative media path (/uploads/…) or an absolute URL; the
     // media library serves relative paths, so `.url()` would wrongly reject.
     featuredImage: z.string().max(2048,).nullish(),
+    // Post author (a staff user id) — null clears it, omitted defaults to
+    // the creating user on create.
+    authorId: z.string().uuid().nullish(),
     status: z.enum(['draft', 'published', 'scheduled', 'archived', 'deleted',],).optional(),
     publishAt: z.string().datetime().nullable().optional(),
     isPrivate: z.boolean().optional(),
@@ -146,13 +149,13 @@ export const postsRoutes = [
     },),
 
     defineRoute({
-        method: 'post', path: '/bulk', auth: 'admin',
+        method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Bulk status change / soft-delete by id list.',
         handler: ({ body, },) => posts.bulk(body,),
     },),
 
     defineRoute({
-        method: 'get', path: '/:id', auth: 'admin',
+        method: 'get', path: '/:id', auth: 'staff',
         summary: 'Fetch a post by id (any status).',
         input: { params: idParams, },
         handler: async ({ params, },) => {
@@ -163,7 +166,7 @@ export const postsRoutes = [
     },),
 
     defineRoute({
-        method: 'post', path: '/', auth: 'admin',
+        method: 'post', path: '/', auth: 'staff',
         summary: 'Create a post.',
         input: { body: postSchema, },
         handler: async ({ body, audit, },) => {
@@ -173,14 +176,14 @@ export const postsRoutes = [
     },),
 
     defineRoute({
-        method: 'put', path: '/:id', auth: 'admin',
+        method: 'put', path: '/:id', auth: 'staff',
         summary: 'Update a post. Snapshots a revision first.',
         input: { params: idParams, body: postSchema.partial(), },
         handler: ({ params, body, audit, },) => posts.update(params.id, body, audit(),),
     },),
 
     defineRoute({
-        method: 'delete', path: '/:id', auth: 'admin',
+        method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a post.',
         input: { params: idParams, },
         handler: async ({ params, audit, },) => {
@@ -190,28 +193,28 @@ export const postsRoutes = [
     },),
 
     defineRoute({
-        method: 'get', path: '/:id/revisions', auth: 'admin',
+        method: 'get', path: '/:id/revisions', auth: 'staff',
         summary: 'List a post\'s saved revisions.',
         input: { params: idParams, },
         handler: ({ params, },) => posts.listRevisions(params.id,),
     },),
 
     defineRoute({
-        method: 'get', path: '/:id/revisions/:version', auth: 'admin',
+        method: 'get', path: '/:id/revisions/:version', auth: 'staff',
         summary: 'Fetch one revision snapshot.',
         input: { params: z.object({ id: z.string(), version: z.coerce.number().int(), },), },
         handler: ({ params, },) => posts.getRevision(params.id, params.version,),
     },),
 
     defineRoute({
-        method: 'post', path: '/:id/revisions/:version/restore', auth: 'admin',
+        method: 'post', path: '/:id/revisions/:version/restore', auth: 'staff',
         summary: 'Restore a revision (snapshots current state first).',
         input: { params: z.object({ id: z.string(), version: z.coerce.number().int(), },), },
         handler: ({ params, audit, },) => posts.restoreRevision(params.id, params.version, audit(),),
     },),
 
     defineRoute({
-        method: 'put', path: '/:id/blocks/reorder', auth: 'admin',
+        method: 'put', path: '/:id/blocks/reorder', auth: 'staff',
         summary: 'Reorder a post\'s content blocks.',
         input: {
             params: idParams,

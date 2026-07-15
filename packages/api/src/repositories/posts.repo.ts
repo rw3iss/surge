@@ -343,9 +343,11 @@ export async function createPost(data: Record<string, unknown>, authorId: string
             data.excerpt,
             content,
             data.featuredImage,
-            // author_id is a UUID FK; synthetic actors (api-key:<name>,
-            // system) become NULL rather than 500ing the INSERT.
-            uuidOrNull(authorId,),
+            // author_id is a UUID FK. An explicit authorId in the body wins
+            // (the editor picked an author, possibly null to clear it);
+            // otherwise default to the creating user. Synthetic actors
+            // (api-key:<name>, system) become NULL rather than 500ing.
+            uuidOrNull(data.authorId !== undefined ? (data.authorId as string | null) : authorId,),
             data.status || 'draft',
             data.isPrivate || false,
             data.accessLevel || 'public',
@@ -381,6 +383,7 @@ export async function updatePost(id: string, data: Record<string, unknown>,): Pr
         excerpt: 'excerpt',
         content: 'content',
         featuredImage: 'featured_image',
+        authorId: 'author_id',
         status: 'status',
         isPrivate: 'is_private',
         accessLevel: 'access_level',

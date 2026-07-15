@@ -153,7 +153,7 @@ export const formsRoutes = [
 
     // Export submissions as CSV (admin, raw).
     defineRoute({
-        method: 'get', path: '/:id/submissions/export', auth: 'admin', raw: true,
+        method: 'get', path: '/:id/submissions/export', auth: 'staff', raw: true,
         summary: 'Export a form\'s submissions as CSV.',
         input: { params: idParams, },
         handler: async ({ params, res, },) => {
@@ -166,7 +166,7 @@ export const formsRoutes = [
 
     // Bulk actions (admin).
     defineRoute({
-        method: 'post', path: '/bulk', auth: 'admin',
+        method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Bulk status change / delete by id list.',
         handler: ({ body, },) => forms.bulk(body,),
     },),
@@ -187,7 +187,7 @@ export const formsRoutes = [
 
     // Form submissions (admin).
     defineRoute({
-        method: 'get', path: '/:id/submissions', auth: 'admin',
+        method: 'get', path: '/:id/submissions', auth: 'staff',
         summary: 'List a form\'s submissions.',
         input: { params: idParams, query: submissionsQuery, },
         handler: async ({ params, query, },) => {
@@ -198,7 +198,7 @@ export const formsRoutes = [
 
     // Create form (admin).
     defineRoute({
-        method: 'post', path: '/', auth: 'admin',
+        method: 'post', path: '/', auth: 'staff',
         summary: 'Create a form (optionally with questions).',
         input: { body: formSchema, },
         handler: async ({ body, audit, },) => {
@@ -209,7 +209,7 @@ export const formsRoutes = [
 
     // Update form (admin).
     defineRoute({
-        method: 'put', path: '/:id', auth: 'admin',
+        method: 'put', path: '/:id', auth: 'staff',
         summary: 'Update a form.',
         input: { params: idParams, body: formSchema.partial(), },
         handler: ({ params, body, audit, },) => forms.update(params.id, body, audit(),),
@@ -217,7 +217,7 @@ export const formsRoutes = [
 
     // Add question (admin).
     defineRoute({
-        method: 'post', path: '/:id/questions', auth: 'admin',
+        method: 'post', path: '/:id/questions', auth: 'staff',
         summary: 'Add a question to a form.',
         input: { params: idParams, body: questionSchema, },
         handler: async ({ params, body, audit, },) => {
@@ -228,7 +228,7 @@ export const formsRoutes = [
 
     // Update question (admin).
     defineRoute({
-        method: 'put', path: '/:formId/questions/:questionId', auth: 'admin',
+        method: 'put', path: '/:formId/questions/:questionId', auth: 'staff',
         summary: 'Update a form question.',
         input: {
             params: z.object({ formId: z.string(), questionId: z.string(), },),
@@ -239,7 +239,7 @@ export const formsRoutes = [
 
     // Delete question (admin).
     defineRoute({
-        method: 'delete', path: '/:formId/questions/:questionId', auth: 'admin',
+        method: 'delete', path: '/:formId/questions/:questionId', auth: 'staff',
         summary: 'Delete a form question.',
         input: { params: z.object({ formId: z.string(), questionId: z.string(), },), },
         handler: async ({ params, audit, },) => {
@@ -250,7 +250,7 @@ export const formsRoutes = [
 
     // Delete form (admin).
     defineRoute({
-        method: 'delete', path: '/:id', auth: 'admin',
+        method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a form.',
         input: { params: idParams, },
         handler: async ({ params, audit, },) => {

@@ -128,6 +128,7 @@ const AdminUsers: Component = () => {
                                     <label>Role</label>
                                     <select value={formRole()} onChange={(e,) => setFormRole(e.currentTarget.value,)}>
                                         <option value="member">Member</option>
+                                        <option value="editor">Editor</option>
                                         <option value="admin">Admin</option>
                                         <option value="sysadmin">System Admin</option>
                                     </select>
@@ -161,6 +162,7 @@ const AdminUsers: Component = () => {
                 >
                     <option value="">All roles</option>
                     <option value="member">Member</option>
+                    <option value="editor">Editor</option>
                     <option value="admin">Admin</option>
                     <option value="sysadmin">Sysadmin</option>
                 </select>

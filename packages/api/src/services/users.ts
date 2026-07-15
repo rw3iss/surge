@@ -29,6 +29,11 @@ export const AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 // ─── Reads ────────────────────────────────────────────────────────
 
+/** Staff users for the post-author dropdown (id/displayName/role only). */
+export async function listAuthors(): Promise<Array<{ id: string; displayName: string; role: string; }>> {
+    return repo.listStaffAuthors();
+}
+
 export async function list(
     filters: repo.UserFilters = {},
     pagination: PaginationOpts = {},

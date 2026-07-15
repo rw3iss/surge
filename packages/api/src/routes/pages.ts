@@ -112,7 +112,7 @@ export const pagesRoutes = [
 
     // Admin list.
     defineRoute({
-        method: 'get', path: '/', auth: 'admin',
+        method: 'get', path: '/', auth: 'staff',
         summary: 'List pages (any status) with filters.',
         input: { query: listQuery, },
         handler: async ({ query, },) => {
@@ -126,28 +126,28 @@ export const pagesRoutes = [
 
     // Bulk actions (admin).
     defineRoute({
-        method: 'post', path: '/bulk', auth: 'admin',
+        method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Bulk status change / soft-delete by id list.',
         handler: ({ body, },) => pages.bulk(body,),
     },),
 
     // Revisions (admin).
     defineRoute({
-        method: 'get', path: '/:id/revisions', auth: 'admin',
+        method: 'get', path: '/:id/revisions', auth: 'staff',
         summary: 'List a page\'s saved revisions.',
         input: { params: idParams, },
         handler: ({ params, },) => pages.listRevisions(params.id,),
     },),
 
     defineRoute({
-        method: 'get', path: '/:id/revisions/:version', auth: 'admin',
+        method: 'get', path: '/:id/revisions/:version', auth: 'staff',
         summary: 'Fetch one revision snapshot.',
         input: { params: versionParams, },
         handler: ({ params, },) => pages.getRevision(params.id, params.version,),
     },),
 
     defineRoute({
-        method: 'post', path: '/:id/revisions/:version/restore', auth: 'admin',
+        method: 'post', path: '/:id/revisions/:version/restore', auth: 'staff',
         summary: 'Restore a revision (snapshots current state first).',
         input: { params: versionParams, },
         handler: ({ params, audit, },) => pages.restoreRevision(params.id, params.version, audit(),),
@@ -156,7 +156,7 @@ export const pagesRoutes = [
     // Block routes (admin). Declared before /:id so the more specific
     // /:pageId/blocks paths match first.
     defineRoute({
-        method: 'post', path: '/:pageId/blocks', auth: 'admin',
+        method: 'post', path: '/:pageId/blocks', auth: 'staff',
         summary: 'Create a page block.',
         input: { params: z.object({ pageId: z.string(), },), body: blockSchema, },
         handler: async ({ params, body, audit, },) => {
@@ -166,7 +166,7 @@ export const pagesRoutes = [
     },),
 
     defineRoute({
-        method: 'put', path: '/:pageId/blocks/reorder', auth: 'admin',
+        method: 'put', path: '/:pageId/blocks/reorder', auth: 'staff',
         summary: 'Reorder a page\'s blocks within one parent.',
         input: {
             params: z.object({ pageId: z.string(), },),
@@ -179,14 +179,14 @@ export const pagesRoutes = [
     },),
 
     defineRoute({
-        method: 'put', path: '/:pageId/blocks/:blockId', auth: 'admin',
+        method: 'put', path: '/:pageId/blocks/:blockId', auth: 'staff',
         summary: 'Update a page block.',
         input: { params: z.object({ pageId: z.string(), blockId: z.string(), },), body: blockSchema.partial(), },
         handler: ({ params, body, audit, },) => pages.updateBlock(params.pageId, params.blockId, body, audit(),),
     },),
 
     defineRoute({
-        method: 'delete', path: '/:pageId/blocks/:blockId', auth: 'admin',
+        method: 'delete', path: '/:pageId/blocks/:blockId', auth: 'staff',
         summary: 'Delete a page block.',
         input: { params: z.object({ pageId: z.string(), blockId: z.string(), },), },
         handler: async ({ params, audit, },) => {
@@ -197,7 +197,7 @@ export const pagesRoutes = [
 
     // Admin fetch by id (with blocks).
     defineRoute({
-        method: 'get', path: '/:id', auth: 'admin',
+        method: 'get', path: '/:id', auth: 'staff',
         summary: 'Fetch a page by id (any status, with blocks).',
         input: { params: idParams, },
         handler: async ({ params, },) => {
@@ -209,7 +209,7 @@ export const pagesRoutes = [
 
     // Create (admin).
     defineRoute({
-        method: 'post', path: '/', auth: 'admin',
+        method: 'post', path: '/', auth: 'staff',
         summary: 'Create a page.',
         input: { body: pageSchema, },
         handler: async ({ body, audit, },) => {
@@ -220,7 +220,7 @@ export const pagesRoutes = [
 
     // Update (admin). Snapshots a revision first.
     defineRoute({
-        method: 'put', path: '/:id', auth: 'admin',
+        method: 'put', path: '/:id', auth: 'staff',
         summary: 'Update a page. Snapshots a revision first.',
         input: { params: idParams, body: pageSchema.partial(), },
         handler: ({ params, body, audit, },) => pages.update(params.id, body, audit(),),
@@ -228,7 +228,7 @@ export const pagesRoutes = [
 
     // Delete (admin).
     defineRoute({
-        method: 'delete', path: '/:id', auth: 'admin',
+        method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a page.',
         input: { params: idParams, },
         handler: async ({ params, audit, },) => {
