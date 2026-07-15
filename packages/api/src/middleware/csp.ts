@@ -31,7 +31,10 @@ let pluginOrigins: PluginCspOrigins = EMPTY;
 function buildDirectives(): Record<string, string[]> {
     return {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", ...pluginOrigins.styleSrc],
+        // fonts.googleapis.com: the appearance system loads Google Fonts
+        // stylesheets; the gstatic font files are already covered by the
+        // default font-src ('self' https: data:).
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', ...pluginOrigins.styleSrc],
         scriptSrc: ["'self'", ...pluginOrigins.scriptSrc],
         imgSrc: ["'self'", 'data:', 'blob:', 'https:', ...pluginOrigins.imgSrc],
         connectSrc: ["'self'", 'https://api.stripe.com', ...pluginOrigins.connectSrc],
