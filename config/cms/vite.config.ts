@@ -66,21 +66,35 @@ export default defineConfig(({ mode }) => {
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        // The default navigateFallback intercepts every navigation
-        // request and serves the SPA's index.html. That breaks
-        // backend-served HTML/XML routes (sitemap.xml, feed.xml,
-        // robots.txt) and every API call: the SW would hand the SPA
-        // shell back instead of the real response. Deny those paths
-        // so they pass through to the network and hit the backend.
-        navigateFallbackDenylist: [
-            /^\/api\//,
-            /^\/sitemap\.xml$/,
-            /^\/feed\.xml$/,
-            /^\/robots\.txt$/,
-            /^\/uploads\//,
-            /^\/avatars\//,
-        ],
+        // Disable the precache navigation fallback. It served the SPA shell
+        // (index.html) from the precache for every navigation, which FROZE
+        // the document's response headers — most importantly the CSP. A
+        // plugin-extended connect-src (set server-side per enabled plugin)
+        // therefore never reached the browser and the widget was blocked.
+        // Navigations are handled NetworkFirst below instead (fresh headers
+        // online, cached shell offline). `undefined` overrides the
+        // vite-plugin-pwa default of 'index.html'.
+        navigateFallback: undefined,
         runtimeCaching: [
+          {
+            // The SPA shell (the HTML document) must be fetched fresh so
+            // server-set response headers — chiefly a plugin-extended CSP —
+            // always propagate. Precaching index.html and serving it via the
+            // navigation fallback froze the CSP header, so an enabled plugin's
+            // connect-src (e.g. PageLoop → its endpoint) never reached the
+            // browser. NetworkFirst serves the live document online and falls
+            // back to the last cached copy offline. Registered first so it wins
+            // navigation requests over the precache navigation fallback.
+            urlPattern: ({ request, url }: { request: Request; url: URL; }) =>
+              request.mode === 'navigate'
+              && !/^\/(api|uploads|avatars)\/|^\/(sitemap\.xml|feed\.xml|robots\.txt)$/.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-shell',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /^https:\/\/api\./i,
             handler: 'NetworkFirst',
