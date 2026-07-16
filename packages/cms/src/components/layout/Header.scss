@@ -36,26 +36,15 @@
   }
 
   // ─── Float right-side content ─────────────────────────────────────
-  // The right-side controls (cart / admin / user / logout) are pulled
-  // out of flow and pinned to the header's right edge so they don't push
-  // the main header content left — keeps centered content centered. The
-  // right inset follows the container's own right padding via a CSS var.
+  // The right-side controls (cart / admin / user / logout) are pulled out of
+  // flow and pinned to the header's right edge so they don't push the main
+  // header content left — keeps centered content centered. The actual
+  // `position: absolute` on `.header__nav` lives in the `&__nav` block below
+  // (after the `.header--custom` override, which sets `position: static` at
+  // equal specificity — so it must come later in the cascade to win).
   &--float-right {
     .header__container {
       position: relative;
-    }
-
-    .header__nav {
-      position: absolute;
-      right: var(--header-pad-right, 0);
-      // Span the full header height and center the items with the nav's own
-      // flex (align-items: center) so the floated content keeps the SAME
-      // vertical alignment as the in-flow header content — rather than being
-      // centered in the padding box (which pushed it toward the top).
-      top: 0;
-      bottom: 0;
-      margin-left: 0;
-      z-index: 2;
     }
   }
 
@@ -122,6 +111,20 @@
       gap: $spacing-lg;
       margin-left: $spacing-md;
       flex-shrink: 0;
+    }
+
+    // Float right-side content: pull the nav out of flow and pin it to the
+    // header's right edge (inset by the container's right padding/gutter via
+    // `--header-pad-right`). Placed AFTER `.header--custom &` so it wins at
+    // equal specificity for custom headers; `top/bottom: 0` + the nav's own
+    // `align-items: center` keep it vertically aligned with the header content.
+    .header--float-right & {
+      position: absolute;
+      right: var(--header-pad-right, 0);
+      top: 0;
+      bottom: 0;
+      margin-left: 0;
+      z-index: 2;
     }
   }
 
