@@ -17,6 +17,8 @@ export interface HeroCarouselProps {
     /** Padding from the block style, applied to the slide *content* (the text
      *  overlay) only — the background media stays full-bleed. */
     contentPadding?: string;
+    /** Margin from the block style, applied to the slide *content*. */
+    contentMargin?: string;
 }
 
 const DEFAULT_HEIGHT = '50vh';
@@ -113,6 +115,7 @@ const HeroCarousel: Component<HeroCarouselProps> = (props,) => {
         // Block-style padding pushes the text content inward; the background
         // media ignores it (it lives on a separate, un-padded layer).
         if (props.contentPadding) v['--hero-content-padding'] = props.contentPadding;
+        if (props.contentMargin) v['--hero-content-margin'] = props.contentMargin;
         return v;
     };
 

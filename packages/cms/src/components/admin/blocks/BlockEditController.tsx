@@ -147,6 +147,24 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
         }
     };
 
+    /**
+     * BlockStyleEditor onChange. Updates the local `currentStyle` and, for an
+     * inline (id-less) 'custom' style, live-persists it to the block's
+     * `__styleRef.custom` so the admin preview (and, once saved, the public
+     * output) reflect padding/margin/etc AS the operator edits — rather than
+     * only after clicking Save. Template-backed styles (with an id) persist
+     * through Save Template / Set as Default instead, so they're left alone.
+     */
+    const handleStyleEditorChange = (style: BlockStyleData,) => {
+        setCurrentStyle(style,);
+        if (editingStyle() && !style.id) {
+            const { id: _id, name: _name, isDefault: _d, ...customProps } = style;
+            delete (customProps as any).createdAt;
+            delete (customProps as any).updatedAt;
+            props.onUpdate(props.block.id, { ...props.block.data, __styleRef: { custom: customProps, }, },);
+        }
+    };
+
     const handleSaveStyle = () => {
         const style = currentStyle();
         if (style.id) {
@@ -315,7 +333,7 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
                 fallback={
                     <BlockStyleEditor
                         style={currentStyle()}
-                        onChange={setCurrentStyle}
+                        onChange={handleStyleEditorChange}
                         allowSaveTemplate={true}
                         onSaveTemplate={handleSaveTemplate}
                         onCopyTemplate={currentStyle().id ? (() => {

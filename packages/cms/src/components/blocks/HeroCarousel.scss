@@ -70,9 +70,10 @@
     flex-direction: column;
     align-items: var(--hero-content-align, center);
     text-align: var(--hero-text-align, center);
-    // Block-style padding (when set) insets the text content only; the
+    // Block-style padding/margin (when set) inset the text content only; the
     // background media sits on a separate layer and stays full-bleed.
     padding: var(--hero-content-padding, #{$spacing-lg} #{$spacing-xl});
+    margin: var(--hero-content-margin, 0);
     max-width: 90%;
     pointer-events: auto;
   }

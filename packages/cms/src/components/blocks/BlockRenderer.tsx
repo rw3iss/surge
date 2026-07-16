@@ -754,6 +754,16 @@ const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
         ...(s().options as Partial<HeroCarouselOptions> || {}),
     } as HeroCarouselOptions);
 
+    // The block's effective padding is routed to the slide *content* (not the
+    // whole carousel) so the background media stays full-bleed. Mirrors the
+    // non-carousel padding precedence in BlockRenderer: explicit style padding
+    // → settings padding → the site default (unless default padding is off).
+    const contentPadding = () =>
+        (style().padding as string)
+        || (s().padding as string)
+        || (s().useDefaultPadding === false ? undefined : 'var(--site-block-padding, 0)');
+    const contentMargin = () => (style().margin as string) || undefined;
+
     // Use onMount instead of createResource to avoid Suspense jumps
     const [appearance, setAppearance,] = createSignal<any>(null,);
     onMount(async () => {
@@ -770,7 +780,8 @@ const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
                 gutterWidth={appearance()?.gutterWidth}
                 align={style().textAlign}
                 valign={style().verticalAlign}
-                contentPadding={style().padding}
+                contentPadding={contentPadding()}
+                contentMargin={contentMargin()}
             />
         </Show>
     );

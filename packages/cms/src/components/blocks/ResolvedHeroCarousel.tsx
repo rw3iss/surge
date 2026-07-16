@@ -33,6 +33,8 @@ export interface ResolvedHeroCarouselProps {
     valign?: string;
     /** Block-style padding — insets slide text content, not the media. */
     contentPadding?: string;
+    /** Block-style margin — applied to the slide text content. */
+    contentMargin?: string;
 }
 
 /** Build the show-fields overlay metadata for a slide (only the fields
@@ -141,6 +143,7 @@ const ResolvedHeroCarousel: Component<ResolvedHeroCarouselProps> = (props,) => {
             align={props.align}
             valign={props.valign}
             contentPadding={props.contentPadding}
+            contentMargin={props.contentMargin}
         />
     );
 };
