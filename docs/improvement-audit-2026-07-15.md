@@ -99,6 +99,19 @@ Note: the working tree already carried this session's block-editor / carousel ch
 - **B8** — `services/social.ts` two `switch(platform)` blocks → a `PROVIDERS` registry lookup.
 - **B10** — `middleware/error.ts` maps `FeatureCascadeError` → 409 (identical body); settings `PUT /` dropped its `raw`+try/catch and is a thin handler again.
 
+## 8. Update — deferred items now executed (2026-07-15)
+
+Plans were written for the large items, then executed and committed (each gated on build + 118 backend tests, or admin build + `tsc --noEmit` + oxlint + Playwright for the frontend ones):
+- **B12** block-type registry — `67af9f2` (closes SSR silent drop-out; 117→ tests).
+- **B11** cache-invalidation contract — `f5e117f` (byte-identical keys + guard test; 118 tests).
+- **B6** payments split — `1ec0b9e` (webhook extracted; public surface stable).
+- **B7** settings/feature-cascade split — `497819c` (FeatureCascadeError re-exported; 409 body identical).
+- **U2/U3/S7/S8** admin UI primitives — `f3ae52c` (fixes modal-behind-overlay layering bug).
+- **F9** editor shell (`useEntityEditor` + `<EntityEditorShell>`) — `48970c0` (subsumes F8/F12; both editors runtime-verified, post save PUT 200).
+- Plus `a9ebaa2` — a runtime `flexAlign` bug in the earlier F5 change, caught by adding `tsc --noEmit` as a frontend gate.
+
+**Still open:** F10 (path aliases — mechanical), and the deletions **U1 / S6 / B3** (dead `ui/Toggle`, duplicate `ConfirmModal.scss` — note ConfirmModal now wraps ModalShell so its overlay CSS is dead, dead `buildWhereClause`) → run `/dead-code`.
+
 ## 7. Deferred (documented for a dedicated pass — too broad/risky to land safely without tests)
 - **F8** — delete/restore modal + try/catch/toast dedup (`useSoftDelete`). Pure dedup, no bug; skipped to avoid re-touching both editors in this pass.
 - **F9** — `useEntityEditor` + `<EntityEditorShell>` extraction (largest LOC dup; end-to-end on both editors).
