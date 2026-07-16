@@ -21,7 +21,6 @@ import { cache, } from './cache';
 import { stripHtml, truncateText, } from './ssr/schema';
 
 const SITE_URL = config.frontendUrl.replace(/\/$/, '',);
-const CACHE_KEY = 'feed:rss';
 const CACHE_TTL = 1800; // 30 minutes
 
 const FALLBACK_SITE_NAME = 'RW';
@@ -153,9 +152,9 @@ export async function buildFeed(): Promise<string> {
  *  builds, caches (1800s — public-only data, safe to cache freely),
  *  and returns. */
 export async function getFeedXml(): Promise<string> {
-    const cached = await cache.get<string>(CACHE_KEY,);
+    const cached = await cache.get<string>(cache.CACHE_KEYS.feedRss,);
     if (cached) return cached;
     const xml = await buildFeed();
-    await cache.set(CACHE_KEY, xml, CACHE_TTL,);
+    await cache.set(cache.CACHE_KEYS.feedRss, xml, CACHE_TTL,);
     return xml;
 }

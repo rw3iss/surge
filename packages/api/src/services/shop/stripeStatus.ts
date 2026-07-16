@@ -10,7 +10,6 @@ import { config, } from '../../config';
 import * as cache from '../cache';
 import { getStripeClient, } from '../payment/stripe';
 
-const CACHE_KEY = 'shop:stripe:status';
 const CACHE_TTL_SECONDS = 60;
 
 /** The status shape is the shared wire DTO (one definition, no drift). */
@@ -91,10 +90,10 @@ async function computeStatus(): Promise<ShopStripeStatus> {
  */
 export async function getStripeStatus(refresh = false,): Promise<ShopStripeStatus> {
     if (!refresh) {
-        const cached = await cache.get<ShopStripeStatus>(CACHE_KEY,);
+        const cached = await cache.get<ShopStripeStatus>(cache.CACHE_KEYS.shopStripeStatus,);
         if (cached) return cached;
     }
     const status = await computeStatus();
-    await cache.set(CACHE_KEY, status, CACHE_TTL_SECONDS,);
+    await cache.set(cache.CACHE_KEYS.shopStripeStatus, status, CACHE_TTL_SECONDS,);
     return status;
 }

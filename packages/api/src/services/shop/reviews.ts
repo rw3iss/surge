@@ -16,20 +16,8 @@ import { logAudit, } from '../audit';
 import { cache, } from '../cache';
 import type { AuditContext, ListResult, PaginationOpts, } from '../types';
 
-const REVIEWS_CACHE_PREFIX = 'shop:reviews:';
-
 function reviewListCacheKey(productId: string, page: number, limit: number, sort?: string,): string {
-    return `${REVIEWS_CACHE_PREFIX}${productId}:${sort ?? 'newest'}:${page}:${limit}`;
-}
-
-async function invalidateReviewCache(productId: string,): Promise<void> {
-    await cache.delPattern(`${REVIEWS_CACHE_PREFIX}${productId}:*`,);
-}
-
-/** Rating is denormalized onto the product — bust the product caches too. */
-async function invalidateProductRatingCaches(): Promise<void> {
-    await cache.delPattern('shop:product:slug:*',);
-    await cache.delPattern('shop:products:*',);
+    return cache.CACHE_KEYS.shopReviews(productId, sort ?? 'newest', page, limit,);
 }
 
 // ─── Public reads (approved-only — cache freely for anonymous) ──────
@@ -120,7 +108,7 @@ export async function create(input: ReviewCreateInput, ctx: AuditContext,): Prom
         body: input.body ?? null,
         verifiedPurchase,
     },);
-    await invalidateReviewCache(input.productId,);
+    await cache.invalidateShopReviewCache(input.productId,);
     await logAudit({
         userId: ctx.userId,
         action: 'create',
@@ -148,8 +136,7 @@ export async function moderate(
         await repo.recomputeProductRating(updated.productId, client,);
         return updated;
     },);
-    await invalidateReviewCache(review.productId,);
-    await invalidateProductRatingCaches();
+    await cache.invalidateShopReviewCache(review.productId,);
     await logAudit({
         userId: ctx.userId,
         action: 'update',
@@ -173,9 +160,10 @@ export async function remove(id: string, ctx: AuditContext,): Promise<ShopReview
     await repo.deleteReview(id,);
     if (existing.status === 'approved') {
         await repo.recomputeProductRating(existing.productId,);
-        await invalidateProductRatingCaches();
     }
-    await invalidateReviewCache(existing.productId,);
+    // invalidateShopReviewCache busts the review list + the product caches
+    // (rating is denormalized onto the product row).
+    await cache.invalidateShopReviewCache(existing.productId,);
     await logAudit({
         userId: ctx.userId,
         action: 'delete',
@@ -193,6 +181,6 @@ export async function remove(id: string, ctx: AuditContext,): Promise<ShopReview
 export async function markHelpful(id: string,): Promise<{ helpfulCount: number; }> {
     const review = await repo.findReviewById(id,);
     const helpfulCount = await repo.incrementHelpful(id,);
-    await invalidateReviewCache(review.productId,);
+    await cache.invalidateShopReviewCache(review.productId,);
     return { helpfulCount, };
 }

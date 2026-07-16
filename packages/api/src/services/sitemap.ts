@@ -14,7 +14,6 @@ import { config, } from '../config';
 import { query, } from '../db';
 import { cache, } from './cache';
 
-const CACHE_KEY = 'sitemap:xml';
 const CACHE_TTL = 3600; // 1 hour
 
 interface SitemapRow {
@@ -112,10 +111,10 @@ export const EMPTY_SITEMAP_XML =
 /** Cache-aware sitemap read. Returns cached XML if present, else builds,
  *  caches (3600s — public-only data, safe to cache freely), and returns. */
 export async function getSitemapXml(): Promise<string> {
-    const cached = await cache.get<string>(CACHE_KEY,);
+    const cached = await cache.get<string>(cache.CACHE_KEYS.sitemapXml,);
     if (cached) return cached;
     const xml = await buildSitemap();
-    await cache.set(CACHE_KEY, xml, CACHE_TTL,);
+    await cache.set(cache.CACHE_KEYS.sitemapXml, xml, CACHE_TTL,);
     return xml;
 }
 
@@ -130,7 +129,7 @@ export interface SitemapRegenerateResult {
 export async function regenerateSitemap(): Promise<SitemapRegenerateResult> {
     await cache.invalidateSitemapCache();
     const xml = await buildSitemap();
-    await cache.set(CACHE_KEY, xml, CACHE_TTL,);
+    await cache.set(cache.CACHE_KEYS.sitemapXml, xml, CACHE_TTL,);
     return {
         urlCount: countSitemapUrls(xml,),
         bytes: xml.length,

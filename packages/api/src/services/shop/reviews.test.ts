@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi, } from 'vitest';
 
 // ── Mocks ──
-const delPatternMock = vi.fn();
+const invalidateShopReviewMock = vi.fn();
 vi.mock('../cache', () => ({
     cache: {
         get: vi.fn().mockResolvedValue(null,),
         set: vi.fn(),
-        del: vi.fn(),
-        delPattern: (...a: unknown[]) => delPatternMock(...a),
+        invalidateShopReviewCache: (...a: unknown[]) => invalidateShopReviewMock(...a),
+        CACHE_KEYS: {
+            shopReviews: (productId: string, sort: string, page: number, limit: number,) =>
+                `shop:reviews:${productId}:${sort}:${page}:${limit}`,
+        },
     },
 }),);
 
@@ -52,7 +55,7 @@ const ctx = { userId: 'u1', ipAddress: '', userAgent: '', };
 
 describe('shop reviews service', () => {
     beforeEach(() => {
-        delPatternMock.mockReset();
+        invalidateShopReviewMock.mockReset();
         txnQueries.length = 0;
         fakeClient.query.mockClear();
         queryMock.mockClear();

@@ -21,12 +21,8 @@ import type { AuditContext, ListResult, PaginationOpts, } from '../types';
 
 export type { ProductFilters, } from '../../repositories/shop/shopProducts.repo';
 
-const PRODUCTS_CACHE_PREFIX = 'shop:products:';
-const PRODUCT_SLUG_PREFIX = 'shop:product:slug:';
-
 async function invalidateProductCache(): Promise<void> {
-    await cache.delPattern(`${PRODUCTS_CACHE_PREFIX}*`,);
-    await cache.delPattern(`${PRODUCT_SLUG_PREFIX}*`,);
+    await cache.invalidateShopProductCache();
 }
 
 // ─── Admin reads (any status) ─────────────────────────────────────
@@ -79,7 +75,7 @@ export async function listPublicCached(
 ): Promise<ListResult<ShopProduct>> {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 20;
-    const cacheKey = `${PRODUCTS_CACHE_PREFIX}${filters.search ?? ''}:${filters.sortBy ?? 'created_at'}:${filters.sortOrder ?? 'desc'}:${page}:${limit}`;
+    const cacheKey = `${cache.CACHE_KEYS.shopProductsPrefix}${filters.search ?? ''}:${filters.sortBy ?? 'created_at'}:${filters.sortOrder ?? 'desc'}:${page}:${limit}`;
 
     const cached = await cache.get<ListResult<ShopProduct>>(cacheKey,);
     if (cached) return cached;
@@ -91,7 +87,7 @@ export async function listPublicCached(
 
 /** Public slug fetch with anonymous caching. Active-only → safe. */
 export async function getPublicBySlugCached(slug: string,): Promise<ShopProductDetail | null> {
-    const cacheKey = `${PRODUCT_SLUG_PREFIX}${slug}`;
+    const cacheKey = cache.CACHE_KEYS.shopProductSlug(slug,);
     const cached = await cache.get<ShopProductDetail>(cacheKey,);
     if (cached) return cached;
 

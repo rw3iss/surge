@@ -9,17 +9,8 @@ import { logAudit, } from '../audit';
 import { cache, } from '../cache';
 import type { AuditContext, } from '../types';
 
-const CATEGORIES_KEY = 'shop:categories';
-const COLLECTIONS_PREFIX = 'shop:collections:';
-const TAGS_KEY = 'shop:tags';
-
 async function invalidateCatalogCache(): Promise<void> {
-    await cache.del(CATEGORIES_KEY,);
-    await cache.delPattern(`${COLLECTIONS_PREFIX}*`,);
-    await cache.del(TAGS_KEY,);
-    // Product detail carries taxonomy → bust product caches too.
-    await cache.delPattern('shop:product:slug:*',);
-    await cache.delPattern('shop:products:*',);
+    await cache.invalidateShopCatalogCache();
 }
 
 // ─── Categories ───────────────────────────────────────────────────
@@ -27,10 +18,10 @@ async function invalidateCatalogCache(): Promise<void> {
 /** All categories (flat; the tree is assembled client-side via parentId).
  *  Categories are not status-gated → cache-safe for everyone. */
 export async function listCategoriesCached(): Promise<ShopCategory[]> {
-    const cached = await cache.get<ShopCategory[]>(CATEGORIES_KEY,);
+    const cached = await cache.get<ShopCategory[]>(cache.CACHE_KEYS.shopCategories,);
     if (cached) return cached;
     const categories = await repo.findAllCategories();
-    await cache.set(CATEGORIES_KEY, categories, 300,);
+    await cache.set(cache.CACHE_KEYS.shopCategories, categories, 300,);
     return categories;
 }
 
@@ -79,7 +70,7 @@ export async function removeCategory(id: string, ctx: AuditContext,): Promise<vo
 
 /** Published collections (public), cached. */
 export async function listCollectionsPublicCached(): Promise<ShopCollection[]> {
-    const cacheKey = `${COLLECTIONS_PREFIX}published`;
+    const cacheKey = cache.CACHE_KEYS.shopCollections('published',);
     const cached = await cache.get<ShopCollection[]>(cacheKey,);
     if (cached) return cached;
     const collections = await repo.findAllCollections(true,);
@@ -148,10 +139,10 @@ export async function removeCollection(id: string, ctx: AuditContext,): Promise<
 
 /** Distinct tag list (public), cached. */
 export async function listTagsCached(): Promise<string[]> {
-    const cached = await cache.get<string[]>(TAGS_KEY,);
+    const cached = await cache.get<string[]>(cache.CACHE_KEYS.shopTags,);
     if (cached) return cached;
     const tags = await repo.findDistinctTags();
-    await cache.set(TAGS_KEY, tags, 300,);
+    await cache.set(cache.CACHE_KEYS.shopTags, tags, 300,);
     return tags;
 }
 

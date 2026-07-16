@@ -26,8 +26,6 @@ const HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
  *  trustworthy. */
 const SWATCH_ID_RE = /^[a-zA-Z0-9_-]{1,32}$/;
 
-const CACHE_KEY = 'settings:site_colors';
-
 const DEFAULT_HEXES = [
     '#ffffff', '#000000', '#3498cf', '#1d3557', '#f1faee',
     '#457b9d', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51',
@@ -51,7 +49,7 @@ function buildDefaults(): SiteSwatch[] {
  * reads see the new shape directly.
  */
 export async function list(): Promise<SiteSwatch[]> {
-    const cached = await cache.get<SiteSwatch[]>(CACHE_KEY,);
+    const cached = await cache.get<SiteSwatch[]>(cache.CACHE_KEYS.settingsSiteColors,);
     if (cached) return cached;
 
     const result = await query(
@@ -59,14 +57,14 @@ export async function list(): Promise<SiteSwatch[]> {
     );
     if (result.rows.length === 0) {
         const defaults = buildDefaults();
-        await cache.set(CACHE_KEY, defaults, 600,);
+        await cache.set(cache.CACHE_KEYS.settingsSiteColors, defaults, 600,);
         return defaults;
     }
 
     const raw = result.rows[0].value;
     if (!Array.isArray(raw,)) {
         const defaults = buildDefaults();
-        await cache.set(CACHE_KEY, defaults, 600,);
+        await cache.set(cache.CACHE_KEYS.settingsSiteColors, defaults, 600,);
         return defaults;
     }
 
@@ -99,7 +97,7 @@ export async function list(): Promise<SiteSwatch[]> {
         normalised = migrated.length > 0 ? migrated : buildDefaults();
     }
 
-    await cache.set(CACHE_KEY, normalised, 600,);
+    await cache.set(cache.CACHE_KEYS.settingsSiteColors, normalised, 600,);
     return normalised;
 }
 
@@ -140,7 +138,7 @@ export async function replace(
         [JSON.stringify(validated,), uuidOrNull(ctx.userId,),],
     );
 
-    await cache.del(CACHE_KEY,);
+    await cache.invalidateSwatchesCache();
     await cache.invalidateSettingsCache();
 
     await logAudit({

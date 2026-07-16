@@ -28,8 +28,6 @@ import type { AuditContext, } from '../types';
 
 const SETTINGS_KEY = 'shop_settings';
 const APPEARANCE_KEY = 'shop_appearance';
-const PUBLIC_CACHE_KEY = 'shop:settings:public';
-const RAW_CACHE_KEY = 'shop:settings:raw';
 
 // Defaults mirror the registry `shop` onEnable seed. Keep in sync.
 const DEFAULT_SETTINGS: ShopSettings = {
@@ -65,7 +63,7 @@ async function readRow<T,>(key: string,): Promise<Partial<T> | null> {
  * as well as the admin read. Returns defaults when rows are absent.
  */
 export async function getRaw(): Promise<ShopConfig> {
-    const cached = await cache.get<ShopConfig>(RAW_CACHE_KEY,);
+    const cached = await cache.get<ShopConfig>(cache.CACHE_KEYS.shopSettingsRaw,);
     if (cached) return cached;
 
     const [settingsRow, appearanceRow,] = await Promise.all([
@@ -78,7 +76,7 @@ export async function getRaw(): Promise<ShopConfig> {
         appearance: { ...DEFAULT_APPEARANCE, ...(appearanceRow ?? {}), },
     };
 
-    await cache.set(RAW_CACHE_KEY, config, 600,);
+    await cache.set(cache.CACHE_KEYS.shopSettingsRaw, config, 600,);
     return config;
 }
 
@@ -89,7 +87,7 @@ export async function getRaw(): Promise<ShopConfig> {
  * serve to everyone.
  */
 export async function getPublic(): Promise<{ settings: ShopPublicSettings; appearance: ShopAppearance; }> {
-    const cached = await cache.get<{ settings: ShopPublicSettings; appearance: ShopAppearance; }>(PUBLIC_CACHE_KEY,);
+    const cached = await cache.get<{ settings: ShopPublicSettings; appearance: ShopAppearance; }>(cache.CACHE_KEYS.shopSettingsPublic,);
     if (cached) return cached;
 
     const { settings, appearance, } = await getRaw();
@@ -104,7 +102,7 @@ export async function getPublic(): Promise<{ settings: ShopPublicSettings; appea
         appearance,
     };
 
-    await cache.set(PUBLIC_CACHE_KEY, projection, 600,);
+    await cache.set(cache.CACHE_KEYS.shopSettingsPublic, projection, 600,);
     return projection;
 }
 
@@ -179,8 +177,7 @@ export async function update(patch: ShopSettingsPatch, ctx: AuditContext,): Prom
         await writeRow(APPEARANCE_KEY, nextAppearance, actor,);
     }
 
-    await cache.del(RAW_CACHE_KEY,);
-    await cache.del(PUBLIC_CACHE_KEY,);
+    await cache.invalidateShopSettingsCache();
     await cache.invalidateSettingsCache();
 
     await logAudit({

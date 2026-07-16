@@ -416,7 +416,7 @@ export async function getLiveFeed(
     platform: SocialPlatform,
     limit = 10,
 ): Promise<SocialPost[]> {
-    const cacheKey = `social:feed:${platform}:${limit}`;
+    const cacheKey = cache.CACHE_KEYS.socialLiveFeed(platform, limit,);
 
     // Check cache first
     const cached = await cache.get<SocialPost[]>(cacheKey,);

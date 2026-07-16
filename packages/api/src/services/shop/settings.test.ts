@@ -3,14 +3,18 @@ import { beforeEach, describe, expect, it, vi, } from 'vitest';
 // ── Mocks ──
 const cacheGetMock = vi.fn().mockResolvedValue(null,);
 const cacheSetMock = vi.fn();
-const cacheDelMock = vi.fn();
+const invalidateShopSettingsMock = vi.fn();
 const invalidateSettingsMock = vi.fn();
 vi.mock('../cache', () => ({
     cache: {
         get: (...a: unknown[]) => cacheGetMock(...a),
         set: (...a: unknown[]) => cacheSetMock(...a),
-        del: (...a: unknown[]) => cacheDelMock(...a),
+        invalidateShopSettingsCache: (...a: unknown[]) => invalidateShopSettingsMock(...a),
         invalidateSettingsCache: (...a: unknown[]) => invalidateSettingsMock(...a),
+        CACHE_KEYS: {
+            shopSettingsRaw: 'shop:settings:raw',
+            shopSettingsPublic: 'shop:settings:public',
+        },
     },
 }),);
 
@@ -27,7 +31,7 @@ const ctx = { userId: 'u1', ipAddress: '', userAgent: '', };
 beforeEach(() => {
     cacheGetMock.mockReset().mockResolvedValue(null,);
     cacheSetMock.mockReset();
-    cacheDelMock.mockReset();
+    invalidateShopSettingsMock.mockReset();
     invalidateSettingsMock.mockReset();
     logAuditMock.mockReset();
     queryMock.mockReset().mockResolvedValue({ rows: [], });
@@ -132,8 +136,7 @@ describe('shop settings service', () => {
         expect(upsertKeys,).toContain('shop_appearance',);
 
         // Cache invalidation.
-        expect(cacheDelMock,).toHaveBeenCalledWith('shop:settings:raw',);
-        expect(cacheDelMock,).toHaveBeenCalledWith('shop:settings:public',);
+        expect(invalidateShopSettingsMock,).toHaveBeenCalled();
         expect(invalidateSettingsMock,).toHaveBeenCalled();
         expect(logAuditMock,).toHaveBeenCalledWith(
             expect.objectContaining({ entityType: 'shop-settings', }),

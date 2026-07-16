@@ -3,13 +3,16 @@ import { beforeEach, describe, expect, it, vi, } from 'vitest';
 // ── Mocks ──
 const getMock = vi.fn();
 const setMock = vi.fn();
-const delPatternMock = vi.fn();
+const invalidateProductMock = vi.fn();
 vi.mock('../cache', () => ({
     cache: {
         get: (...a: unknown[]) => getMock(...a),
         set: (...a: unknown[]) => setMock(...a),
-        delPattern: (...a: unknown[]) => delPatternMock(...a),
-        del: vi.fn(),
+        invalidateShopProductCache: (...a: unknown[]) => invalidateProductMock(...a),
+        CACHE_KEYS: {
+            shopProductsPrefix: 'shop:products:',
+            shopProductSlug: (slug: string,) => `shop:product:slug:${slug}`,
+        },
     },
 }),);
 
@@ -59,7 +62,7 @@ describe('shop products service', () => {
     beforeEach(() => {
         getMock.mockReset();
         setMock.mockReset();
-        delPatternMock.mockReset();
+        invalidateProductMock.mockReset();
         txnQueries.length = 0;
         fakeClient.query.mockClear();
         findPublicProductsMock.mockClear();
@@ -90,7 +93,7 @@ describe('shop products service', () => {
         const variantInserts = txnQueries.filter((q,) => q.sql.includes('INSERT INTO shop_variants'),);
         expect(optionInserts.length,).toBe(1,);
         expect(variantInserts.length,).toBe(2,);
-        expect(delPatternMock,).toHaveBeenCalled(); // cache invalidated
+        expect(invalidateProductMock,).toHaveBeenCalled(); // cache invalidated
     },);
 
     it('create with NO options synthesizes a single default variant', async () => {

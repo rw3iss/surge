@@ -26,6 +26,6 @@ export async function adjustInventory(
         [variantId, delta,],
     );
     if (result.rows.length === 0) return null;
-    await cache.delPattern('shop:product:slug:*',);
+    await cache.invalidateShopProductSlugCache();
     return result.rows[0].inventory_qty as number;
 }

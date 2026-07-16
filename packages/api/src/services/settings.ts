@@ -74,10 +74,11 @@ export async function set<T,>(
         [key, JSON.stringify(value,), uuidOrNull(ctx.userId,),],
     );
 
+    // invalidateSettingsCache() runs delPattern('settings:*'), which already
+    // busts the per-key `settings:<key>` entry — no separate del needed. If
+    // that call is ever removed from this path, restore an explicit per-key
+    // bust here.
     await cache.invalidateSettingsCache();
-    // Per-key cache miss too — settings.repo / route handlers
-    // sometimes cache by `settings:<key>`.
-    await cache.del(`settings:${key}`,);
 
     await logAudit({
         userId: ctx.userId,
@@ -101,8 +102,9 @@ export async function remove(key: string, ctx: AuditContext,): Promise<boolean> 
     );
     if (result.rows.length === 0) return false;
 
+    // invalidateSettingsCache() (delPattern 'settings:*') already busts the
+    // per-key `settings:<key>` entry.
     await cache.invalidateSettingsCache();
-    await cache.del(`settings:${key}`,);
 
     await logAudit({
         userId: ctx.userId,
@@ -186,7 +188,7 @@ async function computePublicFeatures(
  * entry is safe to serve to everyone (anonymous, member, admin, key).
  */
 export async function getPublicSettings(): Promise<SiteSettings> {
-    const cacheKey = 'settings:public';
+    const cacheKey = cache.CACHE_KEYS.settingsPublic;
 
     const cached = await cache.get<SiteSettings>(cacheKey,);
     if (cached) return cached;
@@ -522,7 +524,9 @@ async function setKeyed(def: KeyedSetting, value: unknown, ctx: AuditContext,): 
         [def.key, JSON.stringify(value,), uuidOrNull(ctx.userId,),],
     );
 
-    await cache.del(def.cacheKey,);
+    // def.cacheKey is a `settings:site_*` entry inside the settings:*
+    // namespace, so invalidateSettingsCache() (delPattern 'settings:*')
+    // already busts it — no separate per-key del needed.
     await cache.invalidateSettingsCache();
 
     await logAudit({

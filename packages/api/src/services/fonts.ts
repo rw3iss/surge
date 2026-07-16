@@ -30,7 +30,6 @@ import {
     listFonts,
 } from '../repositories/fonts.repo';
 
-const CACHE_KEY = 'fonts:list';
 const CACHE_TTL = 600;
 
 /** Directory the binaries live in. Created on first write. */
@@ -66,7 +65,7 @@ function withUrl(font: Font,): FontWithUrl {
 }
 
 async function invalidateCache(): Promise<void> {
-    await cache.del(CACHE_KEY,);
+    await cache.invalidateFontsCache();
 }
 
 /**
@@ -74,11 +73,11 @@ async function invalidateCache(): Promise<void> {
  * invalidated on every create / delete.
  */
 export async function list(): Promise<FontWithUrl[]> {
-    const cached = await cache.get<FontWithUrl[]>(CACHE_KEY,);
+    const cached = await cache.get<FontWithUrl[]>(cache.CACHE_KEYS.fontsList,);
     if (cached) return cached;
     const fonts = await listFonts();
     const enriched = fonts.map(withUrl,);
-    await cache.set(CACHE_KEY, enriched, CACHE_TTL,);
+    await cache.set(cache.CACHE_KEYS.fontsList, enriched, CACHE_TTL,);
     return enriched;
 }
 

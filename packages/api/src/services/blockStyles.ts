@@ -16,8 +16,6 @@ import { cache, } from './cache';
 import * as repo from '../repositories/blockStyles.repo';
 import type { AuditContext, ListResult, } from './types';
 
-const CACHE_KEY = 'block_styles:all';
-
 type BlockStyleRow = Awaited<ReturnType<typeof repo.findById>>;
 
 /** Convert null values to undefined so they match Partial<BlockStyle>. */
@@ -31,10 +29,10 @@ function nullsToUndefined(obj: Record<string, unknown>,): Partial<BlockStyle> {
 
 /** All block styles, served from cache when warm. */
 export async function listAllCached(): Promise<BlockStyleRow[]> {
-    const cached = await cache.get<BlockStyleRow[]>(CACHE_KEY,);
+    const cached = await cache.get<BlockStyleRow[]>(cache.CACHE_KEYS.blockStylesAll,);
     if (cached) return cached;
     const styles = await repo.findAll();
-    await cache.set(CACHE_KEY, styles, 600,);
+    await cache.set(cache.CACHE_KEYS.blockStylesAll, styles, 600,);
     return styles;
 }
 
@@ -64,7 +62,7 @@ export async function create(
     ctx: AuditContext,
 ): Promise<BlockStyleRow> {
     const style = await repo.create(nullsToUndefined(data,),);
-    await cache.del(CACHE_KEY,);
+    await cache.invalidateBlockStylesCache();
     await logAudit({
         userId: ctx.userId,
         action: 'create',
@@ -85,7 +83,7 @@ export async function update(
     // Don't strip nulls on update — null means "clear this field".
     // buildUpdateSet skips undefined but passes null through to SET col = NULL.
     const style = await repo.update(id, patch as Partial<BlockStyle>,);
-    await cache.del(CACHE_KEY,);
+    await cache.invalidateBlockStylesCache();
     await logAudit({
         userId: ctx.userId,
         action: 'update',
@@ -100,7 +98,7 @@ export async function update(
 
 export async function remove(id: string, ctx: AuditContext,): Promise<void> {
     await repo.remove(id,);
-    await cache.del(CACHE_KEY,);
+    await cache.invalidateBlockStylesCache();
     await logAudit({
         userId: ctx.userId,
         action: 'delete',

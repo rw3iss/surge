@@ -173,7 +173,7 @@ export async function disconnect(provider: string,): Promise<void> {
     }
 
     unregisterProviderCron(provider,);
-    await cache.delPattern('social:*',);
+    await cache.invalidateSocialCache();
 
     logger.info(`Social connection disconnected: ${provider}`,);
 }
@@ -224,7 +224,7 @@ export async function reorder(provider: string, direction: 'up' | 'down',): Prom
         );
     },);
 
-    await cache.delPattern('social:*',);
+    await cache.invalidateSocialCache();
 }
 
 /** Build the OAuth redirect_uri for a provider. In dev the API is on 3001
@@ -266,7 +266,7 @@ export async function startOAuth(
     },);
 
     // Store state in Redis for 10 minutes
-    await cache.set(`oauth_state:${state}`, statePayload, 600,);
+    await cache.set(cache.CACHE_KEYS.oauthState(state,), statePayload, 600,);
 
     const redirectUri = buildCallbackUrl(provider,);
     const oauthProvider = getOAuthProvider(provider, credentials, redirectUri,);
@@ -312,13 +312,12 @@ export async function completeOAuth(
         return { kind: 'error', query: 'Missing+authorization+code+or+state', };
     }
 
-    // Validate state
-    const statePayload = await cache.get(`oauth_state:${state}`,);
+    // Validate state (read-and-delete — CSRF state is single-use).
+    const statePayload = await cache.consumeOAuthState(state,);
     if (!statePayload) {
         return { kind: 'error', query: 'Invalid+or+expired+authorization+state', };
     }
 
-    await cache.del(`oauth_state:${state}`,);
     // cache.get() already JSON-parses the value, so statePayload is an
     // object — don't double-parse.
     const parsed = typeof statePayload === 'string' ?
@@ -412,7 +411,7 @@ export async function completeOAuth(
     // Register and start the token refresh cron
     registerProviderCron(provider,);
 
-    await cache.delPattern('social:*',);
+    await cache.invalidateSocialCache();
 
     logger.info(`OAuth connection successful: ${provider} (${userInfo.displayName})`,);
     return { kind: 'success', provider, };

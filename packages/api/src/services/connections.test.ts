@@ -8,8 +8,10 @@ vi.mock('../db', () => ({
         cb({ query: txClientQueryMock, },),
 }),);
 
-const delPatternMock = vi.fn().mockResolvedValue(undefined,);
-vi.mock('./cache', () => ({ cache: { delPattern: (...a: unknown[]) => delPatternMock(...a), }, }),);
+const invalidateSocialMock = vi.fn().mockResolvedValue(undefined,);
+vi.mock('./cache', () => ({
+    cache: { invalidateSocialCache: (...a: unknown[]) => invalidateSocialMock(...a), },
+}),);
 
 import { reorder, upsert, } from './connections';
 
@@ -45,7 +47,7 @@ describe('connections.reorder', () => {
     beforeEach(() => {
         queryMock.mockReset();
         txClientQueryMock.mockReset().mockResolvedValue({ rows: [], },);
-        delPatternMock.mockClear();
+        invalidateSocialMock.mockClear();
     },);
 
     it('swaps sort_order with the upper neighbour when moving up', async () => {
@@ -63,7 +65,7 @@ describe('connections.reorder', () => {
         const updates = txClientQueryMock.mock.calls.map((c,) => c[1] as unknown[]);
         expect(updates,).toContainEqual(['id-b', 0,],);
         expect(updates,).toContainEqual(['id-a', 1,],);
-        expect(delPatternMock,).toHaveBeenCalledWith('social:*',);
+        expect(invalidateSocialMock,).toHaveBeenCalled();
     },);
 
     it('is a no-op at the top edge', async () => {

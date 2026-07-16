@@ -45,7 +45,7 @@ export async function listPosts(
     limit: number,
 ): Promise<SocialListResult> {
     const offset = (page - 1) * limit;
-    const cacheKey = `social:posts:${platform || 'all'}:${page}:${limit}`;
+    const cacheKey = cache.CACHE_KEYS.socialPosts(platform || 'all', page, limit,);
 
     const cached = await cache.get<SocialListResult>(cacheKey,);
     if (cached) return cached;
@@ -99,7 +99,7 @@ export async function listPlatformPosts(opts: {
     }
 
     // Skip cache when search is active (results are query-specific).
-    const cacheKey = search ? null : `social:${platform}:${page}:${limit}:${sort}:${sortDir}`;
+    const cacheKey = search ? null : cache.CACHE_KEYS.socialPlatform(platform, page, limit, sort, sortDir,);
     if (cacheKey) {
         const cached = await cache.get<SocialListResult>(cacheKey,);
         if (cached) return cached;
@@ -136,7 +136,7 @@ export function liveFeed(platform: SocialPlatform, limit = 10,): Promise<SocialP
 /** Posts selected for the homepage; falls back to the latest per
  *  platform when none are configured. Cached 300s. */
 export async function homepagePosts(): Promise<SocialPost[]> {
-    const cacheKey = 'social:homepage';
+    const cacheKey = cache.CACHE_KEYS.socialHomepage;
     const cached = await cache.get<SocialPost[]>(cacheKey,);
     if (cached) return cached;
 
@@ -181,7 +181,7 @@ export async function setHomepagePosts(postIds: string[], userId?: string,): Pro
         // updated_by is a UUID FK; synthetic actors (api-key:<name>) become NULL.
         [JSON.stringify({ postIds, },), uuidOrNull(userId,),],
     );
-    await cache.del('social:homepage',);
+    await cache.invalidateSocialHomepageCache();
 }
 
 // ─── Admin mutations ──────────────────────────────────────────────
@@ -195,7 +195,7 @@ export async function sync(platform?: SocialPlatform,): Promise<Record<string, n
     } else {
         results = await syncAllPlatforms(true,);
     }
-    await cache.delPattern('social:*',);
+    await cache.invalidateSocialCache();
     return results;
 }
 
@@ -206,6 +206,6 @@ export async function deletePost(id: string,): Promise<boolean> {
         [id,],
     );
     if (result.rows.length === 0) return false;
-    await cache.delPattern('social:*',);
+    await cache.invalidateSocialCache();
     return true;
 }

@@ -110,7 +110,7 @@ export async function renderPublicRoute(pathname: string, distDir: string,): Pro
     }
 
     // 2. Check Redis cache
-    const cacheKey = `ssr:html:${pathname}`;
+    const cacheKey = cache.CACHE_KEYS.ssrPath(pathname,);
     const cached = await cache.get<string>(cacheKey,);
     if (cached) {
         logger.debug(`SSR: Cache hit for ${pathname}`,);
@@ -166,12 +166,12 @@ export async function renderPublicRoute(pathname: string, distDir: string,): Pro
 
 /** Invalidate a single SSR cache entry */
 export async function invalidateSsrCache(pathname: string,): Promise<void> {
-    await cache.del(`ssr:html:${pathname}`,);
+    await cache.invalidateSsrCache(pathname,);
 }
 
 /** Invalidate all SSR cache entries */
 export async function invalidateAllSsrCache(): Promise<void> {
-    await cache.delPattern('ssr:html:*',);
+    await cache.invalidateAllSsrCache();
 }
 
 /** Reset the cached HTML template (e.g. after rebuild) */
