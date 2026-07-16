@@ -226,6 +226,18 @@ export function getBlockLabel(type: BlockType,): string {
 }
 
 /**
+ * Human title for a block type — the configured label when known, else the
+ * raw type title-cased (`group_item` → `Group Item`). Used for the edit-panel
+ * heading; replaces the inline `.replace(/_/g,' ').replace(...)` that was
+ * copy-pasted across the block editor.
+ */
+export function titleizeBlockType(type: string,): string {
+    const label = BLOCK_TYPE_MAP[type as BlockType]?.label;
+    if (label) return label;
+    return String(type,).replace(/_/g, ' ',).replace(/\b\w/g, (c,) => c.toUpperCase(),);
+}
+
+/**
  * Initial `data` payload for a freshly-added block. Combines the
  * shared "default padding" rule with any type-specific factory.
  */

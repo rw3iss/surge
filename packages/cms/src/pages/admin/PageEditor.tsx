@@ -18,25 +18,15 @@ import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
-import { buildBlockTree, type AppearanceSettings, } from '@sitesurge/types';
+import { buildBlockTree, } from '@sitesurge/types';
 import { cms, } from '../../services/cmsClient';
 import { BlockStyleService, } from '../../services/blockStyles';
 import { appearanceCssVars, } from '../../utils/appearanceStyle';
+import { useAppearance, } from '../../hooks/useAppearance';
 
 // Uses DEFAULT_BLOCK_TYPES from BlockEditor (unified list for all editors).
-
-/**
- * Block IDs are real UUIDs from the moment they're created in the editor.
- * Children of groups reference their parent via this id — pre-generating
- * UUIDs lets us POST parent + children in any order; the backend's
- * createBlock accepts a client-supplied id (falling back to default uuid
- * generation when absent).
- */
-const generateBlockId = () =>
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ?
-        crypto.randomUUID() :
-        // Fallback for older browsers — still valid v4 shape via random hex.
-        `${Date.now().toString(16,)}-${Math.random().toString(16,).slice(2,)}`;
+// Block IDs are real UUIDs from creation (see utils/blockId) so a group child
+// can reference its parent before either is saved.
 
 // StyleRef / style logic lives in the shared kernel so the page,
 // post, and mail converters can't drift apart.
@@ -108,13 +98,7 @@ const AdminPageEditor: Component = () => {
     },);
 
     // Load site appearance settings for the preview container
-    const [appearance,] = createResource(async () => {
-        try {
-            return await cms.settings.getAppearance() as AppearanceSettings;
-        } catch {
-            return null;
-        }
-    },);
+    const appearance = useAppearance();
 
     /**
      * Build inline styles that mirror what Layout.tsx applies to the
@@ -149,6 +133,9 @@ const AdminPageEditor: Component = () => {
     const [restoring, setRestoring,] = createSignal(false,);
     const isDeleted = () => status() === 'deleted';
     const [deleting, setDeleting,] = createSignal(false,);
+    // Full-bleed mode: driven by the block editor's full-width toggle;
+    // adds `.admin-full-bleed` to remove the centered 1400px content cap.
+    const [fullBleed, setFullBleed,] = createSignal(false,);
 
     createEffect(() => {
         const p = page();
@@ -290,7 +277,7 @@ const AdminPageEditor: Component = () => {
     ],);
 
     return (
-        <div class="page-editor">
+        <div class={`page-editor ${fullBleed() ? 'admin-full-bleed' : ''}`}>
             <Title>{isNew() ? 'New Page' : `Edit Page: ${title() || 'Untitled'}`} - Admin - RW</Title>
 
             <div class="admin-header admin-header--sticky">
@@ -467,6 +454,7 @@ const AdminPageEditor: Component = () => {
                 blocks={blocks()}
                 savedBlocks={savedBlocks()}
                 onBlocksChange={(newBlocks,) => { setBlocks(newBlocks,); markDirty(); }}
+                onFullWidthChange={setFullBleed}
                 containerStyle={siteContainerStyle()}
                 containerClass="site-preview-container"
             />

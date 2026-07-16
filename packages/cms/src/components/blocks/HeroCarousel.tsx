@@ -1,5 +1,6 @@
 import type { HeroCarouselOptions, HeroItem, } from '@sitesurge/types';
 import { Component, createEffect, createSignal, For, Match, on, onCleanup, Show, Switch, } from 'solid-js';
+import { TEXT_ALIGN, toFlexAlign, } from '../../utils/cssAlign';
 import './HeroCarousel.scss';
 
 export interface HeroCarouselProps {
@@ -8,9 +9,21 @@ export interface HeroCarouselProps {
     height?: string;
     previewMode?: boolean;
     gutterWidth?: string;
+    /** Horizontal alignment from the block style (`textAlign`). Overrides the
+     *  default centered overlay so slide content honors the block's setting. */
+    align?: string;
+    /** Vertical alignment from the block style (`verticalAlign`). */
+    valign?: string;
+    /** Padding from the block style, applied to the slide *content* (the text
+     *  overlay) only — the background media stays full-bleed. */
+    contentPadding?: string;
 }
 
 const DEFAULT_HEIGHT = '50vh';
+
+// Block-style alignment is emitted as CSS vars the SCSS reads (with a `center`
+// fallback), so an unset block style keeps the original centered overlay. The
+// keyword→flexbox mapping lives in utils/cssAlign (shared with the renderers).
 
 /** Format a post's ISO date for the slide meta row. */
 function formatMetaDate(iso: string,): string {
@@ -83,6 +96,24 @@ const HeroCarousel: Component<HeroCarouselProps> = (props,) => {
         if (props.height) return props.height;
         if (props.options.customHeight && props.options.height) return props.options.height;
         return DEFAULT_HEIGHT;
+    };
+
+    /** CSS custom properties that push the block-style alignment into the
+     *  slide overlay. Only set the vars the block actually specifies so an
+     *  unstyled carousel keeps the default centered layout. */
+    const alignVars = () => {
+        const v: Record<string, string> = {};
+        const a = props.align;
+        if (a) {
+            v['--hero-content-align'] = toFlexAlign(a,);
+            v['--hero-text-align'] = TEXT_ALIGN[a] ?? 'center';
+        }
+        const va = props.valign;
+        if (va) v['--hero-valign'] = toFlexAlign(va,);
+        // Block-style padding pushes the text content inward; the background
+        // media ignores it (it lives on a separate, un-padded layer).
+        if (props.contentPadding) v['--hero-content-padding'] = props.contentPadding;
+        return v;
     };
 
     // ─── Navigation ───
@@ -174,6 +205,7 @@ const HeroCarousel: Component<HeroCarouselProps> = (props,) => {
             class={`hero-carousel ${props.previewMode ? 'hero-carousel--preview' : ''}`}
             style={{
                 height: resolvedHeight(),
+                ...alignVars(),
                 ...(props.options.applyGutter && props.gutterWidth ? {
                     'padding-left': props.gutterWidth,
                     'padding-right': props.gutterWidth,

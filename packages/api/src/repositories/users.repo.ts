@@ -5,6 +5,7 @@ import { NotFoundError, } from '../middleware/error';
 import { mapRow, } from '../utils/mapRow';
 import { uuidOrNull, } from '../utils/uuid';
 import { findByIdOrThrow, PaginatedResult, PaginationOptions, updateById, } from './base.repo';
+import { ilikeSearch, } from '../utils/queryBuilders';
 
 export interface UserFilters {
     search?: string;
@@ -51,8 +52,7 @@ export async function findUsers(
     const params: unknown[] = [];
 
     if (filters.search) {
-        params.push(`%${filters.search}%`,);
-        whereClause += ` AND (u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length})`;
+        whereClause += ` AND ${ilikeSearch(['u.email', 'u.display_name',], filters.search, params,)}`;
     }
     if (filters.role) {
         params.push(filters.role,);

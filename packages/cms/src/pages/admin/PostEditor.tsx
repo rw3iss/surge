@@ -6,7 +6,7 @@ import BlockEditor from '../../components/admin/blocks/BlockEditor';
 import CollapsiblePanel from '../../components/admin/common/CollapsiblePanel';
 import ConfirmModal from '../../components/admin/common/ConfirmModal';
 import { BlockData, } from '../../components/admin/blocks/ContentBlock';
-import { deriveStyleRefFromStyle, } from '../../services/blockStyleRef';
+import { deriveStyleRefFromStyle, resolveActiveStyleRef, styleRefToPersistedStyle, } from '../../services/blockStyleRef';
 import EditorSaveBar from '../../components/admin/common/EditorSaveBar';
 import PreviewOverlay from '../../components/admin/common/PreviewOverlay';
 import MediaSelectModal from '../../components/admin/media/MediaSelectModal';
@@ -19,14 +19,12 @@ import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
-import type { AppearanceSettings, } from '@sitesurge/types';
 import { invalidatePostsCache, } from '../../services/adminData';
 import { cms, } from '../../services/cmsClient';
 import { BlockStyleService, } from '../../services/blockStyles';
 import { appearanceCssVars, } from '../../utils/appearanceStyle';
-
-let blockIdCounter = 0;
-const generateBlockId = () => `block-${Date.now()}-${++blockIdCounter}`;
+import { generateBlockId, } from '../../utils/blockId';
+import { useAppearance, } from '../../hooks/useAppearance';
 
 const AdminPostEditor: Component = () => {
     const params = useParams<{ id: string, }>();
@@ -45,13 +43,7 @@ const AdminPostEditor: Component = () => {
     },);
 
     // Load site appearance for the preview container
-    const [appearance,] = createResource(async () => {
-        try {
-            return await cms.settings.getAppearance() as AppearanceSettings;
-        } catch {
-            return null;
-        }
-    },);
+    const appearance = useAppearance();
 
     // Staff users (admin / sysadmin / editor) for the Author dropdown.
     const [staffUsers,] = createResource(async () => {
@@ -89,6 +81,9 @@ const AdminPostEditor: Component = () => {
     const [showPreview, setShowPreview,] = createSignal(false,);
     const [deleting, setDeleting,] = createSignal(false,);
     const [restoring, setRestoring,] = createSignal(false,);
+    // Full-bleed mode: driven by the block editor's full-width toggle;
+    // adds `.admin-full-bleed` to remove the centered 1400px content cap.
+    const [fullBleed, setFullBleed,] = createSignal(false,);
     const isDeleted = () => status() === 'deleted';
 
     useKeyboardShortcuts([
@@ -191,12 +186,30 @@ const AdminPostEditor: Component = () => {
             featuredImage: featuredImage() || null,
             authorId: authorId() || null,
             publishAt: publishAt() ? new Date(publishAt(),).toISOString() : null,
-            contentBlocks: blocks().map((b, i,) => ({
-                id: b.id.startsWith('block-',) ? undefined : b.id,
-                type: b.type,
-                sort_order: i,
-                data: b.data,
-            })),
+            contentBlocks: blocks().map((b, i,) => {
+                // Persist the block's style. The backend reads it from
+                // `data.__styleRef`; mirror the page editor by resolving the
+                // active ref (an explicit picker action beats the loaded
+                // value) and embedding it — previously this was dropped, so
+                // styles set in the post editor never saved.
+                const resolved = resolveActiveStyleRef(b.data, b.styleRef,);
+                const persisted = styleRefToPersistedStyle(resolved,);
+                const { __styleRef: _drop, ...cleanData } = b.data as Record<string, any>;
+                const data: Record<string, any> = { ...cleanData, };
+                if (resolved.explicitlyCleared) {
+                    // No templateId/custom → backend writes style = null.
+                } else if (persisted && typeof persisted === 'object' && 'id' in persisted) {
+                    data.__styleRef = { templateId: (persisted as { id: string; }).id, };
+                } else if (persisted) {
+                    data.__styleRef = { custom: persisted, };
+                }
+                return {
+                    id: b.id,
+                    type: b.type,
+                    sort_order: i,
+                    data,
+                };
+            }),
         };
 
         try {
@@ -224,7 +237,7 @@ const AdminPostEditor: Component = () => {
     };
 
     return (
-        <div>
+        <div class={fullBleed() ? 'admin-full-bleed' : undefined}>
             <Title>{isNew() ? 'New Post' : `Edit Post: ${title() || 'Untitled'}`} - Admin - RW</Title>
             <div class="admin-header admin-header--sticky">
                 <h1>{isNew() ? 'New Post' : `Edit Post: ${title() || 'Untitled'}`}</h1>
@@ -419,6 +432,7 @@ const AdminPostEditor: Component = () => {
                     blocks={blocks()}
                     savedBlocks={savedBlocks()}
                     onBlocksChange={(newBlocks,) => { setBlocks(newBlocks,); markDirty(); }}
+                    onFullWidthChange={setFullBleed}
                     containerStyle={siteContainerStyle()}
                     containerClass="site-preview-container"
                 />

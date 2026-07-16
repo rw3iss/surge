@@ -5,6 +5,7 @@ import { mapRow, } from '../utils/mapRow';
 import { sanitize, } from '../utils/sanitize';
 import { uuidOrNull, } from '../utils/uuid';
 import { deleteById, paginatedQuery, PaginatedResult, PaginationOptions, } from './base.repo';
+import { ilikeSearch, } from '../utils/queryBuilders';
 import * as blockStyleResolution from '../services/blockStyleResolution';
 
 export interface ContentBlock {
@@ -229,8 +230,7 @@ export async function findAllPosts(
         whereClause += ` AND p.status != 'deleted'`;
     }
     if (filters.search) {
-        params.push(`%${filters.search}%`,);
-        whereClause += ` AND (p.title ILIKE $${params.length} OR p.slug ILIKE $${params.length})`;
+        whereClause += ` AND ${ilikeSearch(['p.title', 'p.slug',], filters.search, params,)}`;
     }
 
     let orderClause: string;
@@ -264,30 +264,19 @@ export async function findAllPosts(
             break;
     }
 
-    const offset = (pagination.page - 1) * pagination.limit;
-    const countResult = await query(`SELECT COUNT(*) FROM posts p ${whereClause}`, params,);
-    const total = parseInt(countResult.rows[0].count, 10,);
-
-    const fullParams = [...params, pagination.limit, offset,];
-    const paramLen = fullParams.length;
-    const result = await query(
+    // block_count (subquery, ::int) is mapped to `blockCount` by mapRow —
+    // no manual per-row assignment needed.
+    return paginatedQuery<PostWithBlocks>(
         `SELECT p.*, u.display_name as author,
             (SELECT COUNT(*) FROM post_content_blocks pcb WHERE pcb.post_id = p.id)::int as block_count
      FROM posts p
      LEFT JOIN users u ON p.author_id = u.id
      ${whereClause}
-     ${orderClause}
-     LIMIT $${paramLen - 1} OFFSET $${paramLen}`,
-        fullParams,
+     ${orderClause}`,
+        `SELECT COUNT(*) FROM posts p ${whereClause}`,
+        params,
+        pagination,
     );
-
-    const data = result.rows.map((row,) => {
-        const post = mapRow<PostWithBlocks>(row,);
-        post.blockCount = row.block_count as number;
-        return post;
-    },);
-
-    return { data, total, };
 }
 
 export async function findPostBySlug(slug: string,): Promise<PostWithBlocks | null> {

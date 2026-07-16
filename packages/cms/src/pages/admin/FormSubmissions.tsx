@@ -3,6 +3,19 @@ import { A, useParams, } from '@solidjs/router';
 import { Component, createResource, For, Show, } from 'solid-js';
 import { cms, } from '../../services/cmsClient';
 
+/** Number-summary tiles (Min/Max/Avg/Median) — shared styles, tokenized
+ *  (were four identical inline objects). */
+const STAT_TILE_STYLE = {
+    padding: '4px 12px',
+    background: 'var(--admin-bg-subtle, #f8f9fa)',
+    'border-radius': '6px',
+    'text-align': 'center',
+} as const;
+const STAT_LABEL_STYLE = {
+    'font-size': '0.75rem',
+    color: 'var(--admin-text-muted, #6b7280)',
+} as const;
+
 const FormSubmissions: Component = () => {
     const params = useParams();
 
@@ -113,7 +126,7 @@ const FormSubmissions: Component = () => {
                                                 {(opt: any,) => (
                                                     <div style={{ display: 'flex', 'align-items': 'center', gap: '8px', 'margin-bottom': '4px', }}>
                                                         <span style={{ 'min-width': '100px', 'font-size': '0.85rem', }}>{opt.value}</span>
-                                                        <div style={{ flex: '1', height: '18px', background: '#f0f0f0', 'border-radius': '4px', overflow: 'hidden', }}>
+                                                        <div style={{ flex: '1', height: '18px', background: 'var(--admin-bg-subtle, #f0f0f0)', 'border-radius': '4px', overflow: 'hidden', }}>
                                                             <div style={{ width: `${opt.percentage}%`, height: '100%', background: 'var(--site-primary, #3498cf)', 'border-radius': '4px', transition: 'width 0.3s', }} />
                                                         </div>
                                                         <span style={{ 'min-width': '40px', 'text-align': 'right', 'font-size': '0.85rem', 'font-weight': '600', }}>{opt.percentage}%</span>
@@ -125,22 +138,14 @@ const FormSubmissions: Component = () => {
 
                                     <Show when={q.type === 'number'}>
                                         <div style={{ display: 'flex', gap: '1rem', 'margin-top': '0.5rem', 'flex-wrap': 'wrap', }}>
-                                            <div style={{ padding: '4px 12px', background: '#f8f9fa', 'border-radius': '6px', 'text-align': 'center', }}>
-                                                <div style={{ 'font-size': '0.75rem', color: 'var(--admin-text-muted, #6b7280)', }}>Min</div>
-                                                <div style={{ 'font-weight': '600', }}>{q.min}</div>
-                                            </div>
-                                            <div style={{ padding: '4px 12px', background: '#f8f9fa', 'border-radius': '6px', 'text-align': 'center', }}>
-                                                <div style={{ 'font-size': '0.75rem', color: 'var(--admin-text-muted, #6b7280)', }}>Max</div>
-                                                <div style={{ 'font-weight': '600', }}>{q.max}</div>
-                                            </div>
-                                            <div style={{ padding: '4px 12px', background: '#f8f9fa', 'border-radius': '6px', 'text-align': 'center', }}>
-                                                <div style={{ 'font-size': '0.75rem', color: 'var(--admin-text-muted, #6b7280)', }}>Avg</div>
-                                                <div style={{ 'font-weight': '600', }}>{q.avg}</div>
-                                            </div>
-                                            <div style={{ padding: '4px 12px', background: '#f8f9fa', 'border-radius': '6px', 'text-align': 'center', }}>
-                                                <div style={{ 'font-size': '0.75rem', color: 'var(--admin-text-muted, #6b7280)', }}>Median</div>
-                                                <div style={{ 'font-weight': '600', }}>{q.median}</div>
-                                            </div>
+                                            <For each={[{ label: 'Min', value: q.min, }, { label: 'Max', value: q.max, }, { label: 'Avg', value: q.avg, }, { label: 'Median', value: q.median, },]}>
+                                                {(stat,) => (
+                                                    <div style={STAT_TILE_STYLE}>
+                                                        <div style={STAT_LABEL_STYLE}>{stat.label}</div>
+                                                        <div style={{ 'font-weight': '600', }}>{stat.value}</div>
+                                                    </div>
+                                                )}
+                                            </For>
                                         </div>
                                     </Show>
 

@@ -62,4 +62,10 @@
     padding: $spacing-xs $spacing-sm;
 
     &:hover { color: var(--admin-text, #{$text-color}); }
+
+    &:focus-visible {
+        outline: 2px solid var(--site-primary, #{$primary-color});
+        outline-offset: 2px;
+        border-radius: $border-radius-sm;
+    }
 }

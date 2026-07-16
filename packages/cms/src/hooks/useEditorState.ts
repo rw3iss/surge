@@ -2,6 +2,17 @@ import type { ApiResponse, } from '@sitesurge/types';
 import { createSignal, } from 'solid-js';
 
 /**
+ * Extract a human message from anything a failed call can throw/return:
+ * a plain string, an `Error`, or an `ApiResponse` envelope. Single source
+ * of truth for `showError`, `getErrorMessage`, and toast catch blocks.
+ */
+export function toErrorMessage(err: unknown, fallback = 'An error occurred',): string {
+    if (typeof err === 'string') return err || fallback;
+    if (err instanceof Error) return err.message || fallback;
+    return (err as ApiResponse<unknown> | undefined)?.error?.message || fallback;
+}
+
+/**
  * Shared editor state hook for admin edit pages.
  * Provides consistent error/success/saving state management.
  */
@@ -31,16 +42,7 @@ export function useEditorState() {
         errOrResponse: string | ApiResponse<unknown> | Error | unknown,
         fallback = 'An error occurred',
     ) => {
-        if (typeof errOrResponse === 'string') {
-            setError(errOrResponse,);
-            return;
-        }
-        if (errOrResponse instanceof Error) {
-            setError(errOrResponse.message || fallback,);
-            return;
-        }
-        const response = errOrResponse as ApiResponse<unknown>;
-        setError(response?.error?.message || fallback,);
+        setError(toErrorMessage(errOrResponse, fallback,),);
     };
 
     const showSuccess = (message: string,) => {
@@ -70,8 +72,5 @@ export function getErrorMessage(
     response: ApiResponse<unknown> | unknown,
     fallback = 'An error occurred',
 ): string {
-    const r = response as ApiResponse<unknown>;
-    if (!r) return fallback;
-    if (r.error?.message) return r.error.message;
-    return fallback;
+    return toErrorMessage(response, fallback,);
 }

@@ -3,6 +3,7 @@ import { query, } from '../db';
 import { mapRow, mapRows, } from '../utils/mapRow';
 import { uuidOrNull, } from '../utils/uuid';
 import {
+    buildSortClause,
     deleteById,
     findByIdOrThrow,
     paginatedQuery,
@@ -29,12 +30,6 @@ const VALID_SORT_COLUMNS: Record<string, string> = {
     donation_percent: 'CASE WHEN goal_amount_cents > 0 THEN (current_amount_cents::float / goal_amount_cents) ELSE 0 END',
 };
 
-function buildSortClause(sortBy?: string, sortOrder?: string,): string {
-    const column = VALID_SORT_COLUMNS[sortBy || 'created_at'] || 'created_at';
-    const direction = sortOrder === 'asc' ? 'ASC' : 'DESC';
-    return `ORDER BY ${column} ${direction}`;
-}
-
 // ─── Campaigns ───
 
 export interface PublicCampaignOptions {
@@ -60,7 +55,7 @@ export async function findPublicCampaigns(options: PublicCampaignOptions = {},):
         whereClause += ` AND (end_date IS NULL OR end_date > NOW())`;
     }
 
-    const orderClause = buildSortClause(sortBy, sortOrder,);
+    const orderClause = buildSortClause(sortBy, sortOrder, VALID_SORT_COLUMNS, 'created_at',);
 
     const result = await query(
         `SELECT * FROM campaigns ${whereClause} ${orderClause}`,
@@ -92,7 +87,7 @@ export async function findAllCampaigns(
         whereClause += ` AND status = $${params.length}`;
     }
 
-    const orderClause = buildSortClause(filters.sortBy || 'updated_at', filters.sortOrder || 'desc',);
+    const orderClause = buildSortClause(filters.sortBy || 'updated_at', filters.sortOrder || 'desc', VALID_SORT_COLUMNS, 'created_at',);
 
     return paginatedQuery<Campaign>(
         `SELECT * FROM campaigns ${whereClause} ${orderClause}`,
@@ -193,25 +188,16 @@ export async function findAllDonations(
         whereClause += ` AND d.status = $${params.length}`;
     }
 
-    const countResult = await query(
-        `SELECT COUNT(*) FROM donations d ${whereClause}`,
-        params,
-    );
-    const total = parseInt(countResult.rows[0].count, 10,);
-
-    const offset = (pagination.page - 1) * pagination.limit;
-    params.push(pagination.limit, offset,);
-    const result = await query(
+    return paginatedQuery<Donation>(
         `SELECT d.*, c.title as campaign_title
      FROM donations d
      LEFT JOIN campaigns c ON d.campaign_id = c.id
      ${whereClause}
-     ORDER BY d.created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
+     ORDER BY d.created_at DESC`,
+        `SELECT COUNT(*) FROM donations d ${whereClause}`,
         params,
+        pagination,
     );
-
-    return { data: mapRows<Donation>(result.rows,), total, };
 }
 
 export async function getDonationSummary(): Promise<DonationSummary> {

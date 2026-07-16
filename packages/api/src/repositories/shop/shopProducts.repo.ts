@@ -19,6 +19,7 @@ import { query, transaction, } from '../../db';
 import { mapRow, mapRows, } from '../../utils/mapRow';
 import { uuidOrNull, } from '../../utils/uuid';
 import {
+    buildSortClause,
     deleteById,
     findByIdOrThrow,
     paginatedQuery,
@@ -52,12 +53,6 @@ const LIST_EXTRAS = `
          WHERE spm.product_id = shop_products.id AND spm.kind = 'image'
          ORDER BY spm.position ASC LIMIT 1) AS primary_image_url`;
 
-function buildSortClause(sortBy?: string, sortOrder?: string,): string {
-    const column = VALID_SORT_COLUMNS[sortBy || 'created_at'] || 'created_at';
-    const direction = sortOrder === 'asc' ? 'ASC' : 'DESC';
-    return `ORDER BY ${column} ${direction}`;
-}
-
 export interface ProductFilters {
     status?: string;
     search?: string;
@@ -80,7 +75,7 @@ export async function findPublicProducts(
         whereClause += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`;
     }
 
-    const orderClause = buildSortClause(filters.sortBy, filters.sortOrder,);
+    const orderClause = buildSortClause(filters.sortBy, filters.sortOrder, VALID_SORT_COLUMNS, 'created_at',);
 
     return paginatedQuery<ShopProduct>(
         `SELECT *, ${LIST_EXTRAS} FROM shop_products ${whereClause} ${orderClause}`,
@@ -107,7 +102,7 @@ export async function findAllProducts(
         whereClause += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`;
     }
 
-    const orderClause = buildSortClause(filters.sortBy || 'updated_at', filters.sortOrder || 'desc',);
+    const orderClause = buildSortClause(filters.sortBy || 'updated_at', filters.sortOrder || 'desc', VALID_SORT_COLUMNS, 'created_at',);
 
     return paginatedQuery<ShopProduct>(
         `SELECT *, ${LIST_EXTRAS} FROM shop_products ${whereClause} ${orderClause}`,

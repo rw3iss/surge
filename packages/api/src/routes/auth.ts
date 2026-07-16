@@ -12,6 +12,7 @@
  * byte-for-byte from the pre-framework implementation — this is the auth
  * system, so behaviour preservation beats normalization.
  */
+import type { Response, } from 'express';
 import rateLimit, { ipKeyGenerator, } from 'express-rate-limit';
 import { z, } from 'zod';
 import type {
@@ -71,6 +72,35 @@ const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const REFRESH_COOKIE_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const ACCESS_COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour (keep in sync with JWT_ACCESS_TOKEN_EXPIRES)
 
+/**
+ * Set the httpOnly access + refresh cookies. Attributes are byte-identical
+ * to the per-handler blocks this replaces: httpOnly, sameSite 'lax', a
+ * fixed access-cookie lifetime, and `secure` defaulting to
+ * `config.isProduction`. Two knobs vary between callers:
+ *   - `refreshMaxAge` — the refresh cookie's lifetime (remember-me sizes
+ *     it on login/refresh; the OAuth/dev paths use the 7-day default).
+ *   - `secure` — the dev autologin path forces `false`.
+ */
+function setAuthCookies(
+    res: Response,
+    tokens: { accessToken: string; refreshToken: string; },
+    opts: { secure?: boolean; refreshMaxAge?: number; } = {},
+): void {
+    const secure = opts.secure ?? config.isProduction;
+    res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: true,
+        secure,
+        sameSite: 'lax',
+        maxAge: ACCESS_COOKIE_MAX_AGE_MS,
+    },);
+    res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure,
+        sameSite: 'lax',
+        maxAge: opts.refreshMaxAge ?? REFRESH_COOKIE_MAX_AGE_MS,
+    },);
+}
+
 // ─── Rate limiter (attached via `pre`) ────────────────────────────
 
 const loginLimiter = rateLimit({
@@ -125,19 +155,7 @@ export const authRoutes = [
 
                 const authResponse = await authenticateWithPatreon(code, ipAddress, userAgent,);
 
-                res.cookie('accessToken', authResponse.accessToken, {
-                    httpOnly: true,
-                    secure: config.isProduction,
-                    sameSite: 'lax',
-                    maxAge: ACCESS_COOKIE_MAX_AGE_MS,
-                },);
-
-                res.cookie('refreshToken', authResponse.refreshToken, {
-                    httpOnly: true,
-                    secure: config.isProduction,
-                    sameSite: 'lax',
-                    maxAge: REFRESH_COOKIE_MAX_AGE_MS,
-                },);
+                setAuthCookies(res, authResponse,);
 
                 const redirectUrl = req.cookies?.returnUrl || '/';
                 res.clearCookie('returnUrl',);
@@ -168,18 +186,8 @@ export const authRoutes = [
 
             // Access token cookie always has the same short lifetime;
             // remember-me only affects the refresh cookie.
-            res.cookie('accessToken', authResponse.accessToken, {
-                httpOnly: true,
-                secure: config.isProduction,
-                sameSite: 'lax',
-                maxAge: ACCESS_COOKIE_MAX_AGE_MS,
-            },);
-
-            res.cookie('refreshToken', authResponse.refreshToken, {
-                httpOnly: true,
-                secure: config.isProduction,
-                sameSite: 'lax',
-                maxAge: body.rememberMe ? REFRESH_COOKIE_REMEMBER_MS : REFRESH_COOKIE_MAX_AGE_MS,
+            setAuthCookies(res, authResponse, {
+                refreshMaxAge: body.rememberMe ? REFRESH_COOKIE_REMEMBER_MS : REFRESH_COOKIE_MAX_AGE_MS,
             },);
 
             return authResponse;
@@ -231,18 +239,8 @@ export const authRoutes = [
                 throw new UnauthorizedError('Invalid or expired refresh token',);
             }
 
-            res.cookie('accessToken', authResponse.accessToken, {
-                httpOnly: true,
-                secure: config.isProduction,
-                sameSite: 'lax',
-                maxAge: ACCESS_COOKIE_MAX_AGE_MS,
-            },);
-
-            res.cookie('refreshToken', authResponse.refreshToken, {
-                httpOnly: true,
-                secure: config.isProduction,
-                sameSite: 'lax',
-                maxAge: rememberMe ? REFRESH_COOKIE_REMEMBER_MS : REFRESH_COOKIE_MAX_AGE_MS,
+            setAuthCookies(res, authResponse, {
+                refreshMaxAge: rememberMe ? REFRESH_COOKIE_REMEMBER_MS : REFRESH_COOKIE_MAX_AGE_MS,
             },);
 
             return authResponse;
@@ -311,19 +309,7 @@ export const authRoutes = [
 
             const { user, accessToken, refreshToken, } = result;
 
-            res.cookie('accessToken', accessToken, {
-                httpOnly: true,
-                secure: false,
-                sameSite: 'lax',
-                maxAge: ACCESS_COOKIE_MAX_AGE_MS,
-            },);
-
-            res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,
-                secure: false,
-                sameSite: 'lax',
-                maxAge: REFRESH_COOKIE_MAX_AGE_MS,
-            },);
+            setAuthCookies(res, { accessToken, refreshToken, }, { secure: false, },);
 
             return { user, accessToken, refreshToken, };
         },

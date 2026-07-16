@@ -104,6 +104,19 @@
 
 
 
+// ─── Full-bleed editor ───
+// The block editor's full-width toggle adds `.admin-full-bleed` to the
+// editor page root, removing the centered ~1400px content cap so the whole
+// editor spans the page. The blocks column keeps flexing to fill the space;
+// give the inline edit panel a little more room since there's extra width.
+.admin-full-bleed {
+  .flyout-panel--inline {
+    width: 420px;
+  }
+}
+
+
+
 .block-editor__preview-frame {
   position: relative;
   transition: max-width 0.2s ease;
@@ -529,7 +542,7 @@
     border-radius: $border-radius-sm;
     transition: all 0.1s;
 
-    &:hover:not(:disabled) { color: #333; background: rgba(0,0,0,0.06); }
+    &:hover:not(:disabled) { color: $text-color; background: rgba(0,0,0,0.06); }
     &:disabled { opacity: 0.3; cursor: not-allowed; }
 
     &--options {

@@ -202,7 +202,7 @@ export const DatabaseSection: Component<DatabaseSectionProps> = (props,) => {
                             <span>
                                 <strong>Create role if it doesn't exist</strong>
                                 <br />
-                                <span style={{ 'font-size': '12px', color: '#6b7280', }}>
+                                <span style={{ 'font-size': '12px', color: 'var(--admin-text-muted, #6b7280)', }}>
                                     Uses superuser credentials to <code>CREATE ROLE</code> with the password above and grant access to the database.
                                 </span>
                             </span>
@@ -215,7 +215,7 @@ export const DatabaseSection: Component<DatabaseSectionProps> = (props,) => {
                             <span>
                                 <strong>Create database if it doesn't exist</strong>
                                 <br />
-                                <span style={{ 'font-size': '12px', color: '#6b7280', }}>
+                                <span style={{ 'font-size': '12px', color: 'var(--admin-text-muted, #6b7280)', }}>
                                     Uses superuser credentials to <code>CREATE DATABASE</code> owned by the user above.
                                 </span>
                             </span>
@@ -226,7 +226,7 @@ export const DatabaseSection: Component<DatabaseSectionProps> = (props,) => {
 
             <Show when={provisionRequested()}>
                 <h4 style={{ 'margin-top': '24px', 'margin-bottom': '8px', }}>Superuser credentials</h4>
-                <p style={{ 'font-size': '13px', color: '#6b7280', 'margin-bottom': '16px', }}>
+                <p style={{ 'font-size': '13px', color: 'var(--admin-text-muted, #6b7280)', 'margin-bottom': '16px', }}>
                     Used only during install to <code>CREATE ROLE</code>/<code>CREATE DATABASE</code>. Not stored.
                 </p>
                 <FormField label="Superuser" error={pickError(props.errors, 'database', 'superuser.user',)}>

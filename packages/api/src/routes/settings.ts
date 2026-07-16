@@ -3,7 +3,6 @@ import type { SettingsUpdateBody, } from '@sitesurge/types';
 import { defineRoute, } from '../api/defineRoute';
 import * as settings from '../services/settings';
 import * as swatches from '../services/swatches';
-import { FeatureCascadeError, } from '../services/settings';
 
 // ─── Schemas ──────────────────────────────────────────────────────────
 
@@ -66,24 +65,10 @@ export const settingsRoutes = [
         method: 'put', path: '/', auth: 'admin',
         summary: 'Update settings; feature toggles run the dependency cascade + lazy migrations.',
         input: { body: settingsSchema, },
-        // raw: the feature-cascade rejection is a 409 carrying the planner
-        // result verbatim (NOT the standard error envelope) — the frontend
-        // FeatureDependencyModal reads that exact shape. We own the
-        // response on both paths so it stays byte-compatible with the old
-        // sendSuccess / res.status(409).json contract.
-        raw: true,
-        handler: async ({ body, audit, res, },) => {
-            try {
-                const result = await settings.updateSettings(body, audit(),);
-                res.json({ success: true, data: result, },);
-            } catch (err) {
-                if (err instanceof FeatureCascadeError) {
-                    res.status(409,).json({ success: false, error: err.result, },);
-                    return;
-                }
-                throw err;
-            }
-        },
+        // A feature-cascade rejection throws FeatureCascadeError, which the
+        // error middleware maps to a 409 carrying the planner result verbatim
+        // (the FeatureDependencyModal reads that exact shape).
+        handler: ({ body, audit, },) => settings.updateSettings(body, audit(),),
     },),
 
     defineRoute({

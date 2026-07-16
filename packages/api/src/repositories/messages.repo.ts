@@ -1,9 +1,10 @@
 import type { ContactMessage, MessageStatus, } from '@sitesurge/types';
 import { query, } from '../db';
 import { NotFoundError, } from '../middleware/error';
-import { mapRow, mapRows, } from '../utils/mapRow';
+import { mapRow, } from '../utils/mapRow';
 import { uuidOrNull, } from '../utils/uuid';
-import { deleteById, PaginatedResult, PaginationOptions, } from './base.repo';
+import { deleteById, paginatedQuery, PaginatedResult, PaginationOptions, } from './base.repo';
+import { ilikeSearch, } from '../utils/queryBuilders';
 
 // ─── Messages ───
 
@@ -16,8 +17,6 @@ export async function findMessages(
     filters: MessageFilters,
     pagination: PaginationOptions,
 ): Promise<PaginatedResult<ContactMessage> & { unreadCount: number; }> {
-    const offset = (pagination.page - 1) * pagination.limit;
-
     let whereClause = 'WHERE 1=1';
     const params: unknown[] = [];
 
@@ -27,20 +26,14 @@ export async function findMessages(
     }
 
     if (filters.search) {
-        params.push(`%${filters.search}%`,);
-        whereClause +=
-            ` AND (name ILIKE $${params.length} OR email ILIKE $${params.length} OR subject ILIKE $${params.length} OR message ILIKE $${params.length})`;
+        whereClause += ` AND ${ilikeSearch(['name', 'email', 'subject', 'message',], filters.search, params,)}`;
     }
 
-    const countResult = await query(`SELECT COUNT(*) FROM contact_messages ${whereClause}`, params,);
-    const total = parseInt(countResult.rows[0].count, 10,);
-
-    params.push(pagination.limit, offset,);
-    const result = await query(
-        `SELECT * FROM contact_messages ${whereClause}
-     ORDER BY created_at DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    const result = await paginatedQuery<ContactMessage>(
+        `SELECT * FROM contact_messages ${whereClause} ORDER BY created_at DESC`,
+        `SELECT COUNT(*) FROM contact_messages ${whereClause}`,
         params,
+        pagination,
     );
 
     const unreadResult = await query(
@@ -49,8 +42,8 @@ export async function findMessages(
     const unreadCount = parseInt(unreadResult.rows[0].count, 10,);
 
     return {
-        data: mapRows<ContactMessage>(result.rows,),
-        total,
+        data: result.data,
+        total: result.total,
         unreadCount,
     };
 }

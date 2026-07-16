@@ -5,6 +5,7 @@ import BlockPreview from './BlockPreview';
 import HtmlInlineEditor from './HtmlInlineEditor';
 import RichTextEditor from '../editors/RichTextEditor';
 import ConfirmModal from '../common/ConfirmModal';
+import { groupContainerStyle, } from '../../../utils/groupStyle';
 
 // Re-export so existing imports `{ BlockType } from './ContentBlock'`
 // keep working without churn — but this file no longer owns the union.
@@ -261,16 +262,9 @@ interface NestedPreviewProps {
 
 const GroupBlockPreview: Component<NestedPreviewProps> = (props,) => {
     const data = () => props.block.data;
-    const direction = () => (data().direction as string) || 'horizontal';
-    const containerStyle = (): Record<string, string> => ({
-        display: 'flex',
-        'flex-direction': direction() === 'vertical' ? 'column' : 'row',
-        'flex-wrap': (data().wrap as string) || 'wrap',
-        gap: (data().gap as string) || '12px',
-        'align-items': (data().align as string) || 'stretch',
-        'justify-content': (data().justify as string) || 'flex-start',
-        'min-height': '60px',
-    });
+    // Shared with the public renderer so the preview matches the live output;
+    // the editor adds a visible default gap + a min-height floor for slots.
+    const containerStyle = () => groupContainerStyle(data(), { defaultGap: '12px', minHeight: '60px', },);
 
     return (
         <div class="content-block__group" style={containerStyle()}>

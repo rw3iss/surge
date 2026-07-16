@@ -20,6 +20,7 @@ export {
 } from '../core/errors';
 
 import { AppError, } from '../core/errors';
+import { FeatureCascadeError, } from '../services/settings';
 
 export function errorHandler(
     err: Error,
@@ -30,6 +31,7 @@ export function errorHandler(
     // Resolve the HTTP status this error maps to, so we can log by severity.
     let statusCode = 500;
     if (err instanceof AppError) statusCode = err.statusCode;
+    else if (err instanceof FeatureCascadeError) statusCode = 409;
     else if (err instanceof ZodError) statusCode = 400;
     else if ((err as NodeJS.ErrnoException).code === '23505') statusCode = 409;
     else if ((err as NodeJS.ErrnoException).code === '23503') statusCode = 400;
@@ -65,6 +67,13 @@ export function errorHandler(
                 details: err.details,
             },
         },);
+    }
+
+    // Feature dependency-planner rejection: return the planner result
+    // verbatim as the 409 body (NOT the standard error envelope) — the
+    // admin FeatureDependencyModal reads that exact shape.
+    if (err instanceof FeatureCascadeError) {
+        return res.status(409,).json({ success: false, error: err.result, },);
     }
 
     if (err instanceof ZodError) {

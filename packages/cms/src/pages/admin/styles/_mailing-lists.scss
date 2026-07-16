@@ -133,7 +133,7 @@
 
     &__header {
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid $border-color;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -158,10 +158,10 @@
 
     &__vars {
         padding: 0.5rem 1rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid $border-color;
         max-height: 35%;
         overflow: auto;
-        background: #fafafa;
+        background: $background-dark;
     }
 
     &__vars-toggle {
@@ -183,7 +183,7 @@
 
     &__footer {
         padding: 0.5rem 1rem;
-        border-top: 1px solid #eee;
+        border-top: 1px solid $border-color;
         display: flex;
         gap: 0.5rem;
         justify-content: flex-end;

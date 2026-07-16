@@ -16,6 +16,28 @@ export interface PaginatedResult<T,> {
 }
 
 /**
+ * Build a safe `ORDER BY` clause. `sortBy` is looked up in
+ * `allowedColumns` (a fixed allowlist mapping user-facing keys → trusted
+ * column expressions) so untrusted input can never reach the SQL; an
+ * unknown / missing key falls back to `defaultColumn` (or the first
+ * allowlist entry). Direction is `ASC` only for an explicit `'asc'`,
+ * otherwise `DESC`.
+ */
+export function buildSortClause(
+    sortBy: string | undefined,
+    sortOrder: string | undefined,
+    allowedColumns: Record<string, string>,
+    defaultColumn?: string,
+): string {
+    const fallback = (defaultColumn && allowedColumns[defaultColumn])
+        || Object.values(allowedColumns,)[0]
+        || 'created_at';
+    const column = (sortBy && allowedColumns[sortBy]) || fallback;
+    const direction = sortOrder === 'asc' ? 'ASC' : 'DESC';
+    return `ORDER BY ${column} ${direction}`;
+}
+
+/**
  * Executes a paginated query with count.
  */
 export async function paginatedQuery<T,>(

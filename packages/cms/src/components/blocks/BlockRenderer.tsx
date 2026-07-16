@@ -4,6 +4,7 @@ import { Component, createEffect, createResource, createSignal, For, Match, onCl
 import { Portal, } from 'solid-js/web';
 import { cms, } from '../../services/cmsClient';
 import { colorCssValue, } from '../../services/colorResolver';
+import { groupContainerStyle, } from '../../utils/groupStyle';
 import FormRenderer from '../forms/FormRenderer';
 import ResolvedHeroCarousel from './ResolvedHeroCarousel';
 import PostListRenderer, { type PostListSettings, } from './posts/PostListRenderer';
@@ -24,6 +25,10 @@ interface BlockRendererProps {
 export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
     const blockStyle = () => props.block.style as Record<string, any> | undefined;
     const s = () => blockStyle() || {};
+    // Carousel routes its padding to the slide *content* (see
+    // CarouselBlockRenderer) so the background media stays full-bleed —
+    // hence the outer wrapper skips block-style padding for this type.
+    const isCarousel = () => props.block.type === 'carousel';
 
     return (
         <div
@@ -42,8 +47,10 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                 'font-size': s().fontSize || undefined,
                 width: s().width || undefined,
                 height: s().height || undefined,
-                padding: s().padding || (props.block.settings.padding as string) ||
-                    (props.block.settings.useDefaultPadding === false ? undefined : 'var(--site-block-padding, 0)'),
+                padding: isCarousel() ? undefined : (
+                    s().padding || (props.block.settings.padding as string) ||
+                    (props.block.settings.useDefaultPadding === false ? undefined : 'var(--site-block-padding, 0)')
+                ),
                 margin: (() => {
                     const m = s().margin;
                     if (!m) return undefined;
@@ -734,6 +741,10 @@ const HTMLBlock: Component<{ block: Block; }> = (props,) => (
 const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
     const s = () => props.block.settings || {};
     const items = () => (s().items as HeroItem[]) || [];
+    // Block style alignment (set via the block's Style settings) flows into
+    // the carousel slides so items honor Text/Vertical Alignment instead of
+    // always centering.
+    const style = () => (props.block.style as Record<string, any> | undefined) || {};
     const options = () => ({
         autoScroll: false,
         autoScrollInterval: 3000,
@@ -757,6 +768,9 @@ const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
                 items={items()}
                 options={options()}
                 gutterWidth={appearance()?.gutterWidth}
+                align={style().textAlign}
+                valign={style().verticalAlign}
+                contentPadding={style().padding}
             />
         </Show>
     );
@@ -768,29 +782,13 @@ const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {
 // each hold one content block. Item min/max width/height defaults set
 // on the group flow down to slots that don't override.
 //
-// `align` / `justify` accept short keywords (start/center/end/stretch);
-// we map "start" / "end" → "flex-start" / "flex-end" for the appropriate
-// CSS property.
-
-const flexAlign = (v?: string,): string | undefined => {
-    if (!v) return undefined;
-    if (v === 'start') return 'flex-start';
-    if (v === 'end') return 'flex-end';
-    return v;
-};
+// `align` / `justify` accept short keywords (start/center/end/stretch) mapped
+// to flexbox values by the shared groupContainerStyle util.
 
 const GroupBlock: Component<{ block: Block; }> = (props,) => {
     const children = () => (props.block.children || []) as Block[];
     const data = () => (props.block.settings || {}) as Record<string, any>;
-    const direction = () => (data().direction as string) || 'horizontal';
-    const containerStyle = (): Record<string, string | undefined> => ({
-        display: 'flex',
-        'flex-direction': direction() === 'vertical' ? 'column' : 'row',
-        'flex-wrap': (data().wrap as string) || 'wrap',
-        gap: (data().gap as string) || undefined,
-        'align-items': flexAlign(data().align as string,),
-        'justify-content': flexAlign(data().justify as string,),
-    });
+    const containerStyle = () => groupContainerStyle(data(),);
 
     return (
         <div class="block--group" style={containerStyle()}>

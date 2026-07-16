@@ -8,6 +8,8 @@ import BlockEditController from './BlockEditController';
 import ContentBlock, { BlockData, BlockType, } from './ContentBlock';
 import FlyoutPanel, { type FlyoutMode, } from '../common/FlyoutPanel';
 import Toggle from '../common/Toggle';
+import { generateBlockId, } from '../../../utils/blockId';
+import { titleizeBlockType, } from '../../../config/blockTypes';
 
 export type { BlockData, BlockType, } from './ContentBlock';
 
@@ -27,6 +29,11 @@ interface BlockEditorProps {
     containerClass?: string;
     /** Snapshot of blocks as last saved — used for dirty detection & revert */
     savedBlocks?: BlockData[];
+    /** Fired when the full-width preview toggle changes. The host editor
+     *  uses this to add `.admin-full-bleed` to its page root so the whole
+     *  editor (content column + edit panel) uses the full page width, not
+     *  just the block preview frame. */
+    onFullWidthChange?: (full: boolean,) => void;
 }
 
 /**
@@ -36,12 +43,8 @@ interface BlockEditorProps {
  * registered+enabled type.
  */
 
-/** Real UUIDs from the start so newly-added group children can reference
- *  their parent before either has been saved to the server. */
-const generateBlockId = () =>
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ?
-        crypto.randomUUID() :
-        `${Date.now().toString(16,)}-${Math.random().toString(16,).slice(2,)}`;
+// Real UUIDs from the start (see utils/blockId) so newly-added group children
+// can reference their parent before either has been saved to the server.
 
 // ─── Block-tree helpers ───
 //
@@ -247,6 +250,12 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
     const [isMobile, setIsMobile,] = createSignal(false,);
     const [isFullWidth, setIsFullWidth,] = createSignal(false,);
     const [isLandscape, setIsLandscape,] = createSignal(false,);
+
+    // Notify the host editor whenever full-width toggles so it can flip its
+    // page root into full-bleed (removing the admin content-column cap).
+    createEffect(() => {
+        props.onFullWidthChange?.(isFullWidth(),);
+    },);
     const [selectedDevice, setSelectedDevice,] = createSignal(DEFAULT_MOBILE_DEVICE,);
     const [showDeviceHeight, setShowDeviceHeight,] = createSignal(false,);
 
@@ -548,6 +557,40 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         document.addEventListener('pointerup', handleUp,);
     };
 
+    /**
+     * The edit panel (flyout + controller). Rendered once per placement
+     * (inline-left / inline-right / float) from a single definition so the
+     * three can't drift — the float copy previously omitted `isDirty`/
+     * `onRevert`, which this unifies. Call inside a `<Show keyed>` so it
+     * re-mounts when the selected block changes.
+     */
+    const renderEditPanel = () => {
+        const block = selectedBlock();
+        if (!block) return null;
+        return (
+            <FlyoutPanel
+                title={`Edit: ${titleizeBlockType(block.type || '',)}`}
+                open={true}
+                onClose={deselectBlock}
+                side={flyoutSide()}
+                onSideChange={setFlyoutSide}
+                mode={flyoutMode()}
+                onModeChange={setFlyoutMode}
+            >
+                <BlockEditController
+                    block={block}
+                    blockTypes={blockTypes()}
+                    onUpdate={updateBlock}
+                    onChangeType={changeBlockType}
+                    onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
+                    onClose={deselectBlock}
+                    isDirty={isBlockDirty(block.id,)}
+                    onRevert={() => revertBlock(block.id,)}
+                />
+            </FlyoutPanel>
+        );
+    };
+
     return (
         <div class="block-editor">
             {/* Header sits OUTSIDE the styled container */}
@@ -638,28 +681,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
             }`}>
                 {/* Inline flyout on the LEFT — keyed by block ID to force re-mount on switch */}
                 <Show when={selectedBlock() && flyoutMode() === 'inline' && flyoutSide() === 'left' ? selectedBlockId() : null} keyed>
-                    {(_blockId,) => (
-                        <FlyoutPanel
-                            title={`Edit: ${(selectedBlock()!.type || '').replace(/_/g, ' ',).replace(/\b\w/g, c => c.toUpperCase(),)}`}
-                            open={true}
-                            onClose={deselectBlock}
-                            side={flyoutSide()}
-                            onSideChange={setFlyoutSide}
-                            mode={flyoutMode()}
-                            onModeChange={setFlyoutMode}
-                        >
-                            <BlockEditController
-                                block={selectedBlock()!}
-                                blockTypes={blockTypes()}
-                                onUpdate={updateBlock}
-                                onChangeType={changeBlockType}
-                                onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
-                                onClose={deselectBlock}
-                                isDirty={isBlockDirty(selectedBlock()!.id,)}
-                                onRevert={() => revertBlock(selectedBlock()!.id,)}
-                            />
-                        </FlyoutPanel>
-                    )}
+                    {(_blockId,) => renderEditPanel()}
                 </Show>
 
                 {/* Blocks column */}
@@ -745,53 +767,13 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
 
                 {/* Inline flyout on the RIGHT — keyed by block ID */}
                 <Show when={selectedBlock() && flyoutMode() === 'inline' && flyoutSide() === 'right' ? selectedBlockId() : null} keyed>
-                    {(_blockId,) => (
-                        <FlyoutPanel
-                            title={`Edit: ${(selectedBlock()!.type || '').replace(/_/g, ' ',).replace(/\b\w/g, c => c.toUpperCase(),)}`}
-                            open={true}
-                            onClose={deselectBlock}
-                            side={flyoutSide()}
-                            onSideChange={setFlyoutSide}
-                            mode={flyoutMode()}
-                            onModeChange={setFlyoutMode}
-                        >
-                            <BlockEditController
-                                block={selectedBlock()!}
-                                blockTypes={blockTypes()}
-                                onUpdate={updateBlock}
-                                onChangeType={changeBlockType}
-                                onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
-                                onClose={deselectBlock}
-                                isDirty={isBlockDirty(selectedBlock()!.id,)}
-                                onRevert={() => revertBlock(selectedBlock()!.id,)}
-                            />
-                        </FlyoutPanel>
-                    )}
+                    {(_blockId,) => renderEditPanel()}
                 </Show>
             </div>
 
             {/* ─── Floating flyout (only when in float mode) — keyed by block ID ─── */}
             <Show when={selectedBlock() && flyoutMode() === 'float' ? selectedBlockId() : null} keyed>
-                {(_blockId,) => (
-                    <FlyoutPanel
-                        title={`Edit: ${(selectedBlock()!.type || '').replace(/_/g, ' ',).replace(/\b\w/g, c => c.toUpperCase(),)}`}
-                        open={true}
-                        onClose={deselectBlock}
-                        side={flyoutSide()}
-                        onSideChange={setFlyoutSide}
-                        mode={flyoutMode()}
-                        onModeChange={setFlyoutMode}
-                    >
-                        <BlockEditController
-                            block={selectedBlock()!}
-                            blockTypes={blockTypes()}
-                            onUpdate={updateBlock}
-                            onChangeType={changeBlockType}
-                            onRemove={(id,) => { removeBlock(id,); deselectBlock(); }}
-                            onClose={deselectBlock}
-                        />
-                    </FlyoutPanel>
-                )}
+                {(_blockId,) => renderEditPanel()}
             </Show>
         </div>
     );

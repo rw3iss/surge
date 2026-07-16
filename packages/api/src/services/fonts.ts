@@ -16,6 +16,8 @@ import { nanoid, } from '../utils/nanoid';
 import path from 'path';
 import { config, } from '../config';
 import { cache, } from './cache';
+import { logAudit, } from './audit';
+import type { AuditContext, } from './types';
 import { logger, } from '../utils/logger';
 import {
     allocateNextCustomId,
@@ -98,7 +100,7 @@ export interface CreateFontOptions {
  * and inserts a row. Throws on invalid format, missing buffer, or a
  * customId that's already taken.
  */
-export async function create(opts: CreateFontOptions,): Promise<FontWithUrl> {
+export async function create(opts: CreateFontOptions, ctx?: AuditContext,): Promise<FontWithUrl> {
     if (!opts.buffer || opts.buffer.length === 0) {
         throw new Error('Font buffer is empty',);
     }
@@ -134,6 +136,15 @@ export async function create(opts: CreateFontOptions,): Promise<FontWithUrl> {
             familyName: opts.familyName ?? null,
         },);
         await invalidateCache();
+        await logAudit({
+            userId: ctx?.userId ?? 'system',
+            action: 'create',
+            entityType: 'font',
+            entityId: font.id,
+            newValues: { customId: font.customId, originalName: font.originalName, format: font.format, },
+            ipAddress: ctx?.ipAddress,
+            userAgent: ctx?.userAgent,
+        },);
         logger.info(`Font uploaded: ${customId} (${opts.originalName}, ${opts.buffer.length}B)`,);
         return withUrl(font,);
     } catch (error) {
@@ -148,7 +159,7 @@ export async function create(opts: CreateFontOptions,): Promise<FontWithUrl> {
  * Delete a font by id. Removes the file from disk and the row from
  * the table. Returns the deleted row, or null if no font matched.
  */
-export async function remove(id: string,): Promise<Font | null> {
+export async function remove(id: string, ctx?: AuditContext,): Promise<Font | null> {
     const existing = await findFontById(id,);
     if (!existing) return null;
 
@@ -163,6 +174,14 @@ export async function remove(id: string,): Promise<Font | null> {
     }
 
     await invalidateCache();
+    await logAudit({
+        userId: ctx?.userId ?? 'system',
+        action: 'delete',
+        entityType: 'font',
+        entityId: deleted.id,
+        ipAddress: ctx?.ipAddress,
+        userAgent: ctx?.userAgent,
+    },);
     return deleted;
 }
 

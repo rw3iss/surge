@@ -208,6 +208,24 @@ export async function fetchFacebookPosts(maxResults = 10,): Promise<FetchedPost[
     }
 }
 
+/**
+ * Provider registry (Open/Closed): maps each supported platform to its
+ * fetcher. Both the sync and live-feed dispatch look a platform up here
+ * instead of branching in a switch — adding a provider is one entry.
+ * Platforms without a fetcher (patreon/tiktok) are simply absent, so a
+ * lookup miss drives the existing unsupported-platform fallback.
+ */
+interface SocialProvider {
+    fetch: (maxResults?: number,) => Promise<FetchedPost[]>;
+}
+
+const PROVIDERS: Partial<Record<SocialPlatform, SocialProvider>> = {
+    youtube: { fetch: fetchYouTubeVideos, },
+    twitter: { fetch: fetchTwitterPosts, },
+    instagram: { fetch: fetchInstagramPosts, },
+    facebook: { fetch: fetchFacebookPosts, },
+};
+
 interface ConnectionSettings {
     autoPublish: boolean;
     autoPublishCount: number | null;
@@ -255,25 +273,13 @@ export async function syncSocialPosts(platform: SocialPlatform, force = false,):
 
     const maxResults = settings?.autoPublishCount || 10;
 
-    let posts: FetchedPost[] = [];
-
-    switch (platform) {
-        case 'youtube':
-            posts = await fetchYouTubeVideos(maxResults,);
-            break;
-        case 'twitter':
-            posts = await fetchTwitterPosts(maxResults,);
-            break;
-        case 'instagram':
-            posts = await fetchInstagramPosts(maxResults,);
-            break;
-        case 'facebook':
-            posts = await fetchFacebookPosts(maxResults,);
-            break;
-        default:
-            logger.warn(`Unsupported platform: ${platform}`,);
-            return 0;
+    const provider = PROVIDERS[platform];
+    if (!provider) {
+        logger.warn(`Unsupported platform: ${platform}`,);
+        return 0;
     }
+
+    const posts = await provider.fetch(maxResults,);
 
     let synced = 0;
 
@@ -417,24 +423,10 @@ export async function getLiveFeed(
     if (cached) return cached;
 
     // Fetch from provider API
-    let posts: FetchedPost[] = [];
+    const provider = PROVIDERS[platform];
+    if (!provider) return [];
 
-    switch (platform) {
-        case 'youtube':
-            posts = await fetchYouTubeVideos(limit,);
-            break;
-        case 'twitter':
-            posts = await fetchTwitterPosts(limit,);
-            break;
-        case 'instagram':
-            posts = await fetchInstagramPosts(limit,);
-            break;
-        case 'facebook':
-            posts = await fetchFacebookPosts(limit,);
-            break;
-        default:
-            return [];
-    }
+    const posts = await provider.fetch(limit,);
 
     const socialPosts = posts.map((p,) => fetchedPostToSocialPost(p, platform,),);
 

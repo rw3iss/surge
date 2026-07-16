@@ -3,7 +3,11 @@
 
     &__properties {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        // Two columns when there's room, collapsing to one on a narrow
+        // panel / small screen. `auto-fit` + `minmax` keeps the right
+        // column from being cut off: tracks shrink to fit the panel and
+        // wrap to a single column below ~2×150px rather than overflowing.
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: $spacing-xs $spacing-sm;
     }
 
@@ -11,6 +15,10 @@
         display: flex;
         flex-direction: column;
         gap: 2px;
+        // Allow the field (and its full-width select) to shrink below its
+        // intrinsic content width so long option labels don't force the
+        // grid track wider than its share, clipping the adjacent column.
+        min-width: 0;
     }
 
     &__label {

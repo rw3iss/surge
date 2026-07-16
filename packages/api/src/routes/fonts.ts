@@ -35,7 +35,7 @@ export const fontsRoutes = [
         method: 'post', path: '/', auth: 'admin',
         summary: 'Upload a font (multipart, field "file"). Optional customId / familyName.',
         pre: [upload.single('file',),],
-        handler: async ({ req, },) => {
+        handler: async ({ req, audit, },) => {
             const file = (req as { file?: Express.Multer.File; }).file;
             if (!file) throw new AppError(400, 'NO_FILE', 'No font file uploaded',);
             const body = req.body as { customId?: string; familyName?: string; };
@@ -44,7 +44,7 @@ export const fontsRoutes = [
                 originalName: file.originalname,
                 customId: body?.customId || undefined,
                 familyName: body?.familyName || undefined,
-            },);
+            }, audit(),);
             return reply(font, { status: 201, },);
         },
     },),
@@ -53,8 +53,8 @@ export const fontsRoutes = [
         method: 'delete', path: '/:id', auth: 'admin',
         summary: 'Delete a font (file + row).',
         input: { params: z.object({ id: z.string(), },), },
-        handler: async ({ params, },) => {
-            const deleted = await fonts.remove(params.id,);
+        handler: async ({ params, audit, },) => {
+            const deleted = await fonts.remove(params.id, audit(),);
             if (!deleted) throw new NotFoundError('Font',);
             return deleted;
         },

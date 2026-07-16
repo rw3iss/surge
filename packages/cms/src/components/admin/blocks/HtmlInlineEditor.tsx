@@ -23,6 +23,7 @@ import {
     onMount,
     Show,
 } from 'solid-js';
+import { formatHtml, } from '../../../utils/codeFormat';
 
 const STORAGE_KEY = 'sitesurge.editor.blockHeights';
 const DEFAULT_HEIGHT = 200;
@@ -104,6 +105,16 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
         }
     },);
 
+    /** Pretty-print the current HTML (and any embedded <style> CSS) and push
+     *  it back through onChange. Switches to Code view so the result shows. */
+    const handleFormat = () => {
+        const next = formatHtml(props.content || '',);
+        if (next && next !== props.content) {
+            setMode('code',);
+            props.onChange(next,);
+        }
+    };
+
     // ─── Drag-resize ───
     const onResizeStart = (startEvent: PointerEvent,) => {
         startEvent.preventDefault();
@@ -141,6 +152,14 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
                     title="Preview rendered output"
                 >
                     Preview
+                </button>
+                <button
+                    type="button"
+                    class="html-inline-editor__format"
+                    onClick={handleFormat}
+                    title="Format the HTML (and embedded CSS) into clean, indented markup"
+                >
+                    Format
                 </button>
             </div>
 

@@ -102,8 +102,8 @@
     justify-content: center;
     width: 100%;
     height: 180px;
-    background: linear-gradient(135deg, #f0f0f0 0%, #ddd 100%);
-    color: #999;
+    background: linear-gradient(135deg, $background-dark 0%, $border-color 100%);
+    color: $text-light;
     font-size: $font-size-lg;
     font-weight: 600;
     letter-spacing: 1px;

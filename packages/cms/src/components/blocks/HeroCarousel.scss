@@ -46,12 +46,16 @@
 
   // ─── Text overlay ───
 
+  // Alignment vars (set from the block style in HeroCarousel.tsx) drive the
+  // overlay position; they default to the original centered layout so an
+  // unstyled carousel is unchanged. `--hero-content-align`/`--hero-valign`
+  // are flexbox values; `--hero-text-align` is a text-align value.
   &__overlay {
     position: absolute;
     inset: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: var(--hero-valign, center);
+    justify-content: var(--hero-content-align, center);
     // Subtle gradient for text readability
     background: linear-gradient(
       to bottom,
@@ -64,9 +68,11 @@
   &__content {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: $spacing-lg $spacing-xl;
+    align-items: var(--hero-content-align, center);
+    text-align: var(--hero-text-align, center);
+    // Block-style padding (when set) insets the text content only; the
+    // background media sits on a separate layer and stays full-bleed.
+    padding: var(--hero-content-padding, #{$spacing-lg} #{$spacing-xl});
     max-width: 90%;
     pointer-events: auto;
   }
@@ -88,7 +94,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    justify-content: var(--hero-content-align, center);
     gap: $spacing-xs $spacing-md;
     margin-top: $spacing-sm;
     font-size: clamp(0.7rem, 1.2vw, 0.85rem);
@@ -129,7 +135,7 @@
   &__tags {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: var(--hero-content-align, center);
     gap: $spacing-xs;
     margin-top: $spacing-sm;
     font-size: clamp(0.7rem, 1.1vw, 0.8rem);

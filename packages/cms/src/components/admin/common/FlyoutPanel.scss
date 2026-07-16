@@ -29,8 +29,11 @@
     position: sticky;
     top: $spacing-md;
     max-height: calc(100vh - #{$spacing-md} * 2);
-    width: 340px;
-    min-width: 300px;
+    // A touch wider than before so the two-column style grid fits without
+    // clipping its right column. Widens further when the page is in
+    // full-bleed mode (see `.admin-full-bleed` rule in _block-editor.scss).
+    width: 360px;
+    min-width: 320px;
     flex-shrink: 0;
     border: 1px solid $border-color;
     border-radius: $border-radius-md;

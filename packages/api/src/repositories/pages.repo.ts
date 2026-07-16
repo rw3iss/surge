@@ -12,6 +12,7 @@ import {
     PaginationOptions,
     updateById,
 } from './base.repo';
+import { ilikeSearch, } from '../utils/queryBuilders';
 import * as blockStyleResolution from '../services/blockStyleResolution';
 
 // Rich text body is sanitized because the editor surface (WYSIWYG)
@@ -63,8 +64,7 @@ export async function findPages(
         whereClause += ` AND status != 'deleted'`;
     }
     if (filters.search) {
-        params.push(`%${filters.search}%`,);
-        whereClause += ` AND (title ILIKE $${params.length} OR slug ILIKE $${params.length})`;
+        whereClause += ` AND ${ilikeSearch(['title', 'slug',], filters.search, params,)}`;
     }
 
     let orderClause: string;

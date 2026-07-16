@@ -19,6 +19,8 @@ import { config, } from '../config';
 import { query, } from '../db';
 import { NotFoundError, ValidationError, } from '../core/errors';
 import { getStorageProvider, } from './storage';
+import { logAudit, } from './audit';
+import type { AuditContext, } from './types';
 import { logger, } from '../utils/logger';
 import { mapRow, mapRows, } from '../utils/mapRow';
 import { uuidOrNull, } from '../utils/uuid';
@@ -65,7 +67,7 @@ export interface UploadFile {
  */
 async function uploadOne(
     file: UploadFile,
-    actorUserId: string | undefined,
+    ctx: AuditContext,
     extra: { alt?: string; caption?: string; } = {},
 ): Promise<Media> {
     const tempFilePath = file.path;
@@ -95,7 +97,7 @@ async function uploadOne(
 
         // uploaded_by is a UUID FK — synthetic actors (API keys / system)
         // become NULL rather than violating the column type.
-        const uploadedBy = uuidOrNull(actorUserId,);
+        const uploadedBy = uuidOrNull(ctx.userId,);
         const hasMeta = extra.alt !== undefined || extra.caption !== undefined;
         const result = hasMeta
             ? await query(
@@ -115,7 +117,17 @@ async function uploadOne(
             );
 
         inserted = true;
-        return mapRow<Media>(result.rows[0],);
+        const item = mapRow<Media>(result.rows[0],);
+        await logAudit({
+            userId: ctx.userId,
+            action: 'create',
+            entityType: 'media',
+            entityId: item.id,
+            newValues: { filename: item.filename, originalName: item.originalName, mimeType: item.mimeType, },
+            ipAddress: ctx.ipAddress,
+            userAgent: ctx.userAgent,
+        },);
+        return item;
     } finally {
         // Remote storage: temp staging files are always disposable once
         // the work is done. Local storage: the staged file IS the served
@@ -129,9 +141,9 @@ async function uploadOne(
 }
 
 /** Main upload (POST /). Persists alt/caption. */
-export async function upload(file: UploadFile | undefined, alt: string | undefined, caption: string | undefined, actorUserId: string | undefined,): Promise<Media> {
+export async function upload(file: UploadFile | undefined, alt: string | undefined, caption: string | undefined, ctx: AuditContext,): Promise<Media> {
     if (!file) throw new ValidationError('No file provided',);
-    return uploadOne(file, actorUserId, { alt, caption, },);
+    return uploadOne(file, ctx, { alt, caption, },);
 }
 
 /** Content-block upload (POST /block-upload). Echoes postId/blockId back. */
@@ -139,19 +151,19 @@ export async function blockUpload(
     file: UploadFile | undefined,
     postId: string | undefined,
     blockId: string | undefined,
-    actorUserId: string | undefined,
+    ctx: AuditContext,
 ): Promise<Media & { postId: string | null; blockId: string | null; }> {
     if (!file) throw new ValidationError('No file provided',);
-    const media = await uploadOne(file, actorUserId,);
+    const media = await uploadOne(file, ctx,);
     return { ...media, postId: postId || null, blockId: blockId || null, };
 }
 
 /** Bulk upload (POST /bulk). Each file is processed (and cleaned up) in turn. */
-export async function bulkUpload(files: UploadFile[] | undefined, actorUserId: string | undefined,): Promise<Media[]> {
+export async function bulkUpload(files: UploadFile[] | undefined, ctx: AuditContext,): Promise<Media[]> {
     if (!files || files.length === 0) throw new ValidationError('No files provided',);
     const mediaItems: Media[] = [];
     for (const file of files) {
-        mediaItems.push(await uploadOne(file, actorUserId,),);
+        mediaItems.push(await uploadOne(file, ctx,),);
     }
     return mediaItems;
 }
@@ -247,7 +259,7 @@ export interface MediaMetaPatch {
 }
 
 /** Update metadata (title/alt/caption). Only supplied fields change. */
-export async function updateMeta(id: string, patch: MediaMetaPatch,): Promise<Media> {
+export async function updateMeta(id: string, patch: MediaMetaPatch, ctx: AuditContext,): Promise<Media> {
     const updates: string[] = [];
     const values: unknown[] = [];
 
@@ -272,11 +284,21 @@ export async function updateMeta(id: string, patch: MediaMetaPatch,): Promise<Me
         values,
     );
     if (result.rows.length === 0) throw new NotFoundError('Media',);
-    return mapRow<Media>(result.rows[0],);
+    const item = mapRow<Media>(result.rows[0],);
+    await logAudit({
+        userId: ctx.userId,
+        action: 'update',
+        entityType: 'media',
+        entityId: id,
+        newValues: patch as Record<string, unknown>,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+    },);
+    return item;
 }
 
 /** Delete a media row and its files from storage. */
-export async function remove(id: string,): Promise<void> {
+export async function remove(id: string, ctx: AuditContext,): Promise<void> {
     const result = await query(
         'DELETE FROM media WHERE id = $1 RETURNING filename, thumbnail_url',
         [id,],
@@ -289,4 +311,13 @@ export async function remove(id: string,): Promise<void> {
     if (thumbnail_url) {
         await storageProvider.deleteThumbnail(filename,);
     }
+
+    await logAudit({
+        userId: ctx.userId,
+        action: 'delete',
+        entityType: 'media',
+        entityId: id,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+    },);
 }

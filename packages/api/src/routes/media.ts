@@ -90,9 +90,9 @@ export const mediaRoutes = [
         method: 'post', path: '/', auth: 'staff',
         summary: 'Upload a single file (multipart, field "file"; optional alt/caption).',
         pre: [upload.single('file',),],
-        handler: async ({ req, userId, },) => {
+        handler: async ({ req, audit, },) => {
             const body = req.body as { alt?: string; caption?: string; };
-            const result = await media.upload(reqFile(req,), body.alt, body.caption, userId,);
+            const result = await media.upload(reqFile(req,), body.alt, body.caption, audit(),);
             return reply(result, { status: 201, },);
         },
     },),
@@ -101,9 +101,9 @@ export const mediaRoutes = [
         method: 'post', path: '/block-upload', auth: 'staff',
         summary: 'Upload a file for a content block (multipart, field "file"; postId/blockId).',
         pre: [upload.single('file',),],
-        handler: async ({ req, userId, },) => {
+        handler: async ({ req, audit, },) => {
             const body = req.body as { postId?: string; blockId?: string; };
-            const result = await media.blockUpload(reqFile(req,), body.postId, body.blockId, userId,);
+            const result = await media.blockUpload(reqFile(req,), body.postId, body.blockId, audit(),);
             return reply(result, { status: 201, },);
         },
     },),
@@ -112,8 +112,8 @@ export const mediaRoutes = [
         method: 'post', path: '/bulk', auth: 'staff',
         summary: 'Upload multiple files (multipart, field "files", max 10).',
         pre: [upload.array('files', 10,),],
-        handler: async ({ req, userId, },) => {
-            const result = await media.bulkUpload(reqFiles(req,), userId,);
+        handler: async ({ req, audit, },) => {
+            const result = await media.bulkUpload(reqFiles(req,), audit(),);
             return reply(result, { status: 201, },);
         },
     },),
@@ -146,15 +146,15 @@ export const mediaRoutes = [
         method: 'put', path: '/:id', auth: 'staff',
         summary: 'Update media metadata (title/alt/caption).',
         input: { params: idParams, body: updateMetaSchema, },
-        handler: ({ params, body, },) => media.updateMeta(params.id, body,),
+        handler: ({ params, body, audit, },) => media.updateMeta(params.id, body, audit(),),
     },),
 
     defineRoute({
         method: 'delete', path: '/:id', auth: 'staff',
         summary: 'Delete a media item (removes files from storage).',
         input: { params: idParams, },
-        handler: async ({ params, },) => {
-            await media.remove(params.id,);
+        handler: async ({ params, audit, },) => {
+            await media.remove(params.id, audit(),);
             return { message: 'Media deleted', };
         },
     },),

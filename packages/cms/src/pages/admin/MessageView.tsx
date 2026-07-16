@@ -3,6 +3,14 @@ import { A, useParams, } from '@solidjs/router';
 import { Component, createResource, Show, } from 'solid-js';
 import { cms, } from '../../services/cmsClient';
 
+/** Shared style for the field labels in the message detail grid (was an
+ *  inline object repeated 5×; color routed through the admin token). */
+const FIELD_LABEL_STYLE = {
+    'font-weight': '600',
+    'font-size': '0.85rem',
+    color: 'var(--admin-text-muted, #64748b)',
+} as const;
+
 const AdminMessageView: Component = () => {
     const params = useParams<{ id: string, }>();
 
@@ -68,13 +76,13 @@ const AdminMessageView: Component = () => {
                                 }}
                             >
                                 <div>
-                                    <label style={{ 'font-weight': '600', 'font-size': '0.85rem', color: '#64748b', }}>
+                                    <label style={FIELD_LABEL_STYLE}>
                                         From
                                     </label>
                                     <p style={{ margin: '0.25rem 0 0', }}>{m().name}</p>
                                 </div>
                                 <div>
-                                    <label style={{ 'font-weight': '600', 'font-size': '0.85rem', color: '#64748b', }}>
+                                    <label style={FIELD_LABEL_STYLE}>
                                         Email
                                     </label>
                                     <p style={{ margin: '0.25rem 0 0', }}>
@@ -82,7 +90,7 @@ const AdminMessageView: Component = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label style={{ 'font-weight': '600', 'font-size': '0.85rem', color: '#64748b', }}>
+                                    <label style={FIELD_LABEL_STYLE}>
                                         Date
                                     </label>
                                     <p style={{ margin: '0.25rem 0 0', }}>
@@ -90,7 +98,7 @@ const AdminMessageView: Component = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label style={{ 'font-weight': '600', 'font-size': '0.85rem', color: '#64748b', }}>
+                                    <label style={FIELD_LABEL_STYLE}>
                                         IP Address
                                     </label>
                                     <p style={{ margin: '0.25rem 0 0', }}>{m().ipAddress || '—'}</p>
@@ -98,16 +106,16 @@ const AdminMessageView: Component = () => {
                             </div>
 
                             <div style={{ 'margin-bottom': '1.5rem', }}>
-                                <label style={{ 'font-weight': '600', 'font-size': '0.85rem', color: '#64748b', }}>
+                                <label style={FIELD_LABEL_STYLE}>
                                     Message
                                 </label>
                                 <div
                                     style={{
                                         'margin-top': '0.5rem',
                                         padding: '1rem',
-                                        background: '#f8fafc',
+                                        background: 'var(--admin-bg-subtle, #f8fafc)',
                                         'border-radius': '6px',
-                                        'border': '1px solid #e2e8f0',
+                                        'border': '1px solid var(--admin-border, #e2e8f0)',
                                         'white-space': 'pre-wrap',
                                         'line-height': '1.6',
                                     }}

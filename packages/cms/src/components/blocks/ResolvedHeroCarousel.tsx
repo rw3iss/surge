@@ -28,6 +28,11 @@ export interface ResolvedHeroCarouselProps {
     height?: string;
     previewMode?: boolean;
     gutterWidth?: string;
+    /** Block-style alignment (textAlign / verticalAlign) forwarded to slides. */
+    align?: string;
+    valign?: string;
+    /** Block-style padding — insets slide text content, not the media. */
+    contentPadding?: string;
 }
 
 /** Build the show-fields overlay metadata for a slide (only the fields
@@ -133,6 +138,9 @@ const ResolvedHeroCarousel: Component<ResolvedHeroCarouselProps> = (props,) => {
             height={props.height}
             previewMode={props.previewMode}
             gutterWidth={props.gutterWidth}
+            align={props.align}
+            valign={props.valign}
+            contentPadding={props.contentPadding}
         />
     );
 };

@@ -26,6 +26,14 @@
   transition: background $transition-fast, color $transition-fast, opacity $transition-fast;
   gap: $spacing-xs;
 
+  // Keyboard focus ring. global.scss suppresses non-:focus-visible outlines,
+  // so button-based controls need an explicit :focus-visible style to stay
+  // reachable by keyboard.
+  &:focus-visible {
+    outline: 2px solid var(--site-primary, #{$primary-color});
+    outline-offset: 2px;
+  }
+
   &--primary {
     background: var(--site-primary, #{$primary-color});
     color: white;
@@ -99,11 +107,9 @@
     }
   }
 
-  &--small {
-    padding: $spacing-xs $spacing-sm;
-    font-size: $font-size-xs;
-  }
-
+  // `--small` and `--sm` are the same size; aliased so call sites can use
+  // either name without the rules drifting apart.
+  &--small,
   &--sm {
     padding: $spacing-xs $spacing-sm;
     font-size: $font-size-xs;
@@ -135,6 +141,12 @@
   &:hover {
     color: var(--site-primary, #{$primary-color});
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--site-primary, #{$primary-color});
+    outline-offset: 2px;
+    border-radius: $border-radius-sm;
+  }
 }
 
 
@@ -149,23 +161,23 @@
   text-transform: capitalize;
 
   &--success {
-    background: #d4edda;
-    color: #155724;
+    background: $success-bg;
+    color: $success-fg;
   }
 
   &--warning {
-    background: #fff3cd;
-    color: #856404;
+    background: $warning-bg;
+    color: $warning-fg;
   }
 
   &--info {
-    background: #d1ecf1;
-    color: #0c5460;
+    background: $info-bg;
+    color: $info-fg;
   }
 
   &--error {
-    background: #f8d7da;
-    color: #721c24;
+    background: $error-bg;
+    color: $error-fg;
   }
 
   &--muted {
@@ -183,15 +195,15 @@
   margin-bottom: $spacing-lg;
 
   &--error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: $error-bg;
+    color: $error-fg;
+    border: 1px solid $error-border;
   }
 
   &--success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background: $success-bg;
+    color: $success-fg;
+    border: 1px solid $success-border;
   }
 }
 

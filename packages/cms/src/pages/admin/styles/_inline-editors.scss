@@ -365,6 +365,28 @@
 
 
 
+// Format action — pushed to the right edge of the toolbar.
+.html-inline-editor__format {
+  margin-left: auto;
+  font-size: $font-size-xs;
+  padding: 4px 12px;
+  border: 1px solid $border-color;
+  background: #fff;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  font-family: inherit;
+  color: $text-color;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+  &:hover {
+    background: var(--site-primary, #{$primary-color});
+    border-color: var(--site-primary, #{$primary-color});
+    color: #fff;
+  }
+}
+
+
+
 .html-inline-editor__body {
   position: relative;
   // height is set inline (drag-resize / persisted)
