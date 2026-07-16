@@ -77,7 +77,7 @@ const ApiKeysPanel: Component = () => {
         iso ? new Date(iso,).toLocaleDateString() : '—';
 
     return (
-        <div class="settings-grid">
+        <div class="settings-grid settings-grid--stack">
             <section class="settings-card">
                 <h3 class="settings-card__title">Create API key</h3>
                 <p class="settings-card__lede">

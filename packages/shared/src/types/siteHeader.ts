@@ -34,6 +34,9 @@ export interface SiteHeaderSettings {
     /** Default font for the whole header — a font `customId` from the Font
      *  manager. Individual items override it. */
     defaultFont?: string;
+    /** Default text size for the whole header (any CSS length, e.g. '16px').
+     *  Individual items override it via their own `fontSize`. */
+    defaultFontSize?: string;
     /** Pin the header to the viewport top (position: sticky). Default true. */
     sticky?: boolean;
     /** Slide the header out of view on downward scroll, back in on up. */

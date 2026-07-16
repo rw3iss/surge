@@ -121,6 +121,13 @@
         gap: 4px;
     }
 
+    // Label + inline help icon sitting on one row, above the input.
+    &__general-label-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
     &__general-label {
         font-size: $font-size-sm;
         font-weight: 500;

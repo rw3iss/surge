@@ -424,14 +424,14 @@
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
-  .connection-card {
+  .connection-card__row {
     flex-wrap: wrap;
 
-    &__info {
+    .connection-card__info {
       flex-basis: calc(100% - 56px);
     }
 
-    &__actions {
+    .connection-card__actions {
       width: 100%;
       justify-content: flex-end;
     }

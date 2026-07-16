@@ -44,6 +44,8 @@ export interface SiteHeaderSettings {
     textColor?: string;
     /** Font `customId` applied to the whole header's text. Empty → site font. */
     defaultFont?: string;
+    /** Default text size for the whole header (CSS length). Items override it. */
+    defaultFontSize?: string;
     padding?: string;
     margin?: string;
     /** When true (the default), the header pins to the viewport top
@@ -563,6 +565,8 @@ export const Header: Component<HeaderProps> = (props,) => {
         // `fontFamily` overrides it via the item's own inline style.
         const ff = fontStack(props.headerSettings?.defaultFont,);
         if (ff) s['font-family'] = ff;
+        // Header default text size — per-item `fontSize` overrides via cascade.
+        if (props.headerSettings?.defaultFontSize) s['font-size'] = props.headerSettings.defaultFontSize;
         if (props.headerSettings?.margin) s['margin'] = props.headerSettings.margin;
         return s;
     };
@@ -601,6 +605,7 @@ export const Header: Component<HeaderProps> = (props,) => {
         if (tc) s['color'] = tc;
         const ff = fontStack(props.headerSettings?.defaultFont,);
         if (ff) s['font-family'] = ff;
+        if (props.headerSettings?.defaultFontSize) s['font-size'] = props.headerSettings.defaultFontSize;
         return s;
     };
 

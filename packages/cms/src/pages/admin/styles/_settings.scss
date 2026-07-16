@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  max-width: 500px;
+  max-width: 600px;
 }
 
 
@@ -199,13 +199,13 @@
 
 .connection-card {
   display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-md $spacing-lg;
+  flex-direction: column;
+  align-items: stretch;
   background: $background;
   border-radius: $border-radius-md;
   border: 1px solid $border-color;
   margin-bottom: $spacing-sm;
+  overflow: hidden;
 
   &--connected {
     border-left: 3px solid #28a745;
@@ -321,6 +321,12 @@
     @media (max-width: 900px) {
       grid-template-columns: 1fr;
     }
+  }
+
+  // Single full-width column — each settings-card sits on its own
+  // row. Used by the API Keys tab (Create + Existing keys stacked).
+  &--stack {
+    grid-template-columns: 1fr;
   }
 
   // A grid cell that itself stacks multiple settings-cards (e.g. the

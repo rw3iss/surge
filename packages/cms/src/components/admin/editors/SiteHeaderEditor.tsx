@@ -119,6 +119,7 @@ const SiteHeaderEditor: Component = () => {
     const [bgColor, setBgColor,] = createSignal('#ffffff',);
     const [textColor, setTextColor,] = createSignal('#000000',);
     const [defaultFont, setDefaultFont,] = createSignal('',);
+    const [textSize, setTextSize,] = createSignal('',);
     const [headerPadding, setHeaderPadding,] = createSignal('0px',);
     const [headerMargin, setHeaderMargin,] = createSignal('0px',);
     const [itemSpacing, setItemSpacing,] = createSignal('',);
@@ -168,6 +169,7 @@ const SiteHeaderEditor: Component = () => {
                 if (data.backgroundColor) setBgColor(data.backgroundColor,);
                 if (data.textColor) setTextColor(data.textColor,);
                 if (data.defaultFont) setDefaultFont(data.defaultFont,);
+                if (data.defaultFontSize) setTextSize(data.defaultFontSize,);
                 if (data.padding) setHeaderPadding(data.padding,);
                 if (data.margin) setHeaderMargin(data.margin,);
                 if (data.itemSpacing) setItemSpacing(data.itemSpacing,);
@@ -270,6 +272,7 @@ const SiteHeaderEditor: Component = () => {
                 backgroundColor: bgColor(),
                 textColor: textColor(),
                 defaultFont: defaultFont(),
+                defaultFontSize: textSize() || undefined,
                 padding: headerPadding(),
                 margin: headerMargin(),
                 itemSpacing: itemSpacing() || undefined,
@@ -491,6 +494,7 @@ const SiteHeaderEditor: Component = () => {
                     style={{
                         background: colorCssValue(bgColor(), '',) || undefined,
                         color: colorCssValue(textColor(), '',) || undefined,
+                        'font-size': textSize() || undefined,
                         gap: itemSpacing() || undefined,
                         padding: headerPadding() || undefined,
                         margin: headerMargin() || undefined,
@@ -630,6 +634,26 @@ const SiteHeaderEditor: Component = () => {
                                     setTextColor('',);
                                     markDirty();
                                 }}
+                            />
+                        </div>
+                        <div class="site-header-editor__field">
+                            <label class="site-header-editor__label">Text Size</label>
+                            <select
+                                class="site-header-editor__input--sm"
+                                value={textSize()}
+                                onChange={(e,) => {
+                                    setTextSize(e.currentTarget.value,);
+                                    markDirty();
+                                }}
+                            >
+                                <option value="">Default</option>
+                                <For each={FONT_SIZE_OPTIONS}>
+                                    {(size,) => <option value={size}>{size}</option>}
+                                </For>
+                            </select>
+                            <Tooltip
+                                content="Default text size for all header items. Individual items override this with their own Font Size."
+                                header="Text Size"
                             />
                         </div>
                         <div class="site-header-editor__field">

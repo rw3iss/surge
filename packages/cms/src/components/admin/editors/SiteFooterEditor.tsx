@@ -1296,7 +1296,13 @@ function FooterGeneralSettings(props: {
                 />
             </div>
             <div class="footer-editor__general-field">
-                <label class="footer-editor__general-label">Padding</label>
+                <div class="footer-editor__general-label-row">
+                    <label class="footer-editor__general-label">Padding</label>
+                    <Tooltip
+                        content="Valid CSS values: px, em, rem, vw, %, or shorthand like '8px 16px'. Plain numbers will auto-append px."
+                        header="Padding"
+                    />
+                </div>
                 <input
                     type="text"
                     class="footer-editor__general-input"
@@ -1309,13 +1315,15 @@ function FooterGeneralSettings(props: {
                         e.currentTarget.value = v;
                     }}
                 />
-                <Tooltip
-                    content="Valid CSS values: px, em, rem, vw, %, or shorthand like '8px 16px'. Plain numbers will auto-append px."
-                    header="Padding"
-                />
             </div>
             <div class="footer-editor__general-field">
-                <label class="footer-editor__general-label">Margin</label>
+                <div class="footer-editor__general-label-row">
+                    <label class="footer-editor__general-label">Margin</label>
+                    <Tooltip
+                        content="Valid CSS values: px, em, rem, vw, %, auto, or shorthand like '0 auto'. Plain numbers will auto-append px."
+                        header="Margin"
+                    />
+                </div>
                 <input
                     type="text"
                     class="footer-editor__general-input"
@@ -1327,10 +1335,6 @@ function FooterGeneralSettings(props: {
                         props.onMarginChange(v,);
                         e.currentTarget.value = v;
                     }}
-                />
-                <Tooltip
-                    content="Valid CSS values: px, em, rem, vw, %, auto, or shorthand like '0 auto'. Plain numbers will auto-append px."
-                    header="Margin"
                 />
             </div>
         </div>
