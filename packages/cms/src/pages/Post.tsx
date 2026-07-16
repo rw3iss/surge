@@ -6,6 +6,7 @@ import ContentGate from '../components/auth/ContentGate';
 import PostContentBlock from '../components/blocks/posts/PostContentBlock';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
+import { contentPaddingStyle, } from '../utils/appearanceStyle';
 import { useAuth, } from '../stores/auth';
 import { siteLogo, siteName, } from '../stores/siteSettings';
 import { buildArticle, buildBreadcrumb, stripHtml, truncateText, } from '../utils/schema';
@@ -61,8 +62,15 @@ const PostPage: Component = () => {
         },
     );
 
+    // Left/right gutter + top/bottom post-padding are each opt-in per post
+    // (defaults on). Falls back to on/on while the post loads or 404s.
+    const wrapperStyle = () => {
+        const p = post() as (Post & { applyPostPadding?: boolean; applySiteGutter?: boolean; }) | null | undefined;
+        return contentPaddingStyle('--site-post-padding', p?.applyPostPadding, p?.applySiteGutter,);
+    };
+
     return (
-        <div class="post-page page-wrapper">
+        <div class="post-page page-wrapper" style={wrapperStyle()}>
             <Show when={lockedContent()}>
                 {(locked,) => (
                     <ContentGate

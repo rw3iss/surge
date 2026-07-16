@@ -158,8 +158,9 @@ export async function createPage(data: Record<string, unknown>, userId: string,)
     const result = await query(
         `INSERT INTO pages (slug, title, description, meta_title, meta_description,
                         meta_keywords, og_image, status, is_homepage, show_title,
+                        apply_page_padding, apply_site_gutter,
                         show_in_nav, nav_order, is_private, access_level, created_by, publish_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
      RETURNING *`,
         [
             data.slug,
@@ -175,6 +176,9 @@ export async function createPage(data: Record<string, unknown>, userId: string,)
             // can opt out per page via the editor toggle. The
             // `?? true` (not `|| true`) preserves an explicit `false`.
             data.showTitle ?? true,
+            // Layout padding toggles default on (preserve `false`).
+            data.applyPagePadding ?? true,
+            data.applySiteGutter ?? true,
             data.showInNav || false,
             data.navOrder || 0,
             data.isPrivate || false,

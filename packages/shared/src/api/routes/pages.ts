@@ -180,6 +180,8 @@ export interface PageCreateBody {
     publishAt?: string | null;
     isHomepage?: boolean;
     showTitle?: boolean;
+    applyPagePadding?: boolean;
+    applySiteGutter?: boolean;
     showInNav?: boolean;
     navOrder?: number;
     isPrivate?: boolean;

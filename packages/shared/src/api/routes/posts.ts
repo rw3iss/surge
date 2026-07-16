@@ -136,6 +136,8 @@ export interface PostCreateBody {
     metaTitle?: string;
     metaDescription?: string;
     publishedAt?: string;
+    applyPostPadding?: boolean;
+    applySiteGutter?: boolean;
     contentBlocks?: PostCreateContentBlock[];
 }
 

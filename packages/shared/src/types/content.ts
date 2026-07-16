@@ -26,6 +26,12 @@ export interface Page {
      *  operator wants their first content block (e.g. a hero) to be
      *  the visual headline instead. */
     showTitle: boolean;
+    /** When true (default), the page renderer applies the site's Page Padding
+     *  (top/bottom) to this page. Turn off to remove vertical padding. */
+    applyPagePadding?: boolean;
+    /** When true (default), the page renderer applies the site gutter
+     *  (left/right padding) to this page. */
+    applySiteGutter?: boolean;
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
@@ -110,6 +116,12 @@ export interface Post {
     metaDescription?: string;
     publishedAt?: Date;
     publishAt?: string | null;
+    /** When true (default), the post renderer applies the site's Post Padding
+     *  (primarily top/bottom) to this post. */
+    applyPostPadding?: boolean;
+    /** When true (default), the post renderer applies the site gutter
+     *  (left/right padding) to this post. */
+    applySiteGutter?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -183,6 +195,15 @@ export interface AppearanceSettings {
     borderRadius?: string;
     maxContentWidth?: string;
     blockPadding?: string;
+    /** Default vertical padding (top/bottom) applied to pages that opt in
+     *  via their `applyPagePadding` flag. Empty/undefined → 0. Kept separate
+     *  from the gutter so a page can take left/right gutter without vertical
+     *  padding (or vice-versa). Exposed as `--site-page-padding`. */
+    pagePadding?: string;
+    /** Default padding applied to post pages that opt in via their
+     *  `applyPostPadding` flag. Primarily vertical (the gutter overrides
+     *  left/right). Empty/undefined → 0. Exposed as `--site-post-padding`. */
+    postPadding?: string;
 }
 
 export interface SiteSettings {

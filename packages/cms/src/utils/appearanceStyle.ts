@@ -57,6 +57,8 @@ export function appearanceCssVars(
     if (a.headingWeight) s['--site-heading-weight'] = a.headingWeight;
     if (a.borderRadius) s['--site-radius'] = a.borderRadius;
     if (a.gutterWidth) s['--site-gutter'] = a.gutterWidth;
+    if (a.pagePadding) s['--site-page-padding'] = a.pagePadding;
+    if (a.postPadding) s['--site-post-padding'] = a.postPadding;
     if (a.maxContentWidth) s['--site-max-width'] = a.maxContentWidth;
     if (a.blockPadding) s['--site-block-padding'] = a.blockPadding;
 
@@ -91,4 +93,33 @@ export function appearanceCssVars(
     }
 
     return s;
+}
+
+/**
+ * Compute the wrapper padding for a page/post content container from its
+ * two independent opt-in flags.
+ *
+ * - The padding value (`--site-page-padding` / `--site-post-padding`) drives
+ *   the block axis (top/bottom) via `padding-block`. A single value or a
+ *   two-value shorthand ("80px 20px" → top/bottom) both work.
+ * - The site gutter (`--site-gutter`, falling back to 16px) drives the
+ *   inline axis (left/right) via `padding-inline`.
+ *
+ * `padding-block` and `padding-inline` are used (not the `padding`
+ * shorthand + longhand overrides) because a `var()` inside the `padding`
+ * shorthand cannot coexist with `padding-left/right` overrides — the
+ * browser drops the top/bottom. The two logical properties don't overlap,
+ * so each keeps its `var()` intact.
+ *
+ * Both flags default to `true` (pass `undefined` → treated as on).
+ */
+export function contentPaddingStyle(
+    paddingVar: '--site-page-padding' | '--site-post-padding',
+    applyPadding: boolean | undefined,
+    applyGutter: boolean | undefined,
+): Record<string, string> {
+    return {
+        'padding-block': (applyPadding ?? true) ? `var(${paddingVar}, 0px)` : '0px',
+        'padding-inline': (applyGutter ?? true) ? 'var(--site-gutter, 16px)' : '0px',
+    };
 }

@@ -771,6 +771,8 @@ function AppearancePanel() {
 
     // Layout
     const [gutterWidth, setGutterWidth,] = createSignal('',);
+    const [pagePadding, setPagePadding,] = createSignal('',);
+    const [postPadding, setPostPadding,] = createSignal('',);
     const [borderRadius, setBorderRadius,] = createSignal('',);
     const [maxContentWidth, setMaxContentWidth,] = createSignal('',);
     const [blockPadding, setBlockPadding,] = createSignal('',);
@@ -796,6 +798,8 @@ function AppearancePanel() {
                 if (d.headingWeight) setHeadingWeight(d.headingWeight,);
                 if (d.lineHeight) setLineHeight(d.lineHeight,);
                 if (d.gutterWidth) setGutterWidth(d.gutterWidth,);
+                if (d.pagePadding) setPagePadding(d.pagePadding,);
+                if (d.postPadding) setPostPadding(d.postPadding,);
                 if (d.borderRadius) setBorderRadius(d.borderRadius,);
                 if (d.maxContentWidth) setMaxContentWidth(d.maxContentWidth,);
                 if (d.blockPadding) setBlockPadding(d.blockPadding,);
@@ -826,6 +830,8 @@ function AppearancePanel() {
                 headingWeight: headingWeight(),
                 lineHeight: lineHeight(),
                 gutterWidth: gutterWidth() || undefined,
+                pagePadding: pagePadding() || undefined,
+                postPadding: postPadding() || undefined,
                 borderRadius: borderRadius() || undefined,
                 maxContentWidth: maxContentWidth() || undefined,
                 blockPadding: blockPadding() || undefined,
@@ -1015,6 +1021,36 @@ function AppearancePanel() {
                             value={gutterWidth()}
                             onInput={(e,) => { setGutterWidth(e.currentTarget.value,); markDirty(); }}
                             placeholder="e.g. 40px, 5%"
+                            style={{ width: '200px', }}
+                            class="theme-field__input"
+                        />
+                    </ThemeField>
+
+                    <ThemeField
+                        label="Page Padding"
+                        sublabel="Top/bottom padding for pages that enable it"
+                        tooltip="Vertical padding applied to the top and bottom of any page whose 'Apply Page Padding' toggle is on (default on). Kept separate from the Site Gutter so a page can take left/right gutter without vertical padding, or vice-versa. Default 0. Use any CSS padding value: '80px', '4rem 0', etc. Handy for pushing content below a floating header."
+                    >
+                        <input
+                            type="text"
+                            value={pagePadding()}
+                            onInput={(e,) => { setPagePadding(e.currentTarget.value,); markDirty(); }}
+                            placeholder="e.g. 80px, 4rem 0"
+                            style={{ width: '200px', }}
+                            class="theme-field__input"
+                        />
+                    </ThemeField>
+
+                    <ThemeField
+                        label="Post Padding"
+                        sublabel="Padding for posts that enable it"
+                        tooltip="Padding applied to any post whose 'Apply Post Padding' toggle is on (default on). Primarily top/bottom — the Site Gutter still handles left/right when its toggle is on. Default 0. Use any CSS padding value."
+                    >
+                        <input
+                            type="text"
+                            value={postPadding()}
+                            onInput={(e,) => { setPostPadding(e.currentTarget.value,); markDirty(); }}
+                            placeholder="e.g. 80px, 4rem 0"
                             style={{ width: '200px', }}
                             class="theme-field__input"
                         />

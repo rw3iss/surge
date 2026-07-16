@@ -77,6 +77,10 @@ const AdminPageEditor: Component = () => {
      *  content blocks. Default true so new pages get the title for
      *  free; the operator can opt out per page. */
     const [showTitle, setShowTitle,] = createSignal(true,);
+    /** Whether the page renderer applies the site's Page Padding (top/bottom)
+     *  and/or the site gutter (left/right). Both default on. */
+    const [applyPagePadding, setApplyPagePadding,] = createSignal(true,);
+    const [applySiteGutter, setApplySiteGutter,] = createSignal(true,);
     const [status, setStatus,] = createSignal('draft',);
     const [accessLevel, setAccessLevel,] = createSignal('public',);
     // Whether this page is the site's homepage. The slug stays a normal
@@ -158,6 +162,8 @@ const AdminPageEditor: Component = () => {
             accessLevel: accessLevel(),
             isHomepage: isHomepage(),
             showTitle: showTitle(),
+            applyPagePadding: applyPagePadding(),
+            applySiteGutter: applySiteGutter(),
         }),
         validate: () => {
             if (!title()) return 'Title is required';
@@ -173,6 +179,8 @@ const AdminPageEditor: Component = () => {
                 accessLevel: accessLevel(),
                 isHomepage: isHomepage(),
                 showTitle: showTitle(),
+                applyPagePadding: applyPagePadding(),
+                applySiteGutter: applySiteGutter(),
             };
             let pageId = ctx.id;
             if (ctx.isNew) {
@@ -208,6 +216,8 @@ const AdminPageEditor: Component = () => {
         // before this column existed (mapRow returns `undefined` for
         // missing columns).
         setShowTitle((p as any).showTitle !== false,);
+        setApplyPagePadding((p as any).applyPagePadding !== false,);
+        setApplySiteGutter((p as any).applySiteGutter !== false,);
         setIsHomepage(Boolean((p as any).isHomepage,),);
         const blockList = (p as any).blocks as any[] | undefined;
         if (blockList?.length) {
@@ -309,6 +319,28 @@ const AdminPageEditor: Component = () => {
                             <Tooltip
                                 header="Show title on page"
                                 content="When on, the page renderer prints this page's title as a heading above the content blocks. Turn it off when your first block (e.g. a hero or carousel) already provides the visual headline and you don't want a duplicate."
+                            />
+                        </div>
+                        <div class="page-editor__homepage-toggle">
+                            <Toggle
+                                checked={applyPagePadding()}
+                                onChange={(next,) => { setApplyPagePadding(next,); editor.markDirty(); }}
+                                label="Apply Page Padding"
+                            />
+                            <Tooltip
+                                header="Apply Page Padding"
+                                content="Apply the site's Page Padding (Settings → Appearance → Layout) to the top and bottom of this page. Default 0 until you set a value there — useful for pushing content down below a floating header."
+                            />
+                        </div>
+                        <div class="page-editor__homepage-toggle">
+                            <Toggle
+                                checked={applySiteGutter()}
+                                onChange={(next,) => { setApplySiteGutter(next,); editor.markDirty(); }}
+                                label="Apply Site Gutter"
+                            />
+                            <Tooltip
+                                header="Apply Site Gutter"
+                                content="Apply the site's Gutter (left/right padding) to this page's content. Turn off for a full-bleed page."
                             />
                         </div>
                     </div>

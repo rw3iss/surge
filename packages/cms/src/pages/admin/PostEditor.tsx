@@ -1,5 +1,7 @@
 import { Component, createEffect, createResource, createSignal, For, Show, } from 'solid-js';
 import CollapsiblePanel from '../../components/admin/common/CollapsiblePanel';
+import Toggle from '../../components/admin/common/Toggle';
+import Tooltip from '../../components/admin/common/Tooltip';
 import { BlockData, } from '../../components/admin/blocks/ContentBlock';
 import EntityEditorShell from '../../components/admin/editors/EntityEditorShell';
 import { deriveStyleRefFromStyle, resolveActiveStyleRef, styleRefToPersistedStyle, } from '../../services/blockStyleRef';
@@ -25,6 +27,10 @@ const AdminPostEditor: Component = () => {
     const [featuredImage, setFeaturedImage,] = createSignal('',);
     const [publishAt, setPublishAt,] = createSignal('',);
     const [authorId, setAuthorId,] = createSignal('',);
+    /** Whether the post renderer applies the site's Post Padding (top/bottom)
+     *  and/or the site gutter (left/right). Both default on. */
+    const [applyPostPadding, setApplyPostPadding,] = createSignal(true,);
+    const [applySiteGutter, setApplySiteGutter,] = createSignal(true,);
     const [showImageSelect, setShowImageSelect,] = createSignal(false,);
     const [showImageUpload, setShowImageUpload,] = createSignal(false,);
 
@@ -52,6 +58,8 @@ const AdminPostEditor: Component = () => {
             featuredImage: featuredImage(),
             publishAt: publishAt(),
             authorId: authorId(),
+            applyPostPadding: applyPostPadding(),
+            applySiteGutter: applySiteGutter(),
         }),
         validate: () => {
             if (!title()) return 'Title is required';
@@ -70,6 +78,8 @@ const AdminPostEditor: Component = () => {
                 featuredImage: featuredImage() || null,
                 authorId: authorId() || null,
                 publishAt: publishAt() ? new Date(publishAt(),).toISOString() : null,
+                applyPostPadding: applyPostPadding(),
+                applySiteGutter: applySiteGutter(),
                 contentBlocks: ctx.blocks.map((b, i,) => {
                     // Persist the block's style. The backend reads it from
                     // `data.__styleRef`; resolve the active ref (an explicit
@@ -125,6 +135,8 @@ const AdminPostEditor: Component = () => {
             setFeaturedImage(d.featuredImage || '',);
             setPublishAt(d.publishAt || '',);
             setAuthorId(d.authorId || '',);
+            setApplyPostPadding(d.applyPostPadding !== false,);
+            setApplySiteGutter(d.applySiteGutter !== false,);
             editor.setBlocks(d.blocks || [],);
         }
     },);
@@ -141,6 +153,8 @@ const AdminPostEditor: Component = () => {
         setTags((p.tags || []).join(', ',),);
         setFeaturedImage(p.featuredImage || '',);
         setAuthorId((p as any).authorId || '',);
+        setApplyPostPadding((p as any).applyPostPadding !== false,);
+        setApplySiteGutter((p as any).applySiteGutter !== false,);
         setPublishAt(p.publishAt ? new Date(p.publishAt,).toISOString().slice(0, 16,) : '',);
         const blockList = (p as any).contentBlocks as any[] | undefined;
         if (blockList?.length) {
@@ -309,6 +323,30 @@ const AdminPostEditor: Component = () => {
                             </For>
                         </select>
                         <small class="form-help">Staff user credited as the post's author.</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
+                            <Toggle
+                                checked={applyPostPadding()}
+                                onChange={(next,) => { setApplyPostPadding(next,); editor.markDirty(); }}
+                                label="Apply Post Padding"
+                            />
+                            <Tooltip
+                                header="Apply Post Padding"
+                                content="Apply the site's Post Padding (Settings → Appearance → Layout) to this post — primarily top/bottom. Default 0 until you set a value there."
+                            />
+                        </div>
+                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', 'margin-top': '8px', }}>
+                            <Toggle
+                                checked={applySiteGutter()}
+                                onChange={(next,) => { setApplySiteGutter(next,); editor.markDirty(); }}
+                                label="Apply Site Gutter"
+                            />
+                            <Tooltip
+                                header="Apply Site Gutter"
+                                content="Apply the site's Gutter (left/right padding) to this post's content. Turn off for a full-bleed post."
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

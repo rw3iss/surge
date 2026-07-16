@@ -26,6 +26,8 @@ const pageSchema = z.object({
     publishAt: z.string().datetime().nullable().optional(),
     isHomepage: z.boolean().optional(),
     showTitle: z.boolean().optional(),
+    applyPagePadding: z.boolean().optional(),
+    applySiteGutter: z.boolean().optional(),
     showInNav: z.boolean().optional(),
     navOrder: z.number().int().optional(),
     isPrivate: z.boolean().optional(),

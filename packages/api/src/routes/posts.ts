@@ -43,6 +43,8 @@ const postSchema = z.object({
     metaTitle: z.string().max(255,).optional(),
     metaDescription: z.string().optional(),
     publishedAt: z.string().datetime().optional(),
+    applyPostPadding: z.boolean().optional(),
+    applySiteGutter: z.boolean().optional(),
     contentBlocks: z.array(contentBlockSchema,).optional(),
 },);
 
