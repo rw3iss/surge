@@ -347,8 +347,8 @@ function LogoutButton(props: { onLogout: () => void; class?: string; },) {
         <button
             class={props.class ?? 'header__logout-btn'}
             onClick={props.onLogout}
-            title="Sign Out"
-            aria-label="Sign Out"
+            title="Logout"
+            aria-label="Logout"
         >
             <svg
                 viewBox="0 0 24 24"
@@ -440,7 +440,7 @@ function AccountMenu(props: { onLogout: () => void; },) {
                         role="menuitem"
                         onClick={() => { setOpen(false,); props.onLogout(); }}
                     >
-                        Sign Out
+                        Logout
                     </button>
                 </div>
             </Show>
@@ -682,7 +682,7 @@ export const Header: Component<HeaderProps> = (props,) => {
                                 // with a custom header's own CTA.
                                 <Show when={isFeatureEnabled('users',)}>
                                     <A href="/login" class="header__btn header__btn--primary" onClick={closeMobileMenu}>
-                                        Sign In
+                                        Login
                                     </A>
                                 </Show>
                             }
@@ -835,7 +835,7 @@ export const Header: Component<HeaderProps> = (props,) => {
                                     // with a custom header's own CTA.
                                     <Show when={isFeatureEnabled('users',)}>
                                         <A href="/login" class="header__btn header__btn--primary" onClick={closeMobileMenu}>
-                                            Sign In
+                                            Login
                                         </A>
                                     </Show>
                                 }
@@ -854,8 +854,8 @@ export const Header: Component<HeaderProps> = (props,) => {
                                     <button
                                         class="header__logout-btn"
                                         onClick={() => { auth.logout(); closeMobileMenu(); }}
-                                        title="Sign Out"
-                                        aria-label="Sign Out"
+                                        title="Logout"
+                                        aria-label="Logout"
                                     >
                                         <svg
                                             viewBox="0 0 24 24"

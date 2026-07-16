@@ -48,8 +48,12 @@
     .header__nav {
       position: absolute;
       right: var(--header-pad-right, 0);
-      top: 50%;
-      transform: translateY(-50%);
+      // Span the full header height and center the items with the nav's own
+      // flex (align-items: center) so the floated content keeps the SAME
+      // vertical alignment as the in-flow header content — rather than being
+      // centered in the padding box (which pushed it toward the top).
+      top: 0;
+      bottom: 0;
       margin-left: 0;
       z-index: 2;
     }
@@ -115,7 +119,7 @@
     .header--custom & {
       position: static;
       height: auto;
-      gap: $spacing-sm;
+      gap: $spacing-md;
       margin-left: $spacing-md;
       flex-shrink: 0;
     }

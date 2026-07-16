@@ -756,23 +756,6 @@ const SiteHeaderEditor: Component = () => {
                                 content="Renders the page content starting at the very top and floats the header on top of it (absolutely positioned) instead of sitting in the flow above it. Use it for a transparent header with no background that overlays whatever content blocks render below — e.g. a hero image showing through the header."
                             />
                         </div>
-                        <div class="site-header-editor__field">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={floatRightContent()}
-                                    onChange={(e,) => {
-                                        setFloatRightContent(e.currentTarget.checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Float right-side header content</span>
-                            </label>
-                            <Tooltip
-                                header="Float right-side content"
-                                content="Absolutely positions the right-side content (cart, admin link, logged-in user & logout) so it 'floats' on the right of the header instead of taking up layout space. This prevents it from pushing the main header content left — useful when you center your header content and don't want the right-side items to knock it off-center. Off by default (renders in flow as usual)."
-                            />
-                        </div>
                         <Show when={isFeatureEnabled('shop',)}>
                             <div class="site-header-editor__field">
                                 <label class="checkbox-label">
@@ -792,6 +775,23 @@ const SiteHeaderEditor: Component = () => {
                                 />
                             </div>
                         </Show>
+                        <div class="site-header-editor__field">
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={floatRightContent()}
+                                    onChange={(e,) => {
+                                        setFloatRightContent(e.currentTarget.checked,);
+                                        markDirty();
+                                    }}
+                                />
+                                <span>Float right-side header content</span>
+                            </label>
+                            <Tooltip
+                                header="Float right-side content"
+                                content="Absolutely positions the right-side content (cart, admin link, logged-in user & logout) so it 'floats' on the right of the header instead of taking up layout space. This prevents it from pushing the main header content left — useful when you center your header content and don't want the right-side items to knock it off-center. Off by default (renders in flow as usual)."
+                            />
+                        </div>
                         <div class="site-header-editor__field">
                             <label class="site-header-editor__label">Logged-in user format</label>
                             <div class="site-header-editor__inline-field">
