@@ -1,5 +1,12 @@
 # @sitesurge/cli
 
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @sitesurge/server@0.1.13
+
 ## 0.1.12
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @sitesurge/client
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @sitesurge/types@0.1.5
+
 ## 0.2.4
 
 ### Patch Changes

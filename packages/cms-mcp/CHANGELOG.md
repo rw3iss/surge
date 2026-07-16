@@ -1,5 +1,13 @@
 # @sitesurge/mcp
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @sitesurge/types@0.1.5
+  - @sitesurge/client@0.2.5
+
 ## 0.1.4
 
 ### Patch Changes

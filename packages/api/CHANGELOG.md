@@ -1,5 +1,14 @@
 # @sitesurge/server
 
+## 0.1.13
+
+### Patch Changes
+
+- Block-editor features + carousel align/padding + full-width toggle + Custom HTML Format button; fixes post block UUIDs and post styleRef persistence. Internal refactors: SSR block-type registry (closes silent block drop-out), central cache-invalidation contract, payments webhook split, settings feature-cascade split, admin UI primitives (z-index scale fixes modal-behind-overlay), shared editor shell, plus DRY/token cleanup. `@sitesurge/types` adds the `ALL_BLOCK_TYPES` catalog consumed by the SSR registry.
+- Updated dependencies
+  - @sitesurge/types@0.1.5
+  - @sitesurge/admin@0.1.13
+
 ## 0.1.12
 
 ### Patch Changes
