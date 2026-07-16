@@ -197,7 +197,13 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
     const selectedBlock = () => {
         const id = selectedBlockId();
         if (!id) return null;
-        return props.blocks.find(b => b.id === id,) || null;
+        // Read from the reconciled `storeBlocks` (stable proxy identity), NOT
+        // the raw `props.blocks` which is a brand-new array + objects on every
+        // keystroke. The settings-panel controller keys off this; a stable
+        // reference stops the panel churning (and can't briefly go null
+        // mid-update, which would flip the keyed <Show> and remount the panel,
+        // stealing input focus).
+        return storeBlocks.find(b => b.id === id,) || null;
     };
 
     const selectBlock = (id: string,) => {

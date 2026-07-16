@@ -48,7 +48,8 @@ const DEFAULT_ITEM: Partial<SiteHeaderItem> = {
     type: 'text_link',
     text: 'New Link',
     url: '/',
-    fontSize: '16px',
+    // No default font size — items inherit the header's 'Text Size'
+    // (defaultFontSize) unless the operator explicitly picks a size.
     textColor: '#000000',
     alignment: 'center',
 };
@@ -1185,9 +1186,11 @@ const SiteHeaderEditor: Component = () => {
                                             <label class="site-header-edit-panel__label">Font Size</label>
                                             <select
                                                 class="site-header-edit-panel__select"
-                                                value={item().fontSize || '16px'}
-                                                onChange={(e,) => updateEditField('fontSize', e.currentTarget.value,)}
+                                                value={item().fontSize || ''}
+                                                onChange={(e,) =>
+                                                    updateEditField('fontSize', e.currentTarget.value || undefined,)}
                                             >
+                                                <option value="">Default (header text size)</option>
                                                 <For each={FONT_SIZE_OPTIONS}>
                                                     {(size,) => <option value={size}>{size}</option>}
                                                 </For>
