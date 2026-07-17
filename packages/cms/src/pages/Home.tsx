@@ -1,8 +1,9 @@
 import { buildBlockTree, type Page, } from '@sitesurge/types';
-import { Component, createResource, For, Show, } from 'solid-js';
+import { Component, createEffect, createResource, For, onCleanup, Show, } from 'solid-js';
 import { BlockRenderer, } from '../components/blocks/BlockRenderer';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
+import { setActiveHeaderStyle, } from '../stores/headerStyle';
 import { siteDescription, siteLogo, siteName, } from '../stores/siteSettings';
 import { buildOrganization, } from '../utils/schema';
 import './Home.scss';
@@ -20,6 +21,14 @@ const Home: Component = () => {
             return null;
         }
     },);
+
+    // Publish the homepage's chosen header style (explicit wins; otherwise
+    // `null` → the site default page style). Clear on leaving the route.
+    createEffect(() => {
+        const p = page() as (Page & { headerStyle?: 'default' | 'alt'; }) | null | undefined;
+        setActiveHeaderStyle(p?.headerStyle ?? null,);
+    },);
+    onCleanup(() => setActiveHeaderStyle(null,),);
 
     return (
         <div class="home">

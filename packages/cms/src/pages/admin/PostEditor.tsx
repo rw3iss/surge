@@ -31,20 +31,9 @@ const AdminPostEditor: Component = () => {
      *  and/or the site gutter (left/right). Both default on. */
     const [applyPostPadding, setApplyPostPadding,] = createSignal(true,);
     const [applySiteGutter, setApplySiteGutter,] = createSignal(true,);
-    /** Header color style for this post ('' → inherit the site default). */
+    /** Header color style for this post ('' = '-' → inherit the site default). */
     const [headerStyle, setHeaderStyle,] = createSignal('',);
     const [showImageSelect, setShowImageSelect,] = createSignal(false,);
-
-    // Site default post header style — used as the displayed fallback in the
-    // Header Style dropdown when this post hasn't picked one explicitly.
-    const [siteDefaultPostHeaderStyle,] = createResource(async () => {
-        try {
-            const h = await cms.settings.getSiteHeader() as { defaultPostHeaderStyle?: 'default' | 'alt'; } | null;
-            return h?.defaultPostHeaderStyle === 'alt' ? 'alt' : 'default';
-        } catch {
-            return 'default';
-        }
-    },);
     const [showImageUpload, setShowImageUpload,] = createSignal(false,);
 
     // Staff users (admin / sysadmin / editor) for the Author dropdown.
@@ -321,15 +310,16 @@ const AdminPostEditor: Component = () => {
                         <label>Header Style</label>
                         <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
                             <select
-                                value={headerStyle() || (siteDefaultPostHeaderStyle() ?? 'default')}
+                                value={headerStyle()}
                                 onChange={(e,) => { setHeaderStyle(e.currentTarget.value,); editor.markDirty(); }}
                             >
+                                <option value="">- (use site default)</option>
                                 <option value="default">Default</option>
                                 <option value="alt">Alt</option>
                             </select>
                             <Tooltip
                                 header="Header Style"
-                                content="Which Site Header colors this post renders. 'Default' uses the regular Site Header background and text color; 'Alt' uses the alternative (alt) styles. Leave as-is to follow the site's Default Post Header Style."
+                                content="Which Site Header colors this post renders. '-' follows the site's 'Default Post Header Style' (Settings → Site Header). 'Default' forces the regular header colors; 'Alt' forces the alternate colors."
                             />
                         </div>
                     </div>
