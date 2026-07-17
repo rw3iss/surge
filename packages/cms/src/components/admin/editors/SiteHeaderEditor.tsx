@@ -126,6 +126,7 @@ const SiteHeaderEditor: Component = () => {
     const [bgColorAlt, setBgColorAlt,] = createSignal('',);
     const [textColorAlt, setTextColorAlt,] = createSignal('',);
     const [defaultPostHeaderStyle, setDefaultPostHeaderStyle,] = createSignal<'default' | 'alt'>('default',);
+    const [defaultPageHeaderStyle, setDefaultPageHeaderStyle,] = createSignal<'default' | 'alt'>('default',);
     const [defaultFont, setDefaultFont,] = createSignal('',);
     const [textSize, setTextSize,] = createSignal('',);
     const [headerPadding, setHeaderPadding,] = createSignal('0px',);
@@ -179,6 +180,7 @@ const SiteHeaderEditor: Component = () => {
                 if (data.backgroundColorAlt) setBgColorAlt(data.backgroundColorAlt,);
                 if (data.textColorAlt) setTextColorAlt(data.textColorAlt,);
                 if (data.defaultPostHeaderStyle === 'alt') setDefaultPostHeaderStyle('alt',);
+                if (data.defaultPageHeaderStyle === 'alt') setDefaultPageHeaderStyle('alt',);
                 if (data.defaultFont) setDefaultFont(data.defaultFont,);
                 if (data.defaultFontSize) setTextSize(data.defaultFontSize,);
                 if (data.padding) setHeaderPadding(data.padding,);
@@ -285,6 +287,7 @@ const SiteHeaderEditor: Component = () => {
                 backgroundColorAlt: bgColorAlt() || undefined,
                 textColorAlt: textColorAlt() || undefined,
                 defaultPostHeaderStyle: defaultPostHeaderStyle(),
+                defaultPageHeaderStyle: defaultPageHeaderStyle(),
                 defaultFont: defaultFont(),
                 defaultFontSize: textSize() || undefined,
                 padding: headerPadding(),
@@ -926,6 +929,26 @@ const SiteHeaderEditor: Component = () => {
                                 <Tooltip
                                     header="Default Post Header Style"
                                     content="Which header style post pages use by default — 'Default' (regular header colors) or 'Alt' (the alternate colors above). An individual post can override this via its own Header Style setting."
+                                />
+                            </div>
+                        </div>
+                        <div class="site-header-editor__field">
+                            <label class="site-header-editor__label">Default Page Header Style</label>
+                            <div class="site-header-editor__inline-field">
+                                <select
+                                    class="site-header-editor__select"
+                                    value={defaultPageHeaderStyle()}
+                                    onChange={(e,) => {
+                                        setDefaultPageHeaderStyle(e.currentTarget.value === 'alt' ? 'alt' : 'default',);
+                                        markDirty();
+                                    }}
+                                >
+                                    <option value="default">Default</option>
+                                    <option value="alt">Alt</option>
+                                </select>
+                                <Tooltip
+                                    header="Default Page Header Style"
+                                    content="Which header style pages and other routes (contact, shop, cart, checkout, home, …) use by default when they don't set their own. An individual CMS page overrides this via its own Header Style setting."
                                 />
                             </div>
                         </div>

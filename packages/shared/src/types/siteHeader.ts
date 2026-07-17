@@ -40,6 +40,10 @@ export interface SiteHeaderSettings {
     /** Default header style for post pages (`default` | `alt`). A post can
      *  override it via its own `headerStyle`. */
     defaultPostHeaderStyle?: 'default' | 'alt';
+    /** Default header style for pages + all other public routes (contact,
+     *  shop, home, …) that don't set their own. A CMS page overrides it via
+     *  its own `headerStyle`. */
+    defaultPageHeaderStyle?: 'default' | 'alt';
     padding?: string;
     margin?: string;
     itemSpacing?: string;

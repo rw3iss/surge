@@ -65,12 +65,14 @@ const DynamicPage: Component = () => {
     );
 
     // Publish this page's chosen header style to the global signal the
-    // Layout's Header reads. Reset to 'default' when leaving the route.
+    // Layout's Header reads. An explicit page style wins; otherwise `null`
+    // lets the Header fall back to the site default page style. Clear on
+    // leaving the route.
     createEffect(() => {
         const p = page() as (Page & { headerStyle?: 'default' | 'alt'; }) | null | undefined;
-        setActiveHeaderStyle(p?.headerStyle === 'alt' ? 'alt' : 'default',);
+        setActiveHeaderStyle(p?.headerStyle ?? null,);
     },);
-    onCleanup(() => setActiveHeaderStyle('default',),);
+    onCleanup(() => setActiveHeaderStyle(null,),);
 
     // Left/right gutter + top/bottom page-padding are each opt-in per page
     // (defaults on). Falls back to on/on while the page loads or 404s.

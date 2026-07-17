@@ -1,20 +1,38 @@
 /**
  * Active header color style for the current route.
  *
- * The Site Header carries a regular and an "alt" (dark) color pair. A page
- * or post decides which pair the header renders in. Because the Header is
- * rendered by `Layout` (a sibling of the routed page content), the page/post
- * component publishes its resolved choice here and the Header reads it — a
- * global signal keeps them in sync regardless of tree position.
+ * The Site Header carries a regular and an "alt" (dark) color pair. Each
+ * route decides which pair the header renders in. Because the Header is
+ * rendered by `Layout` (a sibling of the routed page content), a route
+ * publishes its choice here and the Header reads it.
  *
- * Defaults to 'default'. Each page/post sets it on load and resets it to
- * 'default' on cleanup (route change), so routes that don't touch it (home,
- * donate, …) always render the regular header colors.
+ * Two layers:
+ *   - `routeHeaderStyle` — the current route's explicit override, or `null`
+ *     when the route doesn't set one (home, contact, shop, cart, …).
+ *   - `siteDefaultPageHeaderStyle` — the site-wide default (Site Header →
+ *     "Default Page Header Style"), applied to any route without an override.
+ *     The `Header` sets it from the loaded header settings.
+ *
+ * `activeHeaderStyle()` resolves them: the route override wins, else the site
+ * default. So a route that never touches the signal still picks up the site
+ * default automatically.
  */
 import { createSignal, } from 'solid-js';
 
 export type HeaderStyleMode = 'default' | 'alt';
 
-const [activeHeaderStyle, setActiveHeaderStyle,] = createSignal<HeaderStyleMode>('default',);
+// Per-route override. `null` = no override → fall back to the site default.
+const [routeHeaderStyle, setRouteHeaderStyle,] = createSignal<HeaderStyleMode | null>(null,);
 
-export { activeHeaderStyle, setActiveHeaderStyle, };
+// Site-wide default for routes without an explicit style.
+const [siteDefaultPageHeaderStyle, setSiteDefaultPageHeaderStyle,] = createSignal<HeaderStyleMode>('default',);
+
+/** Resolved style the Header + items render in: route override, else site default. */
+export const activeHeaderStyle = (): HeaderStyleMode => routeHeaderStyle() ?? siteDefaultPageHeaderStyle();
+
+/** A route sets its explicit style, or clears it with `null` (→ site default). */
+export const setActiveHeaderStyle = (value: HeaderStyleMode | null,): void => {
+    setRouteHeaderStyle(value,);
+};
+
+export { setSiteDefaultPageHeaderStyle, };

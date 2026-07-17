@@ -3,7 +3,7 @@ import { isAdminRole, type NavigationItem, } from '@sitesurge/types';
 import { Component, createEffect, createSignal, For, type JSX, onCleanup, onMount, Show, } from 'solid-js';
 import { colorCssValue, } from '../../services/colorResolver';
 import { fontStack, } from '../../utils/appearanceStyle';
-import { activeHeaderStyle, } from '../../stores/headerStyle';
+import { activeHeaderStyle, setSiteDefaultPageHeaderStyle, } from '../../stores/headerStyle';
 import { useAuth, } from '../../stores/auth';
 import { isFeatureEnabled, } from '../../stores/siteSettings';
 import { cartCount, } from '../../stores/shopCart';
@@ -52,6 +52,8 @@ export interface SiteHeaderSettings {
     textColorAlt?: string;
     /** Default header style for post pages ('default' | 'alt'). */
     defaultPostHeaderStyle?: 'default' | 'alt';
+    /** Default header style for pages + routes without their own ('default' | 'alt'). */
+    defaultPageHeaderStyle?: 'default' | 'alt';
     /** Font `customId` applied to the whole header's text. Empty → site font. */
     defaultFont?: string;
     /** Default text size for the whole header (CSS length). Items override it. */
@@ -568,6 +570,14 @@ export const Header: Component<HeaderProps> = (props,) => {
         if (isFloatRightContent()) cls.push('header--float-right',);
         return cls.join(' ',);
     };
+
+    // Publish the site-wide default page header style so routes that don't
+    // set their own (home, contact, shop, cart, checkout, …) pick it up.
+    createEffect(() => {
+        setSiteDefaultPageHeaderStyle(
+            props.headerSettings?.defaultPageHeaderStyle === 'alt' ? 'alt' : 'default',
+        );
+    },);
 
     // Resolve the header's bg/text for the active style — 'alt' uses the
     // alternate colors (each falling back to the regular one when unset).

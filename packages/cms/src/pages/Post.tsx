@@ -74,13 +74,11 @@ const PostPage: Component = () => {
     },);
     createEffect(() => {
         const p = post() as (Post & { headerStyle?: 'default' | 'alt'; }) | null | undefined;
-        const explicit = p?.headerStyle;
-        const fallback = headerCfg()?.defaultPostHeaderStyle === 'alt' ? 'alt' : 'default';
-        setActiveHeaderStyle(
-            explicit === 'alt' ? 'alt' : explicit === 'default' ? 'default' : fallback,
-        );
+        // Post's own style wins; else the site's default post style; else
+        // `null` (→ the site default page style, via the Header).
+        setActiveHeaderStyle(p?.headerStyle ?? headerCfg()?.defaultPostHeaderStyle ?? null,);
     },);
-    onCleanup(() => setActiveHeaderStyle('default',),);
+    onCleanup(() => setActiveHeaderStyle(null,),);
 
     // Left/right gutter + top/bottom post-padding are each opt-in per post
     // (defaults on). Falls back to on/on while the post loads or 404s.
