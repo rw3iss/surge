@@ -117,6 +117,7 @@ const ConfigArea: Component<{
                 setMode('custom',);
                 const host = buildHost({
                     name: props.plugin.name,
+                    version: props.plugin.version,
                     config: props.plugin.config,
                     settings: (siteSettings() ?? {}) as Record<string, unknown>,
                     user: props.host.user,

@@ -25,6 +25,7 @@ const PluginWidgetMount: Component<{
             const mod = await loadPluginModule(props.plugin.clientUrl);
             const host = buildHost({
                 name: props.plugin.name,
+                version: props.plugin.version,
                 config: props.plugin.config,
                 settings: (siteSettings() ?? {}) as Record<string, unknown>,
                 user: props.user,

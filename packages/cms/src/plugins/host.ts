@@ -9,6 +9,9 @@ import type { PublicPlugin } from '@sitesurge/types';
 
 export interface PluginHost {
     name: string;
+    /** The plugin's version (from its manifest). Handy for cache-busting the
+     *  plugin's own assets so an update reliably reaches every browser. */
+    version: string;
     /** Current plugin config (public subset for widgets; full for config pages). */
     config: Record<string, unknown>;
     /** Public site settings snapshot. */
@@ -55,6 +58,7 @@ export function loadPluginModule(clientUrl: string): Promise<PluginClientModule>
 /** Build a PluginHost around a mounted plugin. */
 export function buildHost(opts: {
     name: string;
+    version?: string;
     config: Record<string, unknown>;
     settings: Record<string, unknown>;
     user: { id: string; role: string } | null;
@@ -76,6 +80,7 @@ export function buildHost(opts: {
     };
     return {
         name: opts.name,
+        version: opts.version ?? '',
         config: opts.config,
         settings: opts.settings,
         user: opts.user,

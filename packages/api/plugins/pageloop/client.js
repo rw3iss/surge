@@ -6,13 +6,17 @@
 
 const ASSET_BASE = '/api/v1/plugins/pageloop/assets';
 
-function loadBundle() {
+function loadBundle(version) {
+    // Cache-bust the bundle URL with the plugin version so an update (which
+    // re-fetches the vendor bundle at the SAME asset path) reliably reaches
+    // every browser instead of serving a stale cached copy.
+    const v = version ? `?v=${encodeURIComponent(version)}` : '';
     if (window.PageLoop) return Promise.resolve(window.PageLoop);
     return new Promise((resolve, reject) => {
         if (!document.querySelector('link[data-pageloop]')) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = `${ASSET_BASE}/vanilla.css`;
+            link.href = `${ASSET_BASE}/vanilla.css${v}`;
             link.setAttribute('data-pageloop', '1');
             document.head.appendChild(link);
         }
@@ -24,7 +28,7 @@ function loadBundle() {
             return;
         }
         const s = document.createElement('script');
-        s.src = `${ASSET_BASE}/pageloop.umd.js`;
+        s.src = `${ASSET_BASE}/pageloop.umd.js${v}`;
         s.async = true;
         s.setAttribute('data-pageloop', '1');
         s.onload = () => resolve(window.PageLoop);
@@ -47,7 +51,7 @@ export default {
         if (activeInstance) return;                   // already live — never duplicate
         let instance = null;
         try {
-            const PageLoop = await loadBundle();
+            const PageLoop = await loadBundle(host && host.version);
             if (!PageLoop || typeof PageLoop.init !== 'function') return;
             if (activeInstance) return;                // lost an init race — bail
             instance = PageLoop.init({
