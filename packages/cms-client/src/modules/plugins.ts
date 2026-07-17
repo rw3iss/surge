@@ -75,6 +75,14 @@ export class PluginsModule extends ModuleBase {
         return this.mutate('POST', '/plugins/:name/uninstall', { params: { name, }, body: { confirm: true, }, invalidates: ['plugins',], },);
     }
 
+    /** POST /plugins/:name/action/:action — invoke a plugin-defined backend action. */
+    action<T = unknown>(name: string, action: string, payload?: Record<string, unknown>,): Promise<T> {
+        return this.mutate<T>('POST', '/plugins/:name/action/:action', {
+            params: { name, action, },
+            body: payload ?? {},
+        },);
+    }
+
     /** GET /plugins/marketplace (stubbed). */
     marketplaceSearch(query?: PluginMarketplaceQuery,): Promise<PluginMarketplaceResponse> {
         return this.get<PluginMarketplaceResponse>('/plugins/marketplace', { query: query as Record<string, unknown>, },);

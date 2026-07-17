@@ -1,6 +1,6 @@
 import { Title, } from '@solidjs/meta';
 import { useNavigate, useParams, } from '@solidjs/router';
-import { Component, createResource, createSignal, Show, } from 'solid-js';
+import { Component, createResource, createSignal, For, onMount, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
 import Toggle from '../../components/admin/common/Toggle';
 import { useAutoSave, } from '../../hooks/useAutoSave';
@@ -9,6 +9,9 @@ import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
 import { invalidateCampaignsCache, } from '../../services/adminData';
 import { cms, } from '../../services/cmsClient';
+import { isPluginEnabled, loadEnabledPlugins, } from '../../stores/plugins';
+
+interface GbCampaign { id: number; code: string; title: string; }
 
 const CampaignEditor: Component = () => {
     const params = useParams<{ id: string, }>();
@@ -31,6 +34,36 @@ const CampaignEditor: Component = () => {
     const [startDate, setStartDate,] = createSignal('',);
     const [endDate, setEndDate,] = createSignal('',);
     const [featuredImage, setFeaturedImage,] = createSignal('',);
+
+    // GiveButter (only surfaced when the plugin is enabled)
+    const [gbAvailable, setGbAvailable,] = createSignal(false,);
+    const [donationProvider, setDonationProvider,] = createSignal<'internal' | 'givebutter'>('internal',);
+    const [gbMode, setGbMode,] = createSignal<'link' | 'create'>('link',);
+    const [gbCampaignId, setGbCampaignId,] = createSignal<number | null>(null,);
+    const [gbCampaignCode, setGbCampaignCode,] = createSignal('',);
+    const [gbList, setGbList,] = createSignal<GbCampaign[]>([],);
+    const [gbLoadingList, setGbLoadingList,] = createSignal(false,);
+    const [gbStatus, setGbStatus,] = createSignal('',);
+
+    onMount(async () => {
+        await loadEnabledPlugins();
+        setGbAvailable(isPluginEnabled('givebutter',),);
+    },);
+
+    const loadGbCampaigns = async () => {
+        setGbLoadingList(true,); setGbStatus('Loading GiveButter campaigns…',);
+        try {
+            const r = await cms.plugins.action<{ ok: boolean; campaigns?: GbCampaign[]; error?: string; }>(
+                'givebutter', 'listCampaigns', {},
+            );
+            if (r?.ok && r.campaigns) { setGbList(r.campaigns,); setGbStatus(`${r.campaigns.length} campaign(s) loaded`,); }
+            else { setGbStatus(r?.error || 'Failed to load campaigns',); }
+        } catch (err) {
+            setGbStatus(err instanceof Error ? err.message : 'Failed to load campaigns',);
+        } finally {
+            setGbLoadingList(false,);
+        }
+    };
 
     // Load existing campaign
     const [campaign,] = createResource(
@@ -64,6 +97,11 @@ const CampaignEditor: Component = () => {
                     setEndDate(new Date(data.endDate,).toISOString().slice(0, 16,),);
                 }
                 setFeaturedImage(data.featuredImage || '',);
+                setDonationProvider(data.donationProvider === 'givebutter' ? 'givebutter' : 'internal',);
+                setGbCampaignId(data.givebutterCampaignId ?? null,);
+                setGbCampaignCode(data.givebutterCampaignCode || '',);
+                // If already linked, default the mode to link; otherwise create.
+                setGbMode(data.givebutterCampaignCode ? 'link' : 'link',);
                 return data;
             }
             return null;
@@ -110,6 +148,32 @@ const CampaignEditor: Component = () => {
         beginSave();
 
         try {
+            // GiveButter: when the provider is GiveButter in "create" mode and not
+            // yet linked, create the GiveButter campaign first and capture its
+            // id + widget code so the saved CMS campaign carries the mapping.
+            let gbId = gbCampaignId();
+            let gbCode = gbCampaignCode();
+            if (gbAvailable() && donationProvider() === 'givebutter' && gbMode() === 'create' && !gbId) {
+                const res = await cms.plugins.action<{ ok: boolean; error?: string; campaign?: { id: number; code: string; }; }>(
+                    'givebutter', 'createCampaign', {
+                        title: title(),
+                        description: shortDescription() || description(),
+                        goal: hasGoal() && goalAmount() ? Math.round(parseFloat(goalAmount(),) * 100,) : undefined,
+                        end_at: endDate() ? new Date(endDate(),).toISOString() : undefined,
+                    },
+                );
+                if (!res?.ok || !res.campaign?.code) {
+                    setGbStatus(res?.error || 'GiveButter campaign creation failed',);
+                    showError(res?.error || 'GiveButter campaign creation failed', 'GiveButter error',);
+                    endSave();
+                    return;
+                }
+                gbId = res.campaign.id;
+                gbCode = res.campaign.code;
+                setGbCampaignId(gbId,);
+                setGbCampaignCode(gbCode,);
+            }
+
             const payload = {
                 title: title(),
                 slug: slug(),
@@ -122,6 +186,13 @@ const CampaignEditor: Component = () => {
                 startDate: startDate() ? new Date(startDate(),).toISOString() : null,
                 endDate: endDate() ? new Date(endDate(),).toISOString() : null,
                 featuredImage: featuredImage() || null,
+                ...(gbAvailable()
+                    ? {
+                        donationProvider: donationProvider(),
+                        givebutterCampaignId: donationProvider() === 'givebutter' ? gbId : null,
+                        givebutterCampaignCode: donationProvider() === 'givebutter' ? (gbCode || null) : null,
+                    }
+                    : {}),
             };
 
             if (isNew()) {
@@ -176,6 +247,112 @@ const CampaignEditor: Component = () => {
 
             <Show when={isNew() || campaign()} fallback={<div>Loading...</div>}>
                 <form onSubmit={handleSubmit} class="admin-form">
+                    {/* GiveButter donation-provider panel (only when the plugin is enabled). */}
+                    <Show when={gbAvailable()}>
+                        <div class="form-section gb-panel">
+                            <h3 class="gb-panel__title">Donations</h3>
+                            <Show when={donationProvider() === 'givebutter'}>
+                                <div class="gb-panel__badge">
+                                    GiveButter is managing donations for this campaign.
+                                </div>
+                            </Show>
+                            <div class="form-group">
+                                <label for="donationProvider">Donation provider</label>
+                                <select
+                                    id="donationProvider"
+                                    value={donationProvider()}
+                                    onChange={(e,) => {
+                                        setDonationProvider((e.currentTarget.value as 'internal' | 'givebutter'),);
+                                        markDirty();
+                                    }}
+                                >
+                                    <option value="internal">Internal (Stripe)</option>
+                                    <option value="givebutter">GiveButter</option>
+                                </select>
+                                <small class="form-help">
+                                    Choose which platform collects donations for this campaign.
+                                </small>
+                            </div>
+
+                            <Show when={donationProvider() === 'givebutter'}>
+                                <div class="form-group">
+                                    <label for="gbMode">GiveButter campaign</label>
+                                    <select
+                                        id="gbMode"
+                                        value={gbMode()}
+                                        onChange={(e,) => {
+                                            setGbMode((e.currentTarget.value as 'link' | 'create'),);
+                                            markDirty();
+                                        }}
+                                    >
+                                        <option value="link">Link an existing GiveButter campaign</option>
+                                        <option value="create">Create a new GiveButter campaign on save</option>
+                                    </select>
+                                </div>
+
+                                <Show when={gbMode() === 'link'}>
+                                    <div class="form-group">
+                                        <button
+                                            type="button"
+                                            class="btn btn--secondary btn--small"
+                                            disabled={gbLoadingList()}
+                                            onClick={loadGbCampaigns}
+                                        >
+                                            {gbLoadingList() ? 'Loading…' : 'Load GiveButter campaigns'}
+                                        </button>
+                                        <Show when={gbList().length > 0}>
+                                            <select
+                                                class="gb-panel__list"
+                                                value={gbCampaignId() != null ? String(gbCampaignId(),) : ''}
+                                                onChange={(e,) => {
+                                                    const picked = gbList().find((c,) => String(c.id,) === e.currentTarget.value);
+                                                    if (picked) { setGbCampaignId(picked.id,); setGbCampaignCode(picked.code,); markDirty(); }
+                                                }}
+                                            >
+                                                <option value="">— select a campaign —</option>
+                                                <For each={gbList()}>
+                                                    {(c,) => <option value={String(c.id,)}>{c.code} — {c.title}</option>}
+                                                </For>
+                                            </select>
+                                        </Show>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="gbCode">…or enter a campaign code</label>
+                                        <input
+                                            type="text"
+                                            id="gbCode"
+                                            value={gbCampaignCode()}
+                                            onInput={(e,) => { setGbCampaignCode((e.target as HTMLInputElement).value,); markDirty(); }}
+                                            placeholder="6-character GiveButter code"
+                                            maxLength={16}
+                                        />
+                                        <small class="form-help">
+                                            The 6-character code near the campaign title in your GiveButter dashboard.
+                                        </small>
+                                    </div>
+                                </Show>
+
+                                <Show when={gbMode() === 'create'}>
+                                    <small class="form-help">
+                                        A GiveButter campaign will be created from this campaign's title, goal,
+                                        and description when you save.
+                                    </small>
+                                </Show>
+
+                                <Show when={!gbCampaignCode()}>
+                                    <div class="alert alert--warning gb-panel__warning">
+                                        ⚠ No GiveButter campaign is linked yet — donations can't render on the
+                                        public site until you link or create one.
+                                    </div>
+                                </Show>
+
+                                <Show when={gbStatus()}>
+                                    <small class="form-help gb-panel__status">{gbStatus()}</small>
+                                </Show>
+                            </Show>
+                        </div>
+                    </Show>
+
                     {/* Single two-column layout: content + fundraising goal on
                         the left, publishing controls + schedule on the right */}
                     <div class="form-section form-columns">

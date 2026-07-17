@@ -25,6 +25,9 @@ const campaignSchema = z.object({
     startDate: z.string().datetime().nullish(),
     endDate: z.string().datetime().nullish(),
     isPublished: z.boolean().optional(),
+    donationProvider: z.enum(['internal', 'givebutter',],).optional(),
+    givebutterCampaignId: z.number().int().nullish(),
+    givebutterCampaignCode: z.string().max(16,).nullish(),
 },) satisfies z.ZodType<CampaignCreateBody>;
 
 const listQuery = z.object({

@@ -69,4 +69,12 @@ export interface PluginServerModule {
     update?(ctx: PluginServerContext): Promise<PluginUpdateResult>;
     /** Optional config validation, called before persisting. */
     validateConfig?(config: Record<string, unknown>): { ok: boolean; errors?: Record<string, string> };
+    /** Named backend operations a plugin exposes to the admin via
+     *  POST /plugins/:name/action/:action. Each receives the plugin ctx + the
+     *  request payload and returns JSON. Keep them idempotent + defensive so a
+     *  bad payload or a failing upstream API surfaces cleanly, not as a crash. */
+    actions?: Record<
+        string,
+        (ctx: PluginServerContext, payload: Record<string, unknown>) => Promise<unknown>
+    >;
 }

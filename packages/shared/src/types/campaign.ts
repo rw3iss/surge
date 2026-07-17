@@ -16,10 +16,20 @@ export interface Campaign {
     endDate?: Date;
     donorCount: number;
     isPublished: boolean;
+    /** Which system collects donations for this campaign. 'internal' = the
+     *  built-in Stripe flow (default); 'givebutter' = the GiveButter plugin's
+     *  embedded widget (only meaningful when that plugin is enabled). */
+    donationProvider: DonationProvider;
+    /** GiveButter numeric campaign id (API), when linked/created. */
+    givebutterCampaignId?: number | null;
+    /** GiveButter 6-char campaign code used by the embed widget. */
+    givebutterCampaignCode?: string | null;
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
 }
+
+export type DonationProvider = 'internal' | 'givebutter';
 
 export type DonationVisibility = 'public' | 'anonymous' | 'hidden';
 

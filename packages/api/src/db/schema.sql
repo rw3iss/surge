@@ -313,6 +313,12 @@ CREATE TABLE campaigns (
     end_date TIMESTAMPTZ,
     donor_count INTEGER NOT NULL DEFAULT 0,
     is_published BOOLEAN NOT NULL DEFAULT false,
+    -- Which system collects donations for this campaign: 'internal' (Stripe,
+    -- default) or 'givebutter' (the GiveButter plugin, when enabled). The
+    -- GiveButter numeric id + 6-char widget code are stored when linked/created.
+    donation_provider VARCHAR(16) NOT NULL DEFAULT 'internal',
+    givebutter_campaign_id BIGINT,
+    givebutter_campaign_code VARCHAR(16),
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

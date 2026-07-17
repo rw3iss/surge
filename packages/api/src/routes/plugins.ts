@@ -108,6 +108,16 @@ export const pluginsRoutes = [
         handler: ({ params, body, audit }) => plugins.saveConfig(params.name, body.config, audit()),
     }),
     defineRoute({
+        method: 'post', path: '/:name/action/:action', auth: 'admin',
+        summary: 'Dispatch a plugin-defined backend action.',
+        input: {
+            params: nameParams.extend({ action: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/) }),
+            body: z.record(z.string(), z.unknown()).optional(),
+        },
+        handler: ({ params, body, audit }) =>
+            plugins.dispatchAction(params.name, params.action, (body ?? {}) as Record<string, unknown>, audit()),
+    }),
+    defineRoute({
         method: 'post', path: '/:name/enable', auth: 'admin',
         summary: 'Enable a plugin.',
         input: { params: nameParams },

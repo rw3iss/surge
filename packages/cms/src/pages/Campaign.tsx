@@ -2,15 +2,19 @@ import { A, useParams, } from '@solidjs/router';
 import type { Campaign, } from '@sitesurge/types';
 import { Component, createResource, Show, } from 'solid-js';
 import DonationForm from '../components/forms/donations/DonationForm';
+import GiveButterWidget from '../components/blocks/GiveButterWidget';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
 import { siteName, } from '../stores/siteSettings';
+import { isPluginEnabled, loadEnabledPlugins, } from '../stores/plugins';
 import { buildBreadcrumb, buildDonation, } from '../utils/schema';
 import './Campaign.scss';
 
 const CampaignPage: Component = () => {
     const params = useParams();
     const canonicalUrl = () => `${window.location.origin}/campaigns/${params.slug}`;
+    void loadEnabledPlugins();
+    const useGiveButter = (c: Campaign,) => isPluginEnabled('givebutter',) && c.donationProvider === 'givebutter';
 
     const [campaign,] = createResource(() => params.slug, async (slug,) => {
         try {
@@ -147,10 +151,17 @@ const CampaignPage: Component = () => {
                             {/* Description */}
                             <div class="campaign-page__description rich-text" innerHTML={c().description} />
 
-                            {/* Donation Form */}
+                            {/* Donation Form — GiveButter widget when this campaign
+                                uses GiveButter and the plugin is enabled, else the
+                                built-in Stripe form. */}
                             <div class="campaign-page__donate">
                                 <h2>Make a Donation</h2>
-                                <DonationForm campaignId={c().id} />
+                                <Show
+                                    when={useGiveButter(c(),)}
+                                    fallback={<DonationForm campaignId={c().id} />}
+                                >
+                                    <GiveButterWidget code={c().givebutterCampaignCode} type="giving-form" />
+                                </Show>
                             </div>
                         </div>
                     </>

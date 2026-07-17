@@ -49,9 +49,20 @@ module.exports = {
   async onLoad(ctx)   { /* every boot for enabled plugins */ },
   async update(ctx)   { return { fromVersion, toVersion, migrated, notes }; },
   validateConfig(config) { return { ok: true }; },
+  // Named backend operations (optional) — the admin invokes these without the
+  // plugin registering Express routes. Used e.g. to proxy a secret-keyed API.
+  actions: { async myAction(ctx, payload) { return { ok: true }; } },
 };
 ```
 `ctx` = `{ name, dir, version, installedVersion, config, db, storage, logger, http }`.
+
+**Action RPC.** `POST /api/v1/plugins/:name/action/:action` (admin) dispatches to
+`server.js` `actions[action](ctx, payload)` and returns its JSON. This is the
+sanctioned way for a plugin to expose backend logic (a plugin can't register its
+own routes). Not txn-wrapped (actions usually make external HTTP calls); an action
+that writes plugin tables should manage its own transaction. Client SDK:
+`cms.plugins.action(name, action, payload)`. Reference: the **GiveButter** plugin
+(`docs/GIVEBUTTER.md`).
 - `ctx.db` — `query(sql,params)`, `tableName(suffix)` → `plugin_<name>_<suffix>`, `migrate()`.
 - `ctx.storage` — `dir`, `dataDir`, `read/write/exists`, `download(url, rel, {force})`.
 - **Idempotency:** check `ctx.installedVersion` + actual state before acting; never overwrite existing data. `update()` applies only the forward delta.

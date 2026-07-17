@@ -7,9 +7,11 @@ import { colorCssValue, } from '../../services/colorResolver';
 import { fontStack, } from '../../utils/appearanceStyle';
 import { groupContainerStyle, } from '../../utils/groupStyle';
 import FormRenderer from '../forms/FormRenderer';
+import GiveButterWidget from './GiveButterWidget';
 import ResolvedHeroCarousel from './ResolvedHeroCarousel';
 import PostListRenderer, { type PostListSettings, } from './posts/PostListRenderer';
 import SocialEmbed from './social/SocialEmbed';
+import { isPluginEnabled, loadEnabledPlugins, } from '../../stores/plugins';
 import './BlockRenderer.scss';
 
 /** Render a stored color value through the swatch resolver. Returns
@@ -534,6 +536,11 @@ const CampaignCard: Component<{ campaign: Campaign; }> = (props,) => {
 const CampaignBlock: Component<{ block: Block; }> = (props,) => {
     const campaignId = () => props.block.settings.campaignId as string;
     const isAllCampaigns = () => campaignId() === ALL_CAMPAIGNS_ID;
+    void loadEnabledPlugins();
+    // When the GiveButter plugin is on and this single campaign uses GiveButter,
+    // render its donation widget inline beneath the teaser card.
+    const showGiveButter = (c: Campaign | null | undefined,) =>
+        !!c && isPluginEnabled('givebutter',) && c.donationProvider === 'givebutter' && !!c.givebutterCampaignCode;
 
     const [campaign,] = createResource(
         () => isAllCampaigns() ? null : campaignId(),
@@ -577,6 +584,11 @@ const CampaignBlock: Component<{ block: Block; }> = (props,) => {
         <>
             <Show when={!isAllCampaigns() && campaign()}>
                 <CampaignCard campaign={campaign()!} />
+                <Show when={showGiveButter(campaign(),)}>
+                    <div class="campaign-block__givebutter">
+                        <GiveButterWidget code={campaign()!.givebutterCampaignCode} type="giving-form" />
+                    </div>
+                </Show>
             </Show>
             <Show when={isAllCampaigns()}>
                 <Show when={allCampaigns.loading}>

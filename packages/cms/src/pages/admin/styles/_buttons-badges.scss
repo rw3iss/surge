@@ -205,6 +205,48 @@
     color: $success-fg;
     border: 1px solid $success-border;
   }
+
+  &--warning {
+    background: $warning-bg;
+    color: $warning-fg;
+    border: 1px solid color.adjust($warning-bg, $lightness: -12%);
+  }
+}
+
+
+
+// GiveButter donation-provider panel on the Campaign editor (plugin-gated).
+.gb-panel {
+  &__title {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-base;
+    font-weight: 600;
+  }
+
+  &__badge {
+    display: inline-block;
+    margin-bottom: $spacing-md;
+    padding: 4px 10px;
+    border-radius: $border-radius-full;
+    background: rgba($primary-color, 0.1);
+    color: color-mix(in srgb, var(--site-primary, #{$primary-color}) 70%, black);
+    font-size: $font-size-sm;
+    font-weight: 600;
+  }
+
+  &__list {
+    margin-top: $spacing-sm;
+  }
+
+  &__warning {
+    margin-top: $spacing-sm;
+  }
+
+  &__status {
+    display: block;
+    margin-top: $spacing-xs;
+    font-style: italic;
+  }
 }
 
 

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-15T18:38:56.561Z",
+  "generatedAt": "2026-07-17T22:21:15.122Z",
   "totalModules": 31,
-  "totalRoutes": 253,
+  "totalRoutes": 254,
   "modules": [
     {
       "module": "api-keys",
@@ -1134,6 +1134,13 @@
           "absolutePath": "/api/v1/plugins/:name/config",
           "auth": "admin",
           "summary": "Save (merge) a plugin's config."
+        },
+        {
+          "method": "POST",
+          "path": "/:name/action/:action",
+          "absolutePath": "/api/v1/plugins/:name/action/:action",
+          "auth": "admin",
+          "summary": "Dispatch a plugin-defined backend action."
         },
         {
           "method": "POST",

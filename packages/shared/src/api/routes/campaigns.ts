@@ -3,7 +3,7 @@
  * `packages/api/src/routes/campaigns.ts`.
  */
 
-import type { Campaign, CampaignStatus, Donation, DonationSummary, } from '../../types/campaign';
+import type { Campaign, CampaignStatus, DonationProvider, Donation, DonationSummary, } from '../../types/campaign';
 import type { BulkActionResult, } from './_shared';
 
 // ─── Entities carried on the wire ─────────────────────────────────
@@ -134,6 +134,9 @@ export interface CampaignCreateBody {
     /** ISO date-time */
     endDate?: string | null;
     isPublished?: boolean;
+    donationProvider?: DonationProvider;
+    givebutterCampaignId?: number | null;
+    givebutterCampaignCode?: string | null;
 }
 
 /** POST /campaigns (201) — the created campaign. */

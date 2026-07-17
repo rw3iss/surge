@@ -123,6 +123,47 @@ export async function getOne(name: string): Promise<Plugin> {
     return withUpdateFlag(await mustGetRow(name));
 }
 
+// ── generic action dispatch ─────────────────────────────────────────────────────
+/**
+ * Invoke a plugin-defined backend action (`server.js` `actions[action]`). Reused
+ * by any plugin that needs server-side operations (e.g. proxying a secret-keyed
+ * third-party API) without registering its own Express routes. NOT wrapped in
+ * `withPluginTxn` — actions typically make external HTTP calls and must not hold
+ * the plugin advisory lock across network I/O; an action that mutates plugin
+ * tables should manage its own transaction.
+ */
+export async function dispatchAction(
+    name: string,
+    action: string,
+    payload: Record<string, unknown>,
+    ctx: AuditContext,
+): Promise<unknown> {
+    const row = await mustGetRow(name);
+    if (!row.enabled || !row.installed || row.error) {
+        throw new AppError(409, 'PLUGIN_UNAVAILABLE', `Plugin "${name}" is not enabled`);
+    }
+    const disk = mustFindOnDisk(name);
+    const mod = getServerModule(disk.dir, disk.manifest);
+    const fn = mod?.actions?.[action];
+    if (!fn) throw new AppError(404, 'ACTION_NOT_FOUND', `Plugin "${name}" has no action "${action}"`);
+    const pctx = buildContext({
+        name, dir: disk.dir, manifest: disk.manifest,
+        config: row.config, installedVersion: row.installedVersion,
+    });
+    try {
+        const result = await fn(pctx, payload ?? {});
+        await audit(`plugin.action:${action}`, name, ctx);
+        return result;
+    } catch (err) {
+        pctx.logger.error(`action "${action}" failed`, {
+            error: err instanceof Error ? err.message : err,
+        });
+        throw err instanceof AppError
+            ? err
+            : new AppError(502, 'PLUGIN_ACTION_FAILED', err instanceof Error ? err.message : 'Action failed');
+    }
+}
+
 // ── inherent public projection ──────────────────────────────────────────────────
 export async function listEnabledPublic(): Promise<PublicPlugin[]> {
     const rows = (await repo.listPlugins()).filter((p) => p.enabled && p.installed && !p.error);

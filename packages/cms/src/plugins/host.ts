@@ -69,10 +69,18 @@ export function buildHost(opts: {
 }): PluginHost {
     const base = `/api/v1/plugins/${opts.name}`;
     const call = async (method: string, path: string, body?: unknown): Promise<unknown> => {
+        // State-changing requests (admin action dispatch) need the CSRF header
+        // matching the csrf-token cookie — cookie-auth POSTs are rejected without
+        // it. Read it off the cookie (the SPA session already set it).
+        const headers: Record<string, string> = body ? { 'Content-Type': 'application/json' } : {};
+        if (method !== 'GET' && method !== 'HEAD') {
+            const m = typeof document !== 'undefined' && document.cookie.match(/(?:^|; )csrf-token=([^;]+)/);
+            if (m) headers['x-csrf-token'] = decodeURIComponent(m[1]);
+        }
         const res = await fetch(`${base}${path.startsWith('/') ? path : `/${path}`}`, {
             method,
             credentials: 'include',
-            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+            headers: Object.keys(headers).length ? headers : undefined,
             body: body ? JSON.stringify(body) : undefined,
         });
         const json = await res.json().catch(() => ({}));

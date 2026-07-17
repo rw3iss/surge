@@ -1,0 +1,22 @@
+{
+  "name": "givebutter",
+  "label": "GiveButter Donations",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "server": "server.js",
+  "client": "client.js",
+  "capabilities": ["config-page"],
+  "adminOnlyToggle": true,
+  "csp": {
+    "scriptSrc": ["https://widgets.givebutter.com"],
+    "connectSrc": ["https://api.givebutter.com", "https://widgets.givebutter.com"],
+    "frameSrc": ["https://givebutter.com", "https://widgets.givebutter.com"],
+    "imgSrc": ["https://givebutter.com", "https://*.givebutter.com"]
+  },
+  "configSchema": [
+    { "key": "apiKey", "label": "GiveButter API key", "type": "secret", "required": true },
+    { "key": "accountId", "label": "Widget Account ID", "type": "string", "required": true },
+    { "key": "apiBaseUrl", "label": "API base URL", "type": "string", "default": "https://api.givebutter.com/v1" },
+    { "key": "defaultWidgetType", "label": "Default widget", "type": "select", "options": ["giving-form", "button", "goal-bar"], "default": "giving-form" }
+  ]
+}

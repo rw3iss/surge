@@ -86,6 +86,7 @@ export const ROUTE_COVERAGE: string[] = [
 
     // ── users ──
     'GET /api/v1/users',
+    'GET /api/v1/users/authors',
     'GET /api/v1/users/:id',
     'POST /api/v1/users',
     'PUT /api/v1/users/:id',
@@ -316,6 +317,7 @@ export const ROUTE_COVERAGE: string[] = [
     'POST /api/v1/plugins/:name/disable',
     'POST /api/v1/plugins/:name/update',
     'POST /api/v1/plugins/:name/uninstall',
+    'POST /api/v1/plugins/:name/action/:action',
 
     // ── feed / sitemap (raw, root-mounted) ──
     'GET /feed.xml',
