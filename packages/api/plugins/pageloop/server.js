@@ -5,7 +5,7 @@
  * /api/v1/plugins/pageloop/assets/*), demonstrating a plugin that fetches its own
  * dependencies. All hooks are idempotent + self-detecting.
  */
-const PAGELOOP_VERSION = '0.7.2';
+const PAGELOOP_VERSION = '0.7.3';
 // jsdelivr, not unpkg: unpkg can lag many minutes behind a fresh npm publish
 // (404 on the just-published version), which stalls the install-time bundle
 // download. jsdelivr serves new versions almost immediately and is generally
