@@ -46,6 +46,7 @@ const postSchema = z.object({
     applyPostPadding: z.boolean().optional(),
     applySiteGutter: z.boolean().optional(),
     headerStyle: z.enum(['default', 'alt',],).optional(),
+    headerPosition: z.enum(['static', 'float',],).optional(),
     contentBlocks: z.array(contentBlockSchema,).optional(),
 },);
 

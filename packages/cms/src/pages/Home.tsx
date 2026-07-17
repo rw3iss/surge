@@ -3,7 +3,7 @@ import { Component, createEffect, createResource, For, onCleanup, Show, } from '
 import { BlockRenderer, } from '../components/blocks/BlockRenderer';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
-import { setActiveHeaderStyle, } from '../stores/headerStyle';
+import { setActiveHeaderPosition, setActiveHeaderStyle, } from '../stores/headerStyle';
 import { siteDescription, siteLogo, siteName, } from '../stores/siteSettings';
 import { buildOrganization, } from '../utils/schema';
 import './Home.scss';
@@ -25,10 +25,17 @@ const Home: Component = () => {
     // Publish the homepage's chosen header style (explicit wins; otherwise
     // `null` → the site default page style). Clear on leaving the route.
     createEffect(() => {
-        const p = page() as (Page & { headerStyle?: 'default' | 'alt'; }) | null | undefined;
+        const p = page() as
+            (Page & { headerStyle?: 'default' | 'alt'; headerPosition?: 'static' | 'float'; })
+            | null
+            | undefined;
         setActiveHeaderStyle(p?.headerStyle ?? null,);
+        setActiveHeaderPosition(p?.headerPosition ?? null,);
     },);
-    onCleanup(() => setActiveHeaderStyle(null,),);
+    onCleanup(() => {
+        setActiveHeaderStyle(null,);
+        setActiveHeaderPosition(null,);
+    },);
 
     return (
         <div class="home">

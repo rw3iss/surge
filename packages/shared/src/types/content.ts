@@ -36,6 +36,9 @@ export interface Page {
      *  `default` (regular header bg/text) or `alt` (the alternate colors).
      *  Empty/undefined → `default`. */
     headerStyle?: 'default' | 'alt';
+    /** Header position for this page: `static` (in flow) or `float` (overlays
+     *  content). Empty/undefined → inherit the site's `headerPosition`. */
+    headerPosition?: 'static' | 'float';
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
@@ -130,6 +133,9 @@ export interface Post {
      *  `default` | `alt`. Empty/undefined → inherit the site's
      *  `defaultPostHeaderStyle`. */
     headerStyle?: 'default' | 'alt';
+    /** Header position for this post: `static` | `float`. Empty/undefined →
+     *  inherit the site's `headerPosition`. */
+    headerPosition?: 'static' | 'float';
     createdAt: Date;
     updatedAt: Date;
 }

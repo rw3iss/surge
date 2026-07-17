@@ -3,7 +3,7 @@ import { isAdminRole, type NavigationItem, } from '@sitesurge/types';
 import { Component, createEffect, createSignal, For, type JSX, onCleanup, onMount, Show, } from 'solid-js';
 import { colorCssValue, } from '../../services/colorResolver';
 import { fontStack, } from '../../utils/appearanceStyle';
-import { activeHeaderStyle, setSiteDefaultPageHeaderStyle, } from '../../stores/headerStyle';
+import { activeHeaderPosition, activeHeaderStyle, setSiteDefaultHeaderPosition, setSiteDefaultPageHeaderStyle, } from '../../stores/headerStyle';
 import { useAuth, } from '../../stores/auth';
 import { isFeatureEnabled, } from '../../stores/siteSettings';
 import { cartCount, } from '../../stores/shopCart';
@@ -72,9 +72,12 @@ export interface SiteHeaderSettings {
     /** When true, horizontal padding follows the site gutter width
      *  instead of the header's own `padding`. */
     applyGutter?: boolean;
-    /** Float the header absolutely on top of the page content (a transparent
-     *  overlay) instead of sitting in flow above it. */
+    /** Legacy: float the header absolutely on top of the page content.
+     *  Superseded by `headerPosition`; kept for backward compatibility. */
     floatHeader?: boolean;
+    /** Site default header position ('static' | 'float'). Pages/posts override
+     *  it. Falls back to `floatHeader` when unset. */
+    headerPosition?: 'static' | 'float';
     /** Absolutely position the right-side content (cart / admin / user /
      *  logout) so it doesn't push the main header content left. */
     floatRightContent?: boolean;
@@ -539,7 +542,19 @@ export const Header: Component<HeaderProps> = (props,) => {
         onCleanup(() => window.removeEventListener('scroll', onScroll,),);
     },);
 
-    const isFloatHeader = () => props.headerSettings?.floatHeader === true;
+    // Publish the site default header position (from `headerPosition`, or the
+    // legacy `floatHeader` boolean) so routes without their own pick it up.
+    createEffect(() => {
+        const hp = props.headerSettings?.headerPosition;
+        const resolved = hp === 'float' || hp === 'static'
+            ? hp
+            : (props.headerSettings?.floatHeader === true ? 'float' : 'static');
+        setSiteDefaultHeaderPosition(resolved,);
+    },);
+
+    // Float vs static comes from the resolved active position (route override
+    // ?? site default), so a page/post can override the site setting.
+    const isFloatHeader = () => activeHeaderPosition() === 'float';
     const isFloatRightContent = () => props.headerSettings?.floatRightContent === true;
 
     // Cart shows only when: the shop feature is on, the operator has the

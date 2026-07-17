@@ -32,6 +32,25 @@
 
 
 
+// Two-column row (Colors | Color Swatches) at the top of the Appearance
+// panel. Each child .theme-section keeps its own panel chrome; the grid
+// just lays them side by side, collapsing to one column on narrow screens.
+.theme-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: $spacing-lg;
+  align-items: start;
+  margin-bottom: $spacing-lg;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+
+  > .theme-section {
+    margin-bottom: 0;
+  }
+}
+
 .theme-section {
   // Same panel theming as .settings-card / .dashboard-panel: bg + text
   // and border are themable via Settings → Admin. The Appearance tab

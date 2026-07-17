@@ -44,6 +44,10 @@ export interface SiteHeaderSettings {
      *  shop, home, …) that don't set their own. A CMS page overrides it via
      *  its own `headerStyle`. */
     defaultPageHeaderStyle?: 'default' | 'alt';
+    /** Site default header position: `static` (in flow, content below) or
+     *  `float` (overlays content). Pages/posts override via `headerPosition`.
+     *  Replaces the legacy `floatHeader` boolean. */
+    headerPosition?: 'static' | 'float';
     padding?: string;
     margin?: string;
     itemSpacing?: string;

@@ -20,6 +20,7 @@
 import { createSignal, } from 'solid-js';
 
 export type HeaderStyleMode = 'default' | 'alt';
+export type HeaderPosition = 'static' | 'float';
 
 // Per-route override. `null` = no override → fall back to the site default.
 const [routeHeaderStyle, setRouteHeaderStyle,] = createSignal<HeaderStyleMode | null>(null,);
@@ -35,4 +36,17 @@ export const setActiveHeaderStyle = (value: HeaderStyleMode | null,): void => {
     setRouteHeaderStyle(value,);
 };
 
-export { setSiteDefaultPageHeaderStyle, };
+// ─── Header position (static vs float) — same two-layer resolution ───
+
+const [routeHeaderPosition, setRouteHeaderPosition,] = createSignal<HeaderPosition | null>(null,);
+const [siteDefaultHeaderPosition, setSiteDefaultHeaderPosition,] = createSignal<HeaderPosition>('static',);
+
+/** Resolved header position: route override, else the site default. */
+export const activeHeaderPosition = (): HeaderPosition => routeHeaderPosition() ?? siteDefaultHeaderPosition();
+
+/** A route sets its explicit position, or clears it with `null` (→ site default). */
+export const setActiveHeaderPosition = (value: HeaderPosition | null,): void => {
+    setRouteHeaderPosition(value,);
+};
+
+export { setSiteDefaultHeaderPosition, setSiteDefaultPageHeaderStyle, };

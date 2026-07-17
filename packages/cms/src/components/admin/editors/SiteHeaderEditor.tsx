@@ -8,6 +8,7 @@ import FontSelect from '../common/FontSelect';
 import MediaSelectModal from '../media/MediaSelectModal';
 import MediaUploadModal from '../media/MediaUploadModal';
 import Tooltip from '../common/Tooltip';
+import Toggle from '../common/Toggle';
 import './SiteHeaderEditor.scss';
 
 // ─── Types ───
@@ -137,7 +138,9 @@ const SiteHeaderEditor: Component = () => {
      *  existing sites; new toggles save the explicit value. */
     const [sticky, setSticky,] = createSignal(true,);
     const [autoHide, setAutoHide,] = createSignal(false,);
-    const [floatHeader, setFloatHeader,] = createSignal(false,);
+    /** Site default header position ('static' | 'float'). Replaces the legacy
+     *  floatHeader checkbox; kept in sync with floatHeader on save. */
+    const [headerPosition, setHeaderPosition,] = createSignal<'static' | 'float'>('static',);
     const [floatRightContent, setFloatRightContent,] = createSignal(false,);
     /** Default true preserves the historic always-show cart behavior. */
     const [showCart, setShowCart,] = createSignal(true,);
@@ -191,7 +194,13 @@ const SiteHeaderEditor: Component = () => {
                 // behavior) when the field is missing on legacy rows.
                 setSticky(data.sticky !== false,);
                 setAutoHide(data.autoHide === true,);
-                setFloatHeader(data.floatHeader === true,);
+                // Header position: prefer the new field; fall back to the
+                // legacy floatHeader boolean.
+                setHeaderPosition(
+                    data.headerPosition === 'float' || data.headerPosition === 'static'
+                        ? data.headerPosition
+                        : (data.floatHeader === true ? 'float' : 'static'),
+                );
                 setFloatRightContent(data.floatRightContent === true,);
                 setShowCart(data.showCart !== false,);
                 setLoggedInFormat(data.loggedInFormat === 'menu' ? 'menu' : 'inline',);
@@ -296,7 +305,9 @@ const SiteHeaderEditor: Component = () => {
                 applyGutter: applyGutter(),
                 sticky: sticky(),
                 autoHide: autoHide(),
-                floatHeader: floatHeader(),
+                headerPosition: headerPosition(),
+                // Keep the legacy boolean in sync for backward compatibility.
+                floatHeader: headerPosition() === 'float',
                 floatRightContent: floatRightContent(),
                 showCart: showCart(),
                 loggedInFormat: loggedInFormat(),
@@ -623,6 +634,8 @@ const SiteHeaderEditor: Component = () => {
                 {/* ─── Collapsible Settings ─── */}
                 <Show when={showSettings()}>
                     <div class="site-header-editor__settings">
+                        <div class="site-header-editor__section">
+                        <h4 class="site-header-editor__section-title">Styles</h4>
                         <div class="site-header-editor__field">
                             <label class="site-header-editor__label">Background</label>
                             <ColorPicker
@@ -718,6 +731,7 @@ const SiteHeaderEditor: Component = () => {
                         <div class="site-header-editor__field">
                             <label class="site-header-editor__label">Default font</label>
                             <FontSelect
+                                class="site-header-editor__font-select"
                                 value={defaultFont()}
                                 onChange={(v,) => {
                                     setDefaultFont(v,);
@@ -792,101 +806,58 @@ const SiteHeaderEditor: Component = () => {
                                 header="Item Spacing"
                             />
                         </div>
-                        <div class="site-header-editor__field">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={applyGutter()}
-                                    onChange={(e,) => {
-                                        setApplyGutter(e.currentTarget.checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Apply Site Gutter</span>
-                            </label>
                         </div>
+
+                        <div class="site-header-editor__section">
+                        <h4 class="site-header-editor__section-title">Default Options</h4>
                         <div class="site-header-editor__field">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={sticky()}
-                                    onChange={(e,) => {
-                                        setSticky(e.currentTarget.checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Make header sticky</span>
-                            </label>
+                            <Toggle
+                                checked={applyGutter()}
+                                onChange={(next,) => { setApplyGutter(next,); markDirty(); }}
+                                label="Apply Site Gutter"
+                            />
+                        </div>
+                        <div class="site-header-editor__field site-header-editor__field--toggle">
+                            <Toggle
+                                checked={sticky()}
+                                onChange={(next,) => { setSticky(next,); markDirty(); }}
+                                label="Make header sticky"
+                            />
                             <Tooltip
                                 header="Sticky header"
                                 content="Pins the site header to the top of the viewport so it stays visible as visitors scroll. Turn off to let the header scroll away with the page like any other section."
                             />
                         </div>
-                        <div class="site-header-editor__field">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={autoHide()}
-                                    onChange={(e,) => {
-                                        setAutoHide(e.currentTarget.checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Auto-hide on scroll</span>
-                            </label>
+                        <div class="site-header-editor__field site-header-editor__field--toggle">
+                            <Toggle
+                                checked={autoHide()}
+                                onChange={(next,) => { setAutoHide(next,); markDirty(); }}
+                                label="Auto-hide on scroll"
+                            />
                             <Tooltip
                                 header="Auto-hide"
                                 content="Slides the header up out of view when the visitor scrolls down, and slides it back into place when they scroll up. Combine with 'Make header sticky' for the typical content-priority pattern; without sticky the header is already in flow so this is a no-op."
                             />
                         </div>
-                        <div class="site-header-editor__field">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={floatHeader()}
-                                    onChange={(e,) => {
-                                        setFloatHeader(e.currentTarget.checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Float header above content</span>
-                            </label>
-                            <Tooltip
-                                header="Float header above content"
-                                content="Renders the page content starting at the very top and floats the header on top of it (absolutely positioned) instead of sitting in the flow above it. Use it for a transparent header with no background that overlays whatever content blocks render below — e.g. a hero image showing through the header."
-                            />
-                        </div>
                         <Show when={isFeatureEnabled('shop',)}>
-                            <div class="site-header-editor__field">
-                                <label class="checkbox-label">
-                                    <input
-                                        type="checkbox"
-                                        checked={showCart()}
-                                        onChange={(e,) => {
-                                            setShowCart(e.currentTarget.checked,);
-                                            markDirty();
-                                        }}
-                                    />
-                                    <span>Show cart link in header</span>
-                                </label>
+                            <div class="site-header-editor__field site-header-editor__field--toggle">
+                                <Toggle
+                                    checked={showCart()}
+                                    onChange={(next,) => { setShowCart(next,); markDirty(); }}
+                                    label="Show cart link in header"
+                                />
                                 <Tooltip
                                     header="Show cart"
                                     content="Shows the shopping-cart icon in the header. Turn it off to hide it entirely — you can then link to the cart yourself from anywhere in your header or content. When shown, the cart appears right after your header content, before the Admin and logged-in-user controls."
                                 />
                             </div>
                         </Show>
-                        <div class="site-header-editor__field">
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={floatRightContent()}
-                                    onChange={(e,) => {
-                                        setFloatRightContent(e.currentTarget.checked,);
-                                        markDirty();
-                                    }}
-                                />
-                                <span>Float right-side header content</span>
-                            </label>
+                        <div class="site-header-editor__field site-header-editor__field--toggle">
+                            <Toggle
+                                checked={floatRightContent()}
+                                onChange={(next,) => { setFloatRightContent(next,); markDirty(); }}
+                                label="Float right-side header content"
+                            />
                             <Tooltip
                                 header="Float right-side content"
                                 content="Absolutely positions the right-side content (cart, admin link, logged-in user & logout) so it 'floats' on the right of the header instead of taking up layout space. This prevents it from pushing the main header content left — useful when you center your header content and don't want the right-side items to knock it off-center. Off by default (renders in flow as usual)."
@@ -909,6 +880,26 @@ const SiteHeaderEditor: Component = () => {
                                 <Tooltip
                                     header="Logged-in user format"
                                     content="How the account controls (Admin link, user name, logout) show for a logged-in visitor on desktop. 'Inline' lays them out in a row as usual. 'Menu' collapses them into a gear icon that opens a dropdown — it closes when you click away or move off it. On mobile they always show inline in the menu, regardless of this setting."
+                                />
+                            </div>
+                        </div>
+                        <div class="site-header-editor__field">
+                            <label class="site-header-editor__label">Header Position</label>
+                            <div class="site-header-editor__inline-field">
+                                <select
+                                    class="site-header-editor__select"
+                                    value={headerPosition()}
+                                    onChange={(e,) => {
+                                        setHeaderPosition(e.currentTarget.value === 'float' ? 'float' : 'static',);
+                                        markDirty();
+                                    }}
+                                >
+                                    <option value="static">Static</option>
+                                    <option value="float">Float</option>
+                                </select>
+                                <Tooltip
+                                    header="Header Position"
+                                    content="'Static' renders the site header at the top of the page, with the content below it. 'Float' places the header above (overlaying) the content — useful for a transparent header over a hero image. Pages and posts can override this per-page via their own Header Position setting."
                                 />
                             </div>
                         </div>
@@ -951,6 +942,7 @@ const SiteHeaderEditor: Component = () => {
                                     content="Which header style pages and other routes (contact, shop, cart, checkout, home, …) use by default when they don't set their own. An individual CMS page overrides this via its own Header Style setting."
                                 />
                             </div>
+                        </div>
                         </div>
                         <div class="site-header-editor__settings-actions">
                             <button

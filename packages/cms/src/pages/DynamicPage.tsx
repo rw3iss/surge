@@ -7,7 +7,7 @@ import ContentGate from '../components/auth/ContentGate';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
 import { contentPaddingStyle, } from '../utils/appearanceStyle';
-import { setActiveHeaderStyle, } from '../stores/headerStyle';
+import { setActiveHeaderPosition, setActiveHeaderStyle, } from '../stores/headerStyle';
 import { useAuth, } from '../stores/auth';
 import { siteName, } from '../stores/siteSettings';
 import { buildBreadcrumb, buildWebPage, stripHtml, truncateText, } from '../utils/schema';
@@ -69,10 +69,17 @@ const DynamicPage: Component = () => {
     // lets the Header fall back to the site default page style. Clear on
     // leaving the route.
     createEffect(() => {
-        const p = page() as (Page & { headerStyle?: 'default' | 'alt'; }) | null | undefined;
+        const p = page() as
+            (Page & { headerStyle?: 'default' | 'alt'; headerPosition?: 'static' | 'float'; })
+            | null
+            | undefined;
         setActiveHeaderStyle(p?.headerStyle ?? null,);
+        setActiveHeaderPosition(p?.headerPosition ?? null,);
     },);
-    onCleanup(() => setActiveHeaderStyle(null,),);
+    onCleanup(() => {
+        setActiveHeaderStyle(null,);
+        setActiveHeaderPosition(null,);
+    },);
 
     // Left/right gutter + top/bottom page-padding are each opt-in per page
     // (defaults on). Falls back to on/on while the page loads or 404s.

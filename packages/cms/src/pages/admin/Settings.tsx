@@ -870,7 +870,8 @@ function AppearancePanel() {
                 <div class="alert alert--error" style={{ 'margin-bottom': '1rem', }}>{error()}</div>
             </Show>
 
-            {/* ─── Colors ─── */}
+            {/* ─── Colors + Color Swatches (two columns) ─── */}
+            <div class="theme-columns">
             <div class="theme-section">
                 <h4 class="theme-section__title">Colors</h4>
                 <div class="theme-section__fields">
@@ -922,6 +923,16 @@ function AppearancePanel() {
                         <ColorPicker value={borderColor()} onChange={(hex,) => { setBorderColor(hex,); markDirty(); }} clearable onClear={() => { setBorderColor('',); markDirty(); }} />
                     </ThemeField>
                 </div>
+            </div>
+
+            {/* ─── Color Swatches (right column) ─── */}
+            <div class="theme-section">
+                <h4 class="theme-section__title">Color Swatches</h4>
+                <p class="theme-section__description">
+                    Manage the color swatches available throughout the admin color picker.
+                </p>
+                <SiteColorsPanel />
+            </div>
             </div>
 
             {/* ─── Typography ─── */}
@@ -1101,15 +1112,6 @@ function AppearancePanel() {
                         />
                     </ThemeField>
                 </div>
-            </div>
-
-            {/* ─── Site Colors Swatches ─── */}
-            <div class="theme-section">
-                <h4 class="theme-section__title">Color Swatches</h4>
-                <p class="theme-section__description">
-                    Manage the color swatches available throughout the admin color picker.
-                </p>
-                <SiteColorsPanel />
             </div>
 
             {/* ─── Font manager ─── */}

@@ -29,6 +29,7 @@ const pageSchema = z.object({
     applyPagePadding: z.boolean().optional(),
     applySiteGutter: z.boolean().optional(),
     headerStyle: z.enum(['default', 'alt',],).optional(),
+    headerPosition: z.enum(['static', 'float',],).optional(),
     showInNav: z.boolean().optional(),
     navOrder: z.number().int().optional(),
     isPrivate: z.boolean().optional(),

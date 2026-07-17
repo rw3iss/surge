@@ -24,10 +24,35 @@
         border-top: 1px solid $border-color;
     }
 
+    // Grouped section ('Styles' / 'Default Options') within the settings panel.
+    &__section {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+        padding: $spacing-md;
+        border: 1px solid $border-color;
+        border-radius: $border-radius-md;
+        background: var(--admin-panel-bg, #fff);
+    }
+
+    &__section-title {
+        margin: 0;
+        font-size: $font-size-sm;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: $text-light;
+    }
+
     &__field {
         display: flex;
         align-items: center;
         gap: $spacing-sm;
+    }
+
+    // A toggle row: switch + label on the left, optional help icon after.
+    &__field--toggle {
+        justify-content: flex-start;
     }
 
     &__label {
@@ -45,6 +70,12 @@
         border: 1px solid $border-color;
         border-radius: $border-radius-sm;
         font-size: $font-size-sm;
+    }
+
+    // Constrain the Default font dropdown — the font names + auto-ids make
+    // it stretch full width otherwise.
+    &__font-select {
+        max-width: 300px;
     }
 
     &__toolbar {

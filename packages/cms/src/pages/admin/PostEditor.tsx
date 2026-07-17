@@ -33,6 +33,8 @@ const AdminPostEditor: Component = () => {
     const [applySiteGutter, setApplySiteGutter,] = createSignal(true,);
     /** Header color style for this post ('' = '-' → inherit the site default). */
     const [headerStyle, setHeaderStyle,] = createSignal('',);
+    /** Header position for this post ('' = '-' → inherit the site default). */
+    const [headerPosition, setHeaderPosition,] = createSignal('',);
     const [showImageSelect, setShowImageSelect,] = createSignal(false,);
     const [showImageUpload, setShowImageUpload,] = createSignal(false,);
 
@@ -63,6 +65,7 @@ const AdminPostEditor: Component = () => {
             applyPostPadding: applyPostPadding(),
             applySiteGutter: applySiteGutter(),
             headerStyle: headerStyle(),
+            headerPosition: headerPosition(),
         }),
         validate: () => {
             if (!title()) return 'Title is required';
@@ -84,6 +87,7 @@ const AdminPostEditor: Component = () => {
                 applyPostPadding: applyPostPadding(),
                 applySiteGutter: applySiteGutter(),
                 headerStyle: headerStyle() || undefined,
+                headerPosition: headerPosition() || undefined,
                 contentBlocks: ctx.blocks.map((b, i,) => {
                     // Persist the block's style. The backend reads it from
                     // `data.__styleRef`; resolve the active ref (an explicit
@@ -142,6 +146,7 @@ const AdminPostEditor: Component = () => {
             setApplyPostPadding(d.applyPostPadding !== false,);
             setApplySiteGutter(d.applySiteGutter !== false,);
             setHeaderStyle(d.headerStyle || '',);
+            setHeaderPosition(d.headerPosition || '',);
             editor.setBlocks(d.blocks || [],);
         }
     },);
@@ -161,6 +166,7 @@ const AdminPostEditor: Component = () => {
         setApplyPostPadding((p as any).applyPostPadding !== false,);
         setApplySiteGutter((p as any).applySiteGutter !== false,);
         setHeaderStyle((p as any).headerStyle || '',);
+        setHeaderPosition((p as any).headerPosition || '',);
         setPublishAt(p.publishAt ? new Date(p.publishAt,).toISOString().slice(0, 16,) : '',);
         const blockList = (p as any).contentBlocks as any[] | undefined;
         if (blockList?.length) {
@@ -320,6 +326,23 @@ const AdminPostEditor: Component = () => {
                             <Tooltip
                                 header="Header Style"
                                 content="Which Site Header colors this post renders. '-' follows the site's 'Default Post Header Style' (Settings → Site Header). 'Default' forces the regular header colors; 'Alt' forces the alternate colors."
+                            />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Header Position</label>
+                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
+                            <select
+                                value={headerPosition()}
+                                onChange={(e,) => { setHeaderPosition(e.currentTarget.value,); editor.markDirty(); }}
+                            >
+                                <option value="">- (use site default)</option>
+                                <option value="static">Static</option>
+                                <option value="float">Float</option>
+                            </select>
+                            <Tooltip
+                                header="Header Position"
+                                content="How the site header sits on this post. '-' follows the site's 'Header Position' (Settings → Site Header). 'Static' renders the header at the top with the content below it; 'Float' places the header above (overlaying) the content."
                             />
                         </div>
                     </div>

@@ -7,7 +7,7 @@ import PostContentBlock from '../components/blocks/posts/PostContentBlock';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
 import { contentPaddingStyle, } from '../utils/appearanceStyle';
-import { setActiveHeaderStyle, } from '../stores/headerStyle';
+import { setActiveHeaderPosition, setActiveHeaderStyle, } from '../stores/headerStyle';
 import { useAuth, } from '../stores/auth';
 import { siteLogo, siteName, } from '../stores/siteSettings';
 import { buildArticle, buildBreadcrumb, stripHtml, truncateText, } from '../utils/schema';
@@ -73,12 +73,20 @@ const PostPage: Component = () => {
         }
     },);
     createEffect(() => {
-        const p = post() as (Post & { headerStyle?: 'default' | 'alt'; }) | null | undefined;
+        const p = post() as
+            (Post & { headerStyle?: 'default' | 'alt'; headerPosition?: 'static' | 'float'; })
+            | null
+            | undefined;
         // Post's own style wins; else the site's default post style; else
         // `null` (→ the site default page style, via the Header).
         setActiveHeaderStyle(p?.headerStyle ?? headerCfg()?.defaultPostHeaderStyle ?? null,);
+        // Header position: post's own, else null → site default (via Header).
+        setActiveHeaderPosition(p?.headerPosition ?? null,);
     },);
-    onCleanup(() => setActiveHeaderStyle(null,),);
+    onCleanup(() => {
+        setActiveHeaderStyle(null,);
+        setActiveHeaderPosition(null,);
+    },);
 
     // Left/right gutter + top/bottom post-padding are each opt-in per post
     // (defaults on). Falls back to on/on while the post loads or 404s.
