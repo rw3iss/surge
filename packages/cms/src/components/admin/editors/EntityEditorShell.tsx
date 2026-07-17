@@ -62,7 +62,7 @@ export function EntityEditorShell<TEntity,>(
     const heading = () => e.isNew() ? props.labels.newHeading : props.labels.editHeading(props.title(),);
 
     return (
-        <div class={props.rootClass(e.fullBleed(),)}>
+        <div class={`entity-editor ${props.rootClass(e.fullBleed(),)}`}>
             <Title>{heading()} - Admin - RW</Title>
 
             <div class="admin-header admin-header--sticky">

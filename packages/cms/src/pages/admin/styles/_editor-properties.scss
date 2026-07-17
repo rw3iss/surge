@@ -95,6 +95,20 @@
 
 
 
+// Header Style + Header Position share a single row, each taking half the
+// width. The selects fill their half (width:100% from the .form-group rule),
+// so they read as two compact side-by-side dropdowns instead of two full-width
+// stacked fields.
+.page-editor__header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm;
+
+  .form-group { min-width: 0; }
+}
+
+
+
 // "Use as homepage" toggle in the page properties sidebar.
 // Single-line layout: checkbox on the left, label on the right.
 //
@@ -145,7 +159,7 @@
 // ─── Two-column properties layout (main + sidebar) ───
 .editor-properties {
   display: grid;
-  grid-template-columns: 1fr 180px;
+  grid-template-columns: 1fr 240px;
   gap: $spacing-md;
 
   @media (max-width: $breakpoint-md) {

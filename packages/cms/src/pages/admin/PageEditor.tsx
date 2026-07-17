@@ -353,38 +353,40 @@ const AdminPageEditor: Component = () => {
                                 content="Apply the site's Gutter (left/right padding) to this page's content. Turn off for a full-bleed page."
                             />
                         </div>
-                        <div class="form-group">
-                            <label>Header Style</label>
-                            <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
-                                <select
-                                    value={headerStyle()}
-                                    onChange={(e,) => { setHeaderStyle(e.currentTarget.value,); editor.markDirty(); }}
-                                >
-                                    <option value="">- (use site default)</option>
-                                    <option value="default">Default</option>
-                                    <option value="alt">Alt</option>
-                                </select>
-                                <Tooltip
-                                    header="Header Style"
-                                    content="Which Site Header colors this page renders. '-' follows the site's 'Default Page Header Style' (Settings → Site Header). 'Default' forces the regular header colors; 'Alt' forces the alternate colors — handy when the page has its own background behind a floating header."
-                                />
+                        <div class="page-editor__header-row">
+                            <div class="form-group">
+                                <label>Header Style</label>
+                                <div class="u-flex-row" style={{ 'align-items': 'center', gap: '6px', }}>
+                                    <select
+                                        value={headerStyle()}
+                                        onChange={(e,) => { setHeaderStyle(e.currentTarget.value,); editor.markDirty(); }}
+                                    >
+                                        <option value="">- (use site default)</option>
+                                        <option value="default">Default</option>
+                                        <option value="alt">Alt</option>
+                                    </select>
+                                    <Tooltip
+                                        header="Header Style"
+                                        content="Which Site Header colors this page renders. '-' follows the site's 'Default Page Header Style' (Settings → Site Header). 'Default' forces the regular header colors; 'Alt' forces the alternate colors — handy when the page has its own background behind a floating header."
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Header Position</label>
-                            <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
-                                <select
-                                    value={headerPosition()}
-                                    onChange={(e,) => { setHeaderPosition(e.currentTarget.value,); editor.markDirty(); }}
-                                >
-                                    <option value="">- (use site default)</option>
-                                    <option value="static">Static</option>
-                                    <option value="float">Float</option>
-                                </select>
-                                <Tooltip
-                                    header="Header Position"
-                                    content="How the site header sits on this page. '-' follows the site's 'Header Position' (Settings → Site Header). 'Static' renders the header at the top with the content below it; 'Float' places the header above (overlaying) the page content."
-                                />
+                            <div class="form-group">
+                                <label>Header Position</label>
+                                <div class="u-flex-row" style={{ 'align-items': 'center', gap: '6px', }}>
+                                    <select
+                                        value={headerPosition()}
+                                        onChange={(e,) => { setHeaderPosition(e.currentTarget.value,); editor.markDirty(); }}
+                                    >
+                                        <option value="">- (use site default)</option>
+                                        <option value="static">Static</option>
+                                        <option value="float">Float</option>
+                                    </select>
+                                    <Tooltip
+                                        header="Header Position"
+                                        content="How the site header sits on this page. '-' follows the site's 'Header Position' (Settings → Site Header). 'Static' renders the header at the top with the content below it; 'Float' places the header above (overlaying) the page content."
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

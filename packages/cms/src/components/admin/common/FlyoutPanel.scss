@@ -47,6 +47,16 @@
     }
   }
 
+  // Inside an entity editor (pages/posts) the header is sticky at the top of
+  // the viewport, so the inline edit panel must stick BELOW it — otherwise it
+  // slides underneath the header when the block list scrolls. Offset its
+  // sticky top by the header's height (+ a small gap) and shrink its
+  // max-height to match so the panel body still fits.
+  .entity-editor &--inline {
+    top: var(--editor-sticky-top, 64px);
+    max-height: calc(100vh - var(--editor-sticky-top, 64px) - #{$spacing-md});
+  }
+
   // ─── Collapsed: just a small floating tab ───
   &--collapsed {
     width: auto;

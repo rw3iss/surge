@@ -542,7 +542,7 @@
 
   &__hover-drag {
     cursor: grab;
-    padding: 2px 4px;
+    padding: 5px 7px;
     color: $text-light;
     font-size: 14px;
 
@@ -563,7 +563,9 @@
     border: none;
     color: $text-light;
     cursor: pointer;
-    padding: 2px 5px;
+    // Roomier hit target — the toolbar icons (collapse, sort, options, delete)
+    // are small glyphs, so extra padding makes them noticeably easier to click.
+    padding: 5px 8px;
     font-size: 10px;
     line-height: 1;
     border-radius: $border-radius-sm;
@@ -576,7 +578,7 @@
       font-size: 16px;
       font-weight: 700;
       letter-spacing: 2px;
-      padding: 0 4px;
+      padding: 2px 8px;
     }
 
     // Delete trash icon — distinguish it from siblings with a soft red
@@ -585,7 +587,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 2px 4px;
+      padding: 5px 7px;
 
       &:hover:not(:disabled) {
         color: $error-color;

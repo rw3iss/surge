@@ -75,8 +75,11 @@ interface ContentBlockProps {
 const ContentBlock: Component<ContentBlockProps> = (props,) => {
     const [showRemoveConfirm, setShowRemoveConfirm,] = createSignal(false,);
     const [showOptionsMenu, setShowOptionsMenu,] = createSignal(false,);
-    // Collapse/minimize the block's preview body (local UI state).
-    const [isCollapsed, setIsCollapsed,] = createSignal(false,);
+    // Collapse/minimize the block's preview body (local UI state). A block
+    // that loads already disabled starts collapsed by default — disabled
+    // blocks are hidden on the public site, so there's little reason to keep
+    // their (greyed-out) preview expanded in the editor on load.
+    const [isCollapsed, setIsCollapsed,] = createSignal(Boolean(props.block.data?.disabled,),);
 
     /** A disabled block keeps its content but renders greyed-out in the editor
      *  and not at all on the public site (see BlockRenderer). Stored on the
