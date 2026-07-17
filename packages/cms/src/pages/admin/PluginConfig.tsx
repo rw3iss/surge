@@ -74,6 +74,14 @@ const AdminPluginConfig: Component = () => {
                             <Show when={p().updateAvailable}>
                                 <button class="btn btn-warning" disabled={!!busy()} onClick={() => run('update', () => cms.plugins.update(p().name,),)}>Update to v{p().version}</button>
                             </Show>
+                            {/* Re-sync: a plugin that implements update() can be
+                                refreshed on demand (e.g. re-fetch its vendor bundle)
+                                even when no version bump is pending. */}
+                            <Show when={p().installed && p().hasUpdateHook && !p().updateAvailable}>
+                                <button class="btn btn-secondary" disabled={!!busy()} onClick={() => run('update', () => cms.plugins.update(p().name,),)}>
+                                    {busy() === 'update' ? 'Updating…' : 'Re-sync / Update'}
+                                </button>
+                            </Show>
                         </div>
 
                         <Show when={error()}><div class="alert alert-danger">{error()}</div></Show>

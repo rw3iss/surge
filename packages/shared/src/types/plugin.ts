@@ -82,6 +82,9 @@ export interface Plugin {
     manifest: PluginManifest;
     /** Disk version > installedVersion → an update is available. */
     updateAvailable: boolean;
+    /** The plugin's server module implements an `update()` hook, so it can be
+     *  re-synced/updated on demand even without a version bump. */
+    hasUpdateHook: boolean;
     /** Last load/install error, surfaced as the table status. */
     error: string | null;
     createdAt: string;

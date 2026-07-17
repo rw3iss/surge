@@ -92,6 +92,9 @@ const AdminPlugins: Component = () => {
                                             <Show when={p.updateAvailable}>
                                                 <button class="btn btn-sm btn-warning" disabled={busy() === p.name} onClick={() => run(p.name, () => cms.plugins.update(p.name,),)}>Update</button>
                                             </Show>
+                                            <Show when={p.installed && p.hasUpdateHook && !p.updateAvailable}>
+                                                <button class="btn btn-sm btn-secondary" disabled={busy() === p.name} onClick={() => run(p.name, () => cms.plugins.update(p.name,),)} title="Re-run this plugin's update() hook (e.g. re-fetch its bundle)">Re-sync</button>
+                                            </Show>
                                             <A href={`/admin/plugins/${p.name}`} class="btn btn-sm btn-secondary">Configure</A>
                                         </td>
                                     </tr>

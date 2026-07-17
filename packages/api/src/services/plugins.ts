@@ -33,10 +33,23 @@ import {
 } from '../plugins/loader';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+/** Whether the on-disk plugin's server module exports an `update()` hook. */
+function pluginHasUpdateHook(name: string): boolean {
+    try {
+        const d = diskMap().get(name);
+        if (!d) return false;
+        const mod = getServerModule(d.dir, d.manifest);
+        return typeof mod?.update === 'function';
+    } catch {
+        return false;
+    }
+}
+
 function withUpdateFlag(p: Plugin): Plugin {
     return {
         ...p,
         updateAvailable: Boolean(p.installed && p.installedVersion && p.installedVersion !== p.version),
+        hasUpdateHook: pluginHasUpdateHook(p.name),
     };
 }
 
