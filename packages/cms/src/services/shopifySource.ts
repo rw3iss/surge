@@ -14,7 +14,7 @@ import { isPluginEnabled, pluginConfig, } from '../stores/plugins';
 export const isShopifyActive = (): boolean => isPluginEnabled('shopify',);
 
 /** The connected shop domain (public config), for "Open in Shopify" links. */
-export const shopifyDomain = (): string => String(pluginConfig('shopify',).shopDomain || '',);
+const shopifyDomain = (): string => String(pluginConfig('shopify',).shopDomain || '',);
 
 /** Base URL of the connected Shopify admin (empty when not configured). */
 export const shopifyAdminUrl = (): string => {
@@ -69,8 +69,6 @@ export const shopifySource = {
         call<{ ok: boolean; products: ShopProduct[]; pageInfo: { hasNextPage: boolean; endCursor?: string; }; error?: string; }>('listProducts', p,),
     getProduct: (handle: string,) =>
         call<{ ok: boolean; product?: ShopProductDetail; error?: string; }>('getProduct', { handle, },),
-    listCollections: () =>
-        call<{ ok: boolean; collections: ShopCollection[]; error?: string; }>('listCollections', {},),
     getCollection: (handle: string,) =>
         call<{ ok: boolean; collection?: ShopCollection; products: ShopProduct[]; error?: string; }>('getCollection', { handle, },),
     cartCreate: (lines: Array<{ merchandiseId: string; quantity: number; }>,) =>

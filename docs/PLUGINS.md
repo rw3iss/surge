@@ -54,7 +54,7 @@ module.exports = {
   actions: { async myAction(ctx, payload) { return { ok: true }; } },
 };
 ```
-`ctx` = `{ name, dir, version, installedVersion, config, db, storage, logger, http }`.
+`ctx` = `{ name, dir, version, installedVersion, config, db, storage, logger, http, httpJson }`.
 
 **Action RPC.** `POST /api/v1/plugins/:name/action/:action` (admin) dispatches to
 `server.js` `actions[action](ctx, payload)` and returns its JSON. This is the
@@ -68,6 +68,10 @@ that writes plugin tables should manage its own transaction. Client SDK:
 `isPluginEnabled('shopify')`.
 - `ctx.db` — `query(sql,params)`, `tableName(suffix)` → `plugin_<name>_<suffix>`, `migrate()`.
 - `ctx.storage` — `dir`, `dataDir`, `read/write/exists`, `download(url, rel, {force})`.
+- `ctx.httpJson(url, {method, headers, jsonBody})` — JSON HTTP with a normalized
+  `{ ok, status, data } | { ok:false, status, error }` envelope (never throws). The
+  sanctioned way to call a third-party JSON/GraphQL API without re-implementing
+  fetch+error handling (GiveButter/Shopify plugins use it).
 - **Idempotency:** check `ctx.installedVersion` + actual state before acting; never overwrite existing data. `update()` applies only the forward delta.
 
 ### `client.js` — framework-agnostic browser module
@@ -78,7 +82,9 @@ export default {
   mountConfig(el, host) { /* admin config page; return teardown */ },
 };
 ```
-`host` = `{ name, config, settings, user, isAdmin, saveConfig(patch), api, mountPoint, onCleanup(fn) }`.
+`host` = `{ name, config, settings, user, isAdmin, saveConfig(patch), api, mountPoint, onCleanup(fn), ui }`.
+`host.ui.form(cfg)` → `{ group, input, select, checkbox }` — admin-styled, config-bound
+DOM builders so a `mountConfig` page doesn't redefine them (`const { input } = host.ui.form(cfg)`).
 Bundles are served **same-origin** (`/api/v1/plugins/<name>/client.js`) and loaded via
 dynamic `import()`, so they satisfy the admin SPA's `scriptSrc 'self'` CSP.
 

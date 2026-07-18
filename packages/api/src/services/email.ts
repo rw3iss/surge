@@ -39,42 +39,6 @@ export async function sendEmail(options: EmailOptions,): Promise<void> {
     }
 }
 
-export async function sendWelcomeEmail(email: string, name: string,): Promise<void> {
-    await sendEmail({
-        to: email,
-        subject: 'Welcome!',
-        html: `
-      <h1>Welcome, ${name}!</h1>
-      <p>Thank you for joining.</p>
-      <p>As a member, you now have access to exclusive content and features.</p>
-    `,
-    },);
-}
-
-export async function sendDonationThankYou(
-    email: string,
-    name: string,
-    amount: number,
-    campaignTitle?: string,
-): Promise<void> {
-    const amountFormatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    },).format(amount / 100,);
-
-    await sendEmail({
-        to: email,
-        subject: 'Thank You for Your Donation!',
-        html: `
-      <h1>Thank You, ${name}!</h1>
-      <p>We received your generous donation of ${amountFormatted}${
-            campaignTitle ? ` to our "${campaignTitle}" campaign` : ''
-        }.</p>
-      <p>Your support helps us continue our mission.</p>
-    `,
-    },);
-}
-
 export async function verifyEmailConfig(): Promise<boolean> {
     try {
         if (!config.email.host) {

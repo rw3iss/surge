@@ -7,7 +7,7 @@ import type { ShopCategory, ShopCollection, ShopProduct, } from '@sitesurge/type
 import type { PoolClient, } from 'pg';
 import { query, } from '../../db';
 import { mapRow, mapRows, } from '../../utils/mapRow';
-import { deleteById, findByIdOrThrow, updateById, } from '../base.repo';
+import { deleteById, updateById, } from '../base.repo';
 
 /**
  * Extra computed columns for storefront product lists (min variant price +
@@ -35,10 +35,6 @@ export async function findAllCategories(): Promise<ShopCategory[]> {
 export async function findCategoryBySlug(slug: string,): Promise<ShopCategory | null> {
     const result = await query(`SELECT * FROM shop_categories WHERE slug = $1`, [slug,],);
     return result.rows.length > 0 ? mapRow<ShopCategory>(result.rows[0],) : null;
-}
-
-export async function findCategoryById(id: string,): Promise<ShopCategory> {
-    return findByIdOrThrow<ShopCategory>('shop_categories', id, 'Category',);
 }
 
 export async function createCategory(data: Record<string, unknown>,): Promise<ShopCategory> {
@@ -91,10 +87,6 @@ export async function findAllCollections(publishedOnly: boolean,): Promise<ShopC
 export async function findCollectionBySlug(slug: string,): Promise<ShopCollection | null> {
     const result = await query(`SELECT * FROM shop_collections WHERE slug = $1`, [slug,],);
     return result.rows.length > 0 ? mapRow<ShopCollection>(result.rows[0],) : null;
-}
-
-export async function findCollectionById(id: string,): Promise<ShopCollection> {
-    return findByIdOrThrow<ShopCollection>('shop_collections', id, 'Collection',);
 }
 
 export async function createCollection(data: Record<string, unknown>,): Promise<ShopCollection> {

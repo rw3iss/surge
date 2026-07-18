@@ -13,18 +13,8 @@ export default {
         };
         el.innerHTML = '';
 
-        const group = (labelText, control, help) => {
-            const g = document.createElement('div'); g.className = 'form-group';
-            const l = document.createElement('label'); l.textContent = labelText; g.appendChild(l);
-            if (help) { const h = document.createElement('div'); h.className = 'form-help-muted'; h.textContent = help; g.appendChild(h); }
-            g.appendChild(control); return g;
-        };
-        const input = (key, type) => {
-            const i = document.createElement('input'); i.className = 'input'; i.type = type || 'text';
-            i.value = cfg[key] != null ? String(cfg[key]) : '';
-            i.addEventListener('input', () => { cfg[key] = i.value; });
-            return i;
-        };
+        // Admin-styled form builders provided by the host (bound to `cfg`).
+        const { group, input } = host.ui.form(cfg);
 
         el.appendChild(group('Shop domain', input('shopDomain'), 'e.g. my-store.myshopify.com'));
         el.appendChild(group('Storefront API access token', input('storefrontToken', 'password'), 'From the Headless / Storefront API app. Stored server-side only.'));

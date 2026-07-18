@@ -102,8 +102,11 @@ Method: two parallel sub-audits (frontend; backend + SCSS), every "dead"/"unused
   - **A3** ✅ — added `hooks/usePluginGate.ts` (`usePluginEnabled`) + `components/common/FeatureReadyGuard.tsx`; `ShopGuard`/`ShopStoreGuard` now render the shared guard (dropped duplicated load+gate logic); `Campaign.tsx`/`BlockRenderer`/`CampaignEditor` use `usePluginEnabled('givebutter')`.
   - **A4** ✅ — added `hooks/createSafeResource.ts`; migrated **14** call sites (ShopDashboard ×5, ShopCategories, ShopCollections ×2, ShopSettings ×2, Donate, Subscribe ×2, PostEditor) off the hand-rolled try/catch pattern. Remaining ~13 sites can adopt incrementally (source-arg resources + non-shop pages) — helper is in place.
   - **A6** ✅ — `posts.repo.ts` `updatePost` now uses `buildUpdateSet` + an allowlist (kept content-sanitize + `published_at` COALESCE). 118 api tests pass.
-  - **A5** — deferred (plugin `ctx.httpJson` + host-served shared config-ui): optional; revisit before a 4th plugin lands.
-- **Phase C (plan separately / `/dead-code`):** F3 (`AdminListPage` adopt-or-delete), A7 (backend dead/unwired exports), A8 (frontend dead exports).
+  - **A5** ✅ — **A5a:** added `ctx.httpJson` (normalized JSON/GraphQL fetch) to the plugin API (`plugins/types.ts` + `loader.ts`); GiveButter `gb()` + Shopify `gqlPost()` now delegate to it (their hand-rolled fetch/envelope helpers collapsed). **A5b:** added `host.ui.form(cfg)` (framework-agnostic `group/input/select/checkbox` builders) to the client host; all three plugins' `client.js` use it instead of redefining ~53 lines of DOM builders. Chose `host.ui`/`ctx` (the sanctioned plugin API) over a host-served shared URL — keeps plugins self-contained/portable.
+- **Phase C (applied):**
+  - **F3** ✅ — deleted the dead `AdminListPage.tsx` (its `.admin-list-page*` CSS stays; hand-rolled pages use those classes).
+  - **A7** ✅ — corrected 2 false positives (`adjustInventory`/`productsByTag` are live `cms.shop.*` SDK surface — kept). Deleted the confirmed-dead, zero-caller, non-SDK exports: `createAdminUser` (auth — the setup wizard rightly uses its own install-context pool, so it can't consolidate), `findCategoryById`/`findCollectionById` (+ now-unused `findByIdOrThrow` import), `listForList`, `resetTemplate`, `sendWelcomeEmail`/`sendDonationThankYou` (superseded by the mailing-lists pipeline).
+  - **A8** ✅ — dropped the unused `enabledPlugins` re-export, un-exported `shopifyDomain` (internal), removed the unused `shopifySource.listCollections`.
 
 ## 6. Docs touched
 - `docs/improvement-audit-2026-07-17.md` (this file).

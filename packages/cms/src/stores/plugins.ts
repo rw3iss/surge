@@ -31,8 +31,6 @@ export function loadEnabledPlugins(force = false,): Promise<PublicPlugin[]> {
     return fetchPromise;
 }
 
-export { enabledPlugins, };
-
 /** Whether a plugin is installed + enabled (reactive). */
 export function isPluginEnabled(name: string,): boolean {
     return (enabledPlugins() ?? []).some((p,) => p.name === name);

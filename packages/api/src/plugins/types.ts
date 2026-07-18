@@ -37,6 +37,23 @@ export interface PluginStorage {
     download(url: string, rel: string, opts?: { force?: boolean }): Promise<void>;
 }
 
+/** Options for `ctx.httpJson`. `jsonBody` is JSON-stringified with a
+ *  `Content-Type: application/json` header; use `body` for raw payloads. */
+export interface PluginHttpJsonOptions {
+    method?: string;
+    headers?: Record<string, string>;
+    jsonBody?: unknown;
+    /** Raw request body (already-serialized). Prefer `jsonBody` for JSON. */
+    body?: string;
+}
+
+/** Normalized result of `ctx.httpJson` — never throws. `data` is the parsed
+ *  JSON body (null on 204). On failure, `error` is a human-readable message and
+ *  `details` carries the parsed error body when present. */
+export type PluginHttpJsonResult =
+    | { ok: true; status: number; data: unknown }
+    | { ok: false; status: number; error: string; details?: unknown };
+
 export interface PluginServerContext {
     name: string;
     /** Absolute plugin dir. */
@@ -52,6 +69,11 @@ export interface PluginServerContext {
     logger: PluginLogger;
     /** node fetch, for downloading deps/code. */
     http: typeof fetch;
+    /** JSON HTTP with a normalized `{ ok, status, data } | { ok:false, status, error }`
+     *  envelope — never throws. The sanctioned way for a plugin to call a
+     *  third-party JSON/GraphQL API without re-implementing fetch+error handling
+     *  (used by the GiveButter/Shopify plugins). */
+    httpJson(url: string, opts?: PluginHttpJsonOptions): Promise<PluginHttpJsonResult>;
 }
 
 export interface PluginServerModule {

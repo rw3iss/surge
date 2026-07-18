@@ -182,9 +182,3 @@ export async function invalidateSsrCache(pathname: string,): Promise<void> {
 export async function invalidateAllSsrCache(): Promise<void> {
     await cache.invalidateAllSsrCache();
 }
-
-/** Reset the cached HTML template (e.g. after rebuild) */
-export function resetTemplate(): void {
-    htmlTemplate = null;
-    htmlTemplatePath = null;
-}

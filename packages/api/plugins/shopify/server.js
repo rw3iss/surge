@@ -28,28 +28,21 @@ function cfg(ctx) {
     };
 }
 
-/** POST a GraphQL query to a Shopify endpoint; normalized envelope, never throws. */
+/** POST a GraphQL query to a Shopify endpoint; normalized envelope, never throws.
+ *  Delegates HTTP + transport errors to the host's `ctx.httpJson`, then applies
+ *  the GraphQL-specific `errors` (200-with-errors) check + unwraps `data`. */
 async function gqlPost(ctx, url, token, headerName, query, variables) {
-    let res;
-    try {
-        res = await ctx.http(url, {
-            method: 'POST',
-            headers: { [headerName]: token, 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ query, variables: variables || {} }),
-        });
-    } catch (e) {
-        return { ok: false, status: 0, error: `Network error reaching Shopify: ${e && e.message}` };
-    }
-    let json = null;
-    try { json = await res.json(); } catch (_) { /* non-JSON */ }
-    if (!res.ok) {
-        const msg = (json && (json.errors && json.errors[0] && json.errors[0].message)) || res.statusText || `HTTP ${res.status}`;
-        return { ok: false, status: res.status, error: msg, details: json };
-    }
+    const r = await ctx.httpJson(url, {
+        method: 'POST',
+        headers: { [headerName]: token },
+        jsonBody: { query, variables: variables || {} },
+    });
+    if (!r.ok) return r;
+    const json = r.data;
     if (json && json.errors && json.errors.length) {
         return { ok: false, status: 200, error: json.errors.map((e) => e.message).join('; '), details: json.errors };
     }
-    return { ok: true, status: res.status, data: (json && json.data) || {} };
+    return { ok: true, status: r.status, data: (json && json.data) || {} };
 }
 
 function storefront(ctx, query, variables) {

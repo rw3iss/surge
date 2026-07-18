@@ -15,24 +15,9 @@ export default {
         };
         el.innerHTML = '';
 
-        const group = (labelText, control, help) => {
-            const g = document.createElement('div'); g.className = 'form-group';
-            const l = document.createElement('label'); l.textContent = labelText; g.appendChild(l);
-            if (help) { const h = document.createElement('div'); h.className = 'form-help-muted'; h.textContent = help; g.appendChild(h); }
-            g.appendChild(control); return g;
-        };
-        const input = (key, type) => {
-            const i = document.createElement('input'); i.className = 'input'; i.type = type || 'text';
-            i.value = cfg[key] != null ? String(cfg[key]) : '';
-            i.addEventListener('input', () => { cfg[key] = i.value; });
-            return i;
-        };
-        const select = (key, options) => {
-            const sel = document.createElement('select'); sel.className = 'input';
-            for (const o of options) { const opt = document.createElement('option'); opt.value = o; opt.textContent = o; if (cfg[key] === o) opt.selected = true; sel.appendChild(opt); }
-            sel.addEventListener('change', () => { cfg[key] = sel.value; });
-            return sel;
-        };
+        // Admin-styled form builders provided by the host (bound to `cfg`), so
+        // this plugin doesn't redefine group/input/select.
+        const { group, input, select } = host.ui.form(cfg);
 
         el.appendChild(group('GiveButter API key', input('apiKey', 'password'), 'From GiveButter → Settings → API. Stored server-side only; never sent to the browser.'));
         el.appendChild(group('Widget Account ID', input('accountId'), 'From GiveButter → Settings → Integrations → Widgets. Used by the public donation widget script.'));

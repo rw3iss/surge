@@ -18,32 +18,16 @@ function cfg(ctx) {
     };
 }
 
-/** Single choke-point for GiveButter REST calls. Returns a normalized envelope. */
-async function gb(ctx, method, path, body) {
+/** Single choke-point for GiveButter REST calls. Delegates the fetch + normalized
+ *  error envelope to the host's `ctx.httpJson`; only builds the URL + auth header. */
+function gb(ctx, method, path, body) {
     const { apiKey, base } = cfg(ctx);
-    if (!apiKey) return { ok: false, status: 0, error: 'GiveButter API key is not configured' };
-    let res;
-    try {
-        res = await ctx.http(`${base}${path}`, {
-            method,
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
-            body: body ? JSON.stringify(body) : undefined,
-        });
-    } catch (e) {
-        return { ok: false, status: 0, error: `Network error reaching GiveButter: ${e && e.message}` };
-    }
-    if (res.status === 204) return { ok: true, status: 204, data: null };
-    let json = null;
-    try { json = await res.json(); } catch (_) { /* non-JSON body */ }
-    if (!res.ok) {
-        const msg = (json && (json.message || json.error)) || res.statusText || `HTTP ${res.status}`;
-        return { ok: false, status: res.status, error: msg, details: json };
-    }
-    return { ok: true, status: res.status, data: json };
+    if (!apiKey) return Promise.resolve({ ok: false, status: 0, error: 'GiveButter API key is not configured' });
+    return ctx.httpJson(`${base}${path}`, {
+        method,
+        headers: { Authorization: `Bearer ${apiKey}` },
+        jsonBody: body,
+    });
 }
 
 /** Reduce a GiveButter campaign to the fields our UI needs. */

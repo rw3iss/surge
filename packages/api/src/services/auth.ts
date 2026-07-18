@@ -328,25 +328,6 @@ export async function refreshTokens(
     }
 }
 
-export async function createAdminUser(
-    email: string,
-    password: string,
-    displayName: string,
-): Promise<User> {
-    const passwordHash = await bcrypt.hash(password, 12,);
-
-    const result = await query(
-        `INSERT INTO users (email, password_hash, display_name, role, auth_provider)
-     VALUES ($1, $2, $3, 'admin', 'email')
-     RETURNING id, email, display_name, avatar_url, role, auth_provider,
-               patreon_id, patreon_tier, is_active, is_banned,
-               last_login_at, created_at, updated_at`,
-        [email, passwordHash, displayName,],
-    );
-
-    return mapRow<User>(result.rows[0],);
-}
-
 /**
  * Public member self-registration. Creates a `member`-role, email-provider
  * account with a bcrypt (12-round) password hash. Deliberately does NOT

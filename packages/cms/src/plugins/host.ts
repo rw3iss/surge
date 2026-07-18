@@ -29,6 +29,27 @@ export interface PluginHost {
     mountPoint: HTMLElement;
     /** Register teardown; the host calls these on unmount. */
     onCleanup(fn: () => void): void;
+    /** Host-provided config-form DOM builders — a framework-agnostic way for a
+     *  `mountConfig` page to render admin-styled fields WITHOUT each plugin
+     *  redefining the same `group`/`input`/`select`/`checkbox` helpers. Bind
+     *  them to the config object being edited: `const { input } = host.ui.form(cfg)`.
+     *  The `input`/`select`/`checkbox` builders read + two-way-bind `cfg[key]`. */
+    ui: {
+        form(cfg: Record<string, unknown>): PluginFormBuilders;
+    };
+}
+
+/** DOM builders returned by `host.ui.form(cfg)`. Match the admin form styling
+ *  (`.form-group`/`.input`/`.form-help-muted`). */
+export interface PluginFormBuilders {
+    /** A labelled `.form-group` wrapping `control`, with optional muted help text. */
+    group(labelText: string, control: HTMLElement, help?: string): HTMLElement;
+    /** A text/password/url `<input>` two-way-bound to `cfg[key]`. */
+    input(key: string, type?: string): HTMLInputElement;
+    /** A `<select>` of string options two-way-bound to `cfg[key]`. */
+    select(key: string, options: string[]): HTMLSelectElement;
+    /** A checkbox two-way-bound to `cfg[key]` (boolean). */
+    checkbox(key: string): HTMLInputElement;
 }
 
 /** A plugin's browser module (default export). */
@@ -100,6 +121,58 @@ export function buildHost(opts: {
             post: (path, b) => call('POST', path, b),
         },
         onCleanup: (fn) => opts.cleanups.push(fn),
+        ui: { form: makeFormBuilders },
+    };
+}
+
+/** Admin-styled, framework-agnostic config-form DOM builders bound to `cfg`.
+ *  Shared by all plugins' `mountConfig` pages via `host.ui.form(cfg)` so they no
+ *  longer each redefine these. */
+function makeFormBuilders(cfg: Record<string, unknown>): PluginFormBuilders {
+    return {
+        group(labelText, control, help) {
+            const g = document.createElement('div');
+            g.className = 'form-group';
+            const l = document.createElement('label');
+            l.textContent = labelText;
+            g.appendChild(l);
+            if (help) {
+                const h = document.createElement('div');
+                h.className = 'form-help-muted';
+                h.textContent = help;
+                g.appendChild(h);
+            }
+            g.appendChild(control);
+            return g;
+        },
+        input(key, type) {
+            const i = document.createElement('input');
+            i.className = 'input';
+            i.type = type ?? 'text';
+            i.value = cfg[key] != null ? String(cfg[key]) : '';
+            i.addEventListener('input', () => { cfg[key] = i.value; });
+            return i;
+        },
+        select(key, options) {
+            const sel = document.createElement('select');
+            sel.className = 'input';
+            for (const o of options) {
+                const opt = document.createElement('option');
+                opt.value = o;
+                opt.textContent = o;
+                if (cfg[key] === o) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            sel.addEventListener('change', () => { cfg[key] = sel.value; });
+            return sel;
+        },
+        checkbox(key) {
+            const i = document.createElement('input');
+            i.type = 'checkbox';
+            i.checked = cfg[key] === true;
+            i.addEventListener('change', () => { cfg[key] = i.checked; });
+            return i;
+        },
     };
 }
 

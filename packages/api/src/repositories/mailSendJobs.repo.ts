@@ -162,13 +162,6 @@ export async function listRecent(limit = 50, offset = 0,): Promise<JobWithListNa
     return r.rows.map((row,) => ({ ...map(row,), listName: row.list_name ?? null, }),);
 }
 
-export async function listForList(listId: string, limit = 20,): Promise<MailSendJob[]> {
-    const r = await query<DbRow>(
-        `SELECT * FROM mail_send_jobs WHERE list_id = $1 ORDER BY created_at DESC LIMIT $2`,
-        [listId, limit,],
-    );
-    return r.rows.map(map,);
-}
 
 export interface StatusPatch {
     startedAt?: string;

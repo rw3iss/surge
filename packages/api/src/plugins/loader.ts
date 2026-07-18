@@ -213,6 +213,32 @@ export function buildContext(opts: BuildContextOpts): PluginServerContext {
         storage: makeStorage(name, dir),
         logger: pluginLogger,
         http: fetch,
+        httpJson: async (url, o = {}) => {
+            let res: Response;
+            try {
+                res = await fetch(url, {
+                    method: o.method ?? 'GET',
+                    headers: {
+                        Accept: 'application/json',
+                        ...(o.jsonBody !== undefined ? { 'Content-Type': 'application/json' } : {}),
+                        ...o.headers,
+                    },
+                    body: o.jsonBody !== undefined ? JSON.stringify(o.jsonBody) : o.body,
+                });
+            } catch (e) {
+                return { ok: false, status: 0, error: `Network error: ${(e as Error)?.message ?? e}` };
+            }
+            if (res.status === 204) return { ok: true, status: 204, data: null };
+            let json: unknown = null;
+            try { json = await res.json(); } catch { /* non-JSON body */ }
+            if (!res.ok) {
+                const j = json as { message?: string; error?: string; errors?: Array<{ message?: string }> } | null;
+                const error = (j && (j.message || j.error || j.errors?.[0]?.message))
+                    || res.statusText || `HTTP ${res.status}`;
+                return { ok: false, status: res.status, error, details: json };
+            }
+            return { ok: true, status: res.status, data: json };
+        },
     };
 }
 
