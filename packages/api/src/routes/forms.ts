@@ -61,7 +61,9 @@ const listQuery = z.object({
 
 const submissionsQuery = z.object({
     page: z.coerce.number().int().min(1,).default(1,),
-    limit: z.coerce.number().int().min(1,).max(100,).default(50,),
+    // Admin submissions table shows responses in one view (CSV export handles bulk),
+    // so allow a larger page than the public-facing list cap.
+    limit: z.coerce.number().int().min(1,).max(500,).default(50,),
 },);
 
 const idParams = z.object({ id: z.string(), },);
