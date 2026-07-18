@@ -138,9 +138,12 @@ export interface Post {
     headerPosition?: 'static' | 'float';
     /** How the banner/featured image + title/meta header renders on the post
      *  page: `standalone` (default — image below the title), `hero` (full-width
-     *  image with the title/meta overlaid), or `thumbnail` (small image beside
-     *  the title/meta). Only meaningful when `featuredImage` is set. */
-    bannerLayout?: 'hero' | 'standalone' | 'thumbnail';
+     *  image with the title/meta overlaid), `hero-full` (like hero but the
+     *  banner background spans the ENTIRE page width edge-to-edge while the
+     *  title/meta stay in the centered content column), or `thumbnail` (small
+     *  image beside the title/meta). Only meaningful when `featuredImage` is
+     *  set. */
+    bannerLayout?: 'hero' | 'hero-full' | 'standalone' | 'thumbnail';
     createdAt: Date;
     updatedAt: Date;
 }

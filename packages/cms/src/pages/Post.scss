@@ -1,5 +1,9 @@
 .post-page {
   padding: $spacing-xl var(--site-gutter, #{$container-padding});
+  // Contain the full-bleed 'Hero Full' banner so it can span the page width
+  // without introducing a horizontal scrollbar. `clip` (not hidden) doesn't
+  // create a scroll container, so it won't break sticky elements.
+  overflow-x: clip;
 
   &__article {
     // Constrain to the site's Max Content Width (Appearance → Layout);
@@ -52,6 +56,30 @@
       inset: 0;
       background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.65) 100%);
     }
+  }
+
+  // ─── Banner layout: Hero Full ───
+  // Same overlaid title/meta as Hero, but the banner background spans the
+  // ENTIRE page width (edge-to-edge, breaking out of the content column and
+  // the wrapper gutter) while the text stays in the centered content column.
+  &__hero--full {
+    width: 100vw;
+    // Full-bleed: pull the element out to the viewport edges regardless of the
+    // parent's max-width / gutter padding. Centered on the page (the content
+    // column is centered), so this lands flush with the page's left/right.
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    border-radius: 0;
+  }
+
+  // Keep the text within the site's content column + gutter so it lines up
+  // with the post body, while the background above spans full width. Compound
+  // selector out-specifies the base overlay's `padding` shorthand so the
+  // horizontal padding becomes the gutter (vertical padding is kept).
+  &__hero--full &__hero-overlay {
+    max-width: var(--site-max-width, 800px);
+    margin-inline: auto;
+    padding-inline: var(--site-gutter, 16px);
   }
 
   &__hero-overlay {

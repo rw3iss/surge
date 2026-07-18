@@ -29,7 +29,7 @@ const AdminPostEditor: Component = () => {
     /** How the banner image + title/meta header renders: standalone (default),
      *  hero (image full-width with title/meta over it), or thumbnail (small
      *  image beside the title/meta). Only meaningful when a banner is set. */
-    const [bannerLayout, setBannerLayout,] = createSignal<'hero' | 'standalone' | 'thumbnail'>('standalone',);
+    const [bannerLayout, setBannerLayout,] = createSignal<'hero' | 'hero-full' | 'standalone' | 'thumbnail'>('standalone',);
     const [publishAt, setPublishAt,] = createSignal('',);
     const [authorId, setAuthorId,] = createSignal('',);
     /** Whether the post renderer applies the site's Post Padding (top/bottom)
@@ -167,7 +167,7 @@ const AdminPostEditor: Component = () => {
         setAccessLevel(p.accessLevel || 'public',);
         setTags((p.tags || []).join(', ',),);
         setFeaturedImage(p.featuredImage || '',);
-        setBannerLayout(((p as any).bannerLayout as 'hero' | 'standalone' | 'thumbnail') || 'standalone',);
+        setBannerLayout(((p as any).bannerLayout as 'hero' | 'hero-full' | 'standalone' | 'thumbnail') || 'standalone',);
         setAuthorId((p as any).authorId || '',);
         setApplyPostPadding((p as any).applyPostPadding !== false,);
         setApplySiteGutter((p as any).applySiteGutter !== false,);
@@ -263,17 +263,18 @@ const AdminPostEditor: Component = () => {
                                     <select
                                         value={bannerLayout()}
                                         onChange={(e,) => {
-                                            setBannerLayout(e.currentTarget.value as 'hero' | 'standalone' | 'thumbnail',);
+                                            setBannerLayout(e.currentTarget.value as 'hero' | 'hero-full' | 'standalone' | 'thumbnail',);
                                             editor.markDirty();
                                         }}
                                     >
                                         <option value="hero">Hero</option>
+                                        <option value="hero-full">Hero Full</option>
                                         <option value="standalone">Standalone</option>
                                         <option value="thumbnail">Thumbnail</option>
                                     </select>
                                     <Tooltip
                                         header="Image Layout"
-                                        content="How the banner image + title/meta render at the top of the post. Hero: full-width image with the title & meta over it (white text). Standalone: title & meta on top, image full-width below. Thumbnail: a small image beside the title & meta in a single row. The post content renders below either way."
+                                        content="How the banner image + title/meta render at the top of the post. Hero: full-width image with the title & meta over it (white text). Hero Full: same as Hero, but the banner background spans the ENTIRE page width edge-to-edge (no left/right gap) while the title & meta stay within the centered content column. Standalone: title & meta on top, image full-width below. Thumbnail: a small image beside the title & meta in a single row. The post content renders below either way."
                                     />
                                 </div>
                             </Show>
@@ -341,38 +342,40 @@ const AdminPostEditor: Component = () => {
                             />
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Header Style</label>
-                        <div class="u-flex-row">
-                            <select
-                                value={headerStyle()}
-                                onChange={(e,) => { setHeaderStyle(e.currentTarget.value,); editor.markDirty(); }}
-                            >
-                                <option value="">- (use site default)</option>
-                                <option value="default">Default</option>
-                                <option value="alt">Alt</option>
-                            </select>
-                            <Tooltip
-                                header="Header Style"
-                                content="Which Site Header colors this post renders. '-' follows the site's 'Default Post Header Style' (Settings → Site Header). 'Default' forces the regular header colors; 'Alt' forces the alternate colors."
-                            />
+                    <div class="page-editor__header-row">
+                        <div class="form-group">
+                            <label>Header Style</label>
+                            <div class="u-flex-row" style={{ 'align-items': 'center', gap: '6px', }}>
+                                <select
+                                    value={headerStyle()}
+                                    onChange={(e,) => { setHeaderStyle(e.currentTarget.value,); editor.markDirty(); }}
+                                >
+                                    <option value="">- (use site default)</option>
+                                    <option value="default">Default</option>
+                                    <option value="alt">Alt</option>
+                                </select>
+                                <Tooltip
+                                    header="Header Style"
+                                    content="Which Site Header colors this post renders. '-' follows the site's 'Default Post Header Style' (Settings → Site Header). 'Default' forces the regular header colors; 'Alt' forces the alternate colors."
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Header Position</label>
-                        <div class="u-flex-row">
-                            <select
-                                value={headerPosition()}
-                                onChange={(e,) => { setHeaderPosition(e.currentTarget.value,); editor.markDirty(); }}
-                            >
-                                <option value="">- (use site default)</option>
-                                <option value="static">Static</option>
-                                <option value="float">Float</option>
-                            </select>
-                            <Tooltip
-                                header="Header Position"
-                                content="How the site header sits on this post. '-' follows the site's 'Header Position' (Settings → Site Header). 'Static' renders the header at the top with the content below it; 'Float' places the header above (overlaying) the content."
-                            />
+                        <div class="form-group">
+                            <label>Header Position</label>
+                            <div class="u-flex-row" style={{ 'align-items': 'center', gap: '6px', }}>
+                                <select
+                                    value={headerPosition()}
+                                    onChange={(e,) => { setHeaderPosition(e.currentTarget.value,); editor.markDirty(); }}
+                                >
+                                    <option value="">- (use site default)</option>
+                                    <option value="static">Static</option>
+                                    <option value="float">Float</option>
+                                </select>
+                                <Tooltip
+                                    header="Header Position"
+                                    content="How the site header sits on this post. '-' follows the site's 'Header Position' (Settings → Site Header). 'Static' renders the header at the top with the content below it; 'Float' places the header above (overlaying) the content."
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

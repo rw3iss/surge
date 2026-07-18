@@ -162,7 +162,8 @@ const PostPage: Component = () => {
                         // Banner layout: how the featured image + title/meta
                         // header renders. Only meaningful with a banner image.
                         const bannerLayout = () =>
-                            ((postData() as any).bannerLayout as 'hero' | 'standalone' | 'thumbnail') || 'standalone';
+                            ((postData() as any).bannerLayout as 'hero' | 'hero-full' | 'standalone' | 'thumbnail')
+                            || 'standalone';
                         const hasBanner = () => !!postData().featuredImage;
                         // Expose the current post to `{{post.*}}` in its blocks.
                         const postCtx = () => ({
@@ -209,6 +210,19 @@ const PostPage: Component = () => {
                                             style={{ 'background-image': `url("${postData().featuredImage}")`, }}
                                         >
                                             <div class="post-page__hero-overlay">
+                                                {heading()}
+                                            </div>
+                                        </header>
+                                    </Match>
+                                    {/* Hero Full: banner background spans the entire page width
+                                        (breaks out of the content column) while the title/meta
+                                        stay in the centered, padded content column. */}
+                                    <Match when={hasBanner() && bannerLayout() === 'hero-full'}>
+                                        <header
+                                            class="post-page__hero post-page__hero--full"
+                                            style={{ 'background-image': `url("${postData().featuredImage}")`, }}
+                                        >
+                                            <div class="post-page__hero-overlay post-page__hero-overlay--full">
                                                 {heading()}
                                             </div>
                                         </header>
