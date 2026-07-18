@@ -80,7 +80,7 @@ const GroupBlock: Component<GroupBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.gap || ''}
-                        onInput={(e,) => update({ gap: e.currentTarget.value, },)}
+                        onChange={(e,) => update({ gap: e.currentTarget.value, },)}
                         placeholder="e.g. 12px, 1rem"
                     />
                 </FormField>
@@ -113,7 +113,7 @@ const GroupBlock: Component<GroupBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.itemMinWidth || ''}
-                        onInput={(e,) => update({ itemMinWidth: e.currentTarget.value, },)}
+                        onChange={(e,) => update({ itemMinWidth: e.currentTarget.value, },)}
                         placeholder="e.g. 200px, 20%"
                     />
                 </FormField>
@@ -121,7 +121,7 @@ const GroupBlock: Component<GroupBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.itemMaxWidth || ''}
-                        onInput={(e,) => update({ itemMaxWidth: e.currentTarget.value, },)}
+                        onChange={(e,) => update({ itemMaxWidth: e.currentTarget.value, },)}
                         placeholder="e.g. 600px, 50%"
                     />
                 </FormField>
@@ -129,7 +129,7 @@ const GroupBlock: Component<GroupBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.itemMinHeight || ''}
-                        onInput={(e,) => update({ itemMinHeight: e.currentTarget.value, },)}
+                        onChange={(e,) => update({ itemMinHeight: e.currentTarget.value, },)}
                         placeholder="e.g. 100px"
                     />
                 </FormField>
@@ -137,7 +137,7 @@ const GroupBlock: Component<GroupBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.itemMaxHeight || ''}
-                        onInput={(e,) => update({ itemMaxHeight: e.currentTarget.value, },)}
+                        onChange={(e,) => update({ itemMaxHeight: e.currentTarget.value, },)}
                         placeholder="e.g. 400px"
                     />
                 </FormField>

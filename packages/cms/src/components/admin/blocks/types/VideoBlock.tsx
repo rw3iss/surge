@@ -109,7 +109,7 @@ const VideoBlock: Component<VideoBlockProps> = (props,) => {
                     <input
                         type="url"
                         value={props.data.url || ''}
-                        onInput={(e,) => props.onUpdate({ ...props.data, url: e.currentTarget.value, },)}
+                        onChange={(e,) => props.onUpdate({ ...props.data, url: e.currentTarget.value, },)}
                         placeholder="https://..."
                     />
                 </div>
@@ -119,7 +119,7 @@ const VideoBlock: Component<VideoBlockProps> = (props,) => {
                         <input
                             type="number"
                             value={props.data.maxWidth || ''}
-                            onInput={(e,) =>
+                            onChange={(e,) =>
                                 props.onUpdate({
                                     ...props.data,
                                     maxWidth: parseInt(e.currentTarget.value,) || undefined,
@@ -132,7 +132,7 @@ const VideoBlock: Component<VideoBlockProps> = (props,) => {
                         <input
                             type="number"
                             value={props.data.maxHeight || ''}
-                            onInput={(e,) =>
+                            onChange={(e,) =>
                                 props.onUpdate({
                                     ...props.data,
                                     maxHeight: parseInt(e.currentTarget.value,) || undefined,

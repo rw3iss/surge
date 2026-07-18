@@ -30,7 +30,7 @@ const GroupItemBlock: Component<GroupItemBlockProps> = (props,) => {
                 <input
                     type="text"
                     value={props.data.width || ''}
-                    onInput={(e,) => update({ width: e.currentTarget.value, },)}
+                    onChange={(e,) => update({ width: e.currentTarget.value, },)}
                     placeholder="e.g. 200px, 30%"
                 />
             </FormField>
@@ -38,7 +38,7 @@ const GroupItemBlock: Component<GroupItemBlockProps> = (props,) => {
                 <input
                     type="text"
                     value={props.data.minWidth || ''}
-                    onInput={(e,) => update({ minWidth: e.currentTarget.value, },)}
+                    onChange={(e,) => update({ minWidth: e.currentTarget.value, },)}
                     placeholder="e.g. 200px"
                 />
             </FormField>
@@ -46,7 +46,7 @@ const GroupItemBlock: Component<GroupItemBlockProps> = (props,) => {
                 <input
                     type="text"
                     value={props.data.maxWidth || ''}
-                    onInput={(e,) => update({ maxWidth: e.currentTarget.value, },)}
+                    onChange={(e,) => update({ maxWidth: e.currentTarget.value, },)}
                     placeholder="e.g. 600px"
                 />
             </FormField>
@@ -54,7 +54,7 @@ const GroupItemBlock: Component<GroupItemBlockProps> = (props,) => {
                 <input
                     type="text"
                     value={props.data.height || ''}
-                    onInput={(e,) => update({ height: e.currentTarget.value, },)}
+                    onChange={(e,) => update({ height: e.currentTarget.value, },)}
                     placeholder="e.g. 200px"
                 />
             </FormField>
@@ -62,7 +62,7 @@ const GroupItemBlock: Component<GroupItemBlockProps> = (props,) => {
                 <input
                     type="text"
                     value={props.data.minHeight || ''}
-                    onInput={(e,) => update({ minHeight: e.currentTarget.value, },)}
+                    onChange={(e,) => update({ minHeight: e.currentTarget.value, },)}
                     placeholder="e.g. 100px"
                 />
             </FormField>
@@ -70,7 +70,7 @@ const GroupItemBlock: Component<GroupItemBlockProps> = (props,) => {
                 <input
                     type="text"
                     value={props.data.maxHeight || ''}
-                    onInput={(e,) => update({ maxHeight: e.currentTarget.value, },)}
+                    onChange={(e,) => update({ maxHeight: e.currentTarget.value, },)}
                     placeholder="e.g. 400px"
                 />
             </FormField>

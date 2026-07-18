@@ -110,7 +110,7 @@ const DocumentBlock: Component<DocumentBlockProps> = (props,) => {
                     <input
                         type="url"
                         value={props.data.url || ''}
-                        onInput={(e,) => props.onUpdate({ ...props.data, url: e.currentTarget.value, },)}
+                        onChange={(e,) => props.onUpdate({ ...props.data, url: e.currentTarget.value, },)}
                         placeholder="https://..."
                     />
                 </div>
@@ -119,7 +119,7 @@ const DocumentBlock: Component<DocumentBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.fileName || ''}
-                        onInput={(e,) => props.onUpdate({ ...props.data, fileName: e.currentTarget.value, },)}
+                        onChange={(e,) => props.onUpdate({ ...props.data, fileName: e.currentTarget.value, },)}
                         placeholder="document.pdf"
                     />
                 </div>

@@ -91,7 +91,7 @@ const PostListBlock: Component<PostListBlockProps> = (props,) => {
                         type="text"
                         value={get('shortMaxHeight', '400px',)}
                         placeholder="400px"
-                        onInput={(e,) => patch({ shortMaxHeight: e.currentTarget.value || undefined, },)}
+                        onChange={(e,) => patch({ shortMaxHeight: e.currentTarget.value || undefined, },)}
                     />
                 </FormField>
                 <FormCheck

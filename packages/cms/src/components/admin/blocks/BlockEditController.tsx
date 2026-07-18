@@ -24,23 +24,23 @@ const HeroBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Record
         <>
             <div class="form-group">
                 <label>Hero Title</label>
-                <input type="text" value={props.data.title || ''} onInput={(e,) => props.onUpdate({ ...props.data, title: e.currentTarget.value, },)} placeholder="Hero title..." />
+                <input type="text" value={props.data.title || ''} onChange={(e,) => props.onUpdate({ ...props.data, title: e.currentTarget.value, },)} placeholder="Hero title..." />
             </div>
             <div class="form-group">
                 <label>Subtitle</label>
-                <input type="text" value={props.data.subtitle || ''} onInput={(e,) => props.onUpdate({ ...props.data, subtitle: e.currentTarget.value, },)} placeholder="Subtitle..." />
+                <input type="text" value={props.data.subtitle || ''} onChange={(e,) => props.onUpdate({ ...props.data, subtitle: e.currentTarget.value, },)} placeholder="Subtitle..." />
             </div>
             <div class="form-group">
                 <label>Content</label>
-                <textarea rows={4} value={props.data.content || ''} onInput={(e,) => props.onUpdate({ ...props.data, content: e.currentTarget.value, },)} placeholder="Hero content (HTML)..." />
+                <textarea rows={4} value={props.data.content || ''} onChange={(e,) => props.onUpdate({ ...props.data, content: e.currentTarget.value, },)} placeholder="Hero content (HTML)..." />
             </div>
             <div class="form-group">
                 <label>Background Image URL</label>
-                <input type="text" value={props.data.backgroundImage || ''} onInput={(e,) => props.onUpdate({ ...props.data, backgroundImage: e.currentTarget.value, },)} placeholder="https://..." />
+                <input type="text" value={props.data.backgroundImage || ''} onChange={(e,) => props.onUpdate({ ...props.data, backgroundImage: e.currentTarget.value, },)} placeholder="https://..." />
             </div>
             <div class="form-group">
                 <label>Min Height</label>
-                <input type="text" value={props.data.minHeight || ''} onInput={(e,) => props.onUpdate({ ...props.data, minHeight: e.currentTarget.value, },)} placeholder="e.g. 300px, 50vh" />
+                <input type="text" value={props.data.minHeight || ''} onChange={(e,) => props.onUpdate({ ...props.data, minHeight: e.currentTarget.value, },)} placeholder="e.g. 300px, 50vh" />
             </div>
         </>
     );
@@ -63,7 +63,7 @@ const ReferenceBlockEdit: Component<{
 }> = (props,) => (
     <div class="form-group">
         <label>{props.label} ID or Slug</label>
-        <input type="text" value={props.data[props.idField] || ''} onInput={(e,) => props.onUpdate({ ...props.data, [props.idField]: e.currentTarget.value, },)} placeholder={`Enter ${props.label.toLowerCase()} ID...`} />
+        <input type="text" value={props.data[props.idField] || ''} onChange={(e,) => props.onUpdate({ ...props.data, [props.idField]: e.currentTarget.value, },)} placeholder={`Enter ${props.label.toLowerCase()} ID...`} />
     </div>
 );
 
@@ -73,7 +73,7 @@ const SpacerBlockEdit: Component<{ data: Record<string, any>; onUpdate: (d: Reco
         <input
             type="text"
             value={props.data.height || '60px'}
-            onInput={(e,) => props.onUpdate({ ...props.data, height: e.currentTarget.value, },)}
+            onChange={(e,) => props.onUpdate({ ...props.data, height: e.currentTarget.value, },)}
             placeholder="e.g. 60px, 2rem, 10vh"
         />
         <small class="form-help">Any valid CSS height: px, rem, em, vh, vw, %</small>

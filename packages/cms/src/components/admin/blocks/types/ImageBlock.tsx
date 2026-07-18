@@ -221,7 +221,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                                 <input
                                     type="url"
                                     value={item().url || ''}
-                                    onInput={(e,) => updateSelected({ url: e.currentTarget.value, },)}
+                                    onChange={(e,) => updateSelected({ url: e.currentTarget.value, },)}
                                     placeholder="https://..."
                                 />
                             </FormField>
@@ -229,7 +229,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                                 <input
                                     type="text"
                                     value={item().alt || ''}
-                                    onInput={(e,) => updateSelected({ alt: e.currentTarget.value, },)}
+                                    onChange={(e,) => updateSelected({ alt: e.currentTarget.value, },)}
                                     placeholder="Describe the image"
                                 />
                             </FormField>
@@ -237,7 +237,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                                 <input
                                     type="text"
                                     value={item().caption || ''}
-                                    onInput={(e,) => updateSelected({ caption: e.currentTarget.value, },)}
+                                    onChange={(e,) => updateSelected({ caption: e.currentTarget.value, },)}
                                     placeholder="Optional caption shown under the image"
                                 />
                             </FormField>
@@ -245,7 +245,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                                 <input
                                     type="url"
                                     value={item().link || ''}
-                                    onInput={(e,) => updateSelected({ link: e.currentTarget.value, },)}
+                                    onChange={(e,) => updateSelected({ link: e.currentTarget.value, },)}
                                     placeholder="Optional — wraps the image in a link"
                                 />
                             </FormField>
@@ -279,7 +279,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                         <input
                             type="text"
                             value={(props.data.itemMinWidth as string) || ''}
-                            onInput={(e,) => updateBlock({ itemMinWidth: e.currentTarget.value, },)}
+                            onChange={(e,) => updateBlock({ itemMinWidth: e.currentTarget.value, },)}
                             placeholder="e.g. 200px, 25%"
                         />
                     </FormField>
@@ -291,7 +291,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                         <input
                             type="text"
                             value={(props.data.itemMaxWidth as string) || ''}
-                            onInput={(e,) => updateBlock({ itemMaxWidth: e.currentTarget.value, },)}
+                            onChange={(e,) => updateBlock({ itemMaxWidth: e.currentTarget.value, },)}
                             placeholder="e.g. 600px, 50%"
                         />
                     </FormField>
@@ -303,7 +303,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                         <input
                             type="text"
                             value={(props.data.itemMinHeight as string) || ''}
-                            onInput={(e,) => updateBlock({ itemMinHeight: e.currentTarget.value, },)}
+                            onChange={(e,) => updateBlock({ itemMinHeight: e.currentTarget.value, },)}
                             placeholder="e.g. 100px"
                         />
                     </FormField>
@@ -315,7 +315,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                         <input
                             type="text"
                             value={(props.data.itemMaxHeight as string) || ''}
-                            onInput={(e,) => updateBlock({ itemMaxHeight: e.currentTarget.value, },)}
+                            onChange={(e,) => updateBlock({ itemMaxHeight: e.currentTarget.value, },)}
                             placeholder="e.g. 400px"
                         />
                     </FormField>

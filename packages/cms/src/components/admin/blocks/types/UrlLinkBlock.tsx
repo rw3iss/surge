@@ -63,7 +63,7 @@ const UrlLinkBlock: Component<UrlLinkBlockProps> = (props,) => {
                         <input
                             type="url"
                             value={props.data.url || ''}
-                            onInput={(e,) => props.onUpdate({ ...props.data, url: e.currentTarget.value, },)}
+                            onChange={(e,) => props.onUpdate({ ...props.data, url: e.currentTarget.value, },)}
                             placeholder="https://example.com/article"
                         />
                     </div>
@@ -82,7 +82,7 @@ const UrlLinkBlock: Component<UrlLinkBlockProps> = (props,) => {
                     <input
                         type="text"
                         value={props.data.title || ''}
-                        onInput={(e,) => props.onUpdate({ ...props.data, title: e.currentTarget.value, },)}
+                        onChange={(e,) => props.onUpdate({ ...props.data, title: e.currentTarget.value, },)}
                         placeholder="Link title"
                     />
                 </div>
@@ -91,7 +91,7 @@ const UrlLinkBlock: Component<UrlLinkBlockProps> = (props,) => {
                     <textarea
                         rows={3}
                         value={props.data.description || ''}
-                        onInput={(e,) => props.onUpdate({ ...props.data, description: e.currentTarget.value, },)}
+                        onChange={(e,) => props.onUpdate({ ...props.data, description: e.currentTarget.value, },)}
                         placeholder="Link description"
                     />
                 </div>
@@ -101,7 +101,7 @@ const UrlLinkBlock: Component<UrlLinkBlockProps> = (props,) => {
                         <input
                             type="url"
                             value={props.data.image || ''}
-                            onInput={(e,) => props.onUpdate({ ...props.data, image: e.currentTarget.value, },)}
+                            onChange={(e,) => props.onUpdate({ ...props.data, image: e.currentTarget.value, },)}
                             placeholder="Preview image URL"
                         />
                     </div>
@@ -110,7 +110,7 @@ const UrlLinkBlock: Component<UrlLinkBlockProps> = (props,) => {
                         <input
                             type="text"
                             value={props.data.siteName || ''}
-                            onInput={(e,) => props.onUpdate({ ...props.data, siteName: e.currentTarget.value, },)}
+                            onChange={(e,) => props.onUpdate({ ...props.data, siteName: e.currentTarget.value, },)}
                             placeholder="Example.com"
                         />
                     </div>
