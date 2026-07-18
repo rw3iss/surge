@@ -1,7 +1,7 @@
 import type { Post, } from '@sitesurge/types';
 import { query, } from '../db';
 import { NotFoundError, } from '../middleware/error';
-import { mapRow, } from '../utils/mapRow';
+import { buildUpdateSet, mapRow, } from '../utils/mapRow';
 import { sanitize, } from '../utils/sanitize';
 import { uuidOrNull, } from '../utils/uuid';
 import { deleteById, paginatedQuery, PaginatedResult, PaginationOptions, } from './base.repo';
@@ -373,53 +373,38 @@ export async function updatePost(id: string, data: Record<string, unknown>,): Pr
     const existing = await query('SELECT status FROM posts WHERE id = $1', [id,],);
     if (existing.rows.length === 0) throw new NotFoundError('Post',);
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
+    // Allowlisted updatable columns (camelCase). buildUpdateSet does the
+    // camel→snake conversion generically; we only pre-sanitize `content`.
+    // `contentBlocks` is handled separately below; other keys are ignored.
+    const ALLOWED_FIELDS = [
+        'slug', 'title', 'excerpt', 'content', 'featuredImage', 'authorId',
+        'status', 'isPrivate', 'accessLevel', 'tags', 'categories', 'metaTitle',
+        'metaDescription', 'publishAt', 'applyPostPadding', 'applySiteGutter',
+        'headerStyle', 'headerPosition', 'bannerLayout',
+    ] as const;
 
-    const fields: Record<string, string> = {
-        slug: 'slug',
-        title: 'title',
-        excerpt: 'excerpt',
-        content: 'content',
-        featuredImage: 'featured_image',
-        authorId: 'author_id',
-        status: 'status',
-        isPrivate: 'is_private',
-        accessLevel: 'access_level',
-        tags: 'tags',
-        categories: 'categories',
-        metaTitle: 'meta_title',
-        metaDescription: 'meta_description',
-        publishAt: 'publish_at',
-        applyPostPadding: 'apply_post_padding',
-        applySiteGutter: 'apply_site_gutter',
-        headerStyle: 'header_style',
-        headerPosition: 'header_position',
-        bannerLayout: 'banner_layout',
-    };
-
-    for (const [camelKey, dbKey,] of Object.entries(fields,)) {
-        if (data[camelKey] !== undefined) {
-            // Sanitize HTML content
-            let value = data[camelKey];
-            if (camelKey === 'content' && typeof value === 'string') {
-                value = sanitize(value,);
-            }
-            values.push(value,);
-            updates.push(`${dbKey} = $${values.length}`,);
-        }
+    const patch: Record<string, unknown> = {};
+    for (const key of ALLOWED_FIELDS) {
+        if (data[key] === undefined) continue;
+        patch[key] = key === 'content' && typeof data[key] === 'string'
+            ? sanitize(data[key] as string,)
+            : data[key];
     }
 
-    // Set published_at on first publish
+    const { setClause, values, } = buildUpdateSet(patch,);
+    const parts = setClause ? [setClause,] : [];
+
+    // Set published_at on first publish (raw COALESCE fragment — appended after
+    // the generic SET clause with the next positional parameter).
     if (data.status === 'published' && existing.rows[0].status !== 'published') {
         values.push(new Date().toISOString(),);
-        updates.push(`published_at = COALESCE(published_at, $${values.length})`,);
+        parts.push(`published_at = COALESCE(published_at, $${values.length})`,);
     }
 
-    if (updates.length > 0) {
+    if (parts.length > 0) {
         values.push(id,);
         await query(
-            `UPDATE posts SET ${updates.join(', ',)}, updated_at = NOW() WHERE id = $${values.length}`,
+            `UPDATE posts SET ${parts.join(', ',)}, updated_at = NOW() WHERE id = $${values.length}`,
             values,
         );
     }

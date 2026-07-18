@@ -6,15 +6,15 @@ import GiveButterWidget from '../components/blocks/GiveButterWidget';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
 import { siteName, } from '../stores/siteSettings';
-import { isPluginEnabled, loadEnabledPlugins, } from '../stores/plugins';
+import { usePluginEnabled, } from '../hooks/usePluginGate';
 import { buildBreadcrumb, buildDonation, } from '../utils/schema';
 import './Campaign.scss';
 
 const CampaignPage: Component = () => {
     const params = useParams();
     const canonicalUrl = () => `${window.location.origin}/campaigns/${params.slug}`;
-    void loadEnabledPlugins();
-    const useGiveButter = (c: Campaign,) => isPluginEnabled('givebutter',) && c.donationProvider === 'givebutter';
+    const gbEnabled = usePluginEnabled('givebutter',);
+    const useGiveButter = (c: Campaign,) => gbEnabled() && c.donationProvider === 'givebutter';
 
     const [campaign,] = createResource(() => params.slug, async (slug,) => {
         try {

@@ -11,7 +11,7 @@ import GiveButterWidget from './GiveButterWidget';
 import ResolvedHeroCarousel from './ResolvedHeroCarousel';
 import PostListRenderer, { type PostListSettings, } from './posts/PostListRenderer';
 import SocialEmbed from './social/SocialEmbed';
-import { isPluginEnabled, loadEnabledPlugins, } from '../../stores/plugins';
+import { usePluginEnabled, } from '../../hooks/usePluginGate';
 import './BlockRenderer.scss';
 
 /** Render a stored color value through the swatch resolver. Returns
@@ -536,11 +536,11 @@ const CampaignCard: Component<{ campaign: Campaign; }> = (props,) => {
 const CampaignBlock: Component<{ block: Block; }> = (props,) => {
     const campaignId = () => props.block.settings.campaignId as string;
     const isAllCampaigns = () => campaignId() === ALL_CAMPAIGNS_ID;
-    void loadEnabledPlugins();
+    const gbEnabled = usePluginEnabled('givebutter',);
     // When the GiveButter plugin is on and this single campaign uses GiveButter,
     // render its donation widget inline beneath the teaser card.
     const showGiveButter = (c: Campaign | null | undefined,) =>
-        !!c && isPluginEnabled('givebutter',) && c.donationProvider === 'givebutter' && !!c.givebutterCampaignCode;
+        !!c && gbEnabled() && c.donationProvider === 'givebutter' && !!c.givebutterCampaignCode;
 
     const [campaign,] = createResource(
         () => isAllCampaigns() ? null : campaignId(),

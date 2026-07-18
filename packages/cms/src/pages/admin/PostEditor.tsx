@@ -1,4 +1,4 @@
-import { Component, createEffect, createResource, createSignal, For, Show, } from 'solid-js';
+import { Component, createEffect, createSignal, For, Show, } from 'solid-js';
 import CollapsiblePanel from '../../components/admin/common/CollapsiblePanel';
 import Toggle from '../../components/admin/common/Toggle';
 import Tooltip from '../../components/admin/common/Tooltip';
@@ -9,6 +9,7 @@ import MediaSelectModal from '../../components/admin/media/MediaSelectModal';
 import MediaUploadModal from '../../components/admin/media/MediaUploadModal';
 import { Layout, } from '../../components/layout/Layout';
 import PostContentBlock from '../../components/blocks/posts/PostContentBlock';
+import { createSafeResource, } from '../../hooks/createSafeResource';
 import { useEntityEditor, type EntitySaveContext, } from '../../hooks/useEntityEditor';
 import { invalidatePostsCache, } from '../../services/adminData';
 import { cms, } from '../../services/cmsClient';
@@ -43,13 +44,10 @@ const AdminPostEditor: Component = () => {
     const [showImageUpload, setShowImageUpload,] = createSignal(false,);
 
     // Staff users (admin / sysadmin / editor) for the Author dropdown.
-    const [staffUsers,] = createResource(async () => {
-        try {
-            return await cms.users.authors();
-        } catch {
-            return [] as { id: string; displayName: string; role: string; }[];
-        }
-    },);
+    const [staffUsers,] = createSafeResource(
+        async () => await cms.users.authors(),
+        [] as { id: string; displayName: string; role: string; }[],
+    );
 
     const editor = useEntityEditor<Post>({
         entityKind: 'post',

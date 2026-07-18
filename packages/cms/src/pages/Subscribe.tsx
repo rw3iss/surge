@@ -1,8 +1,9 @@
 import { loadStripe, Stripe, } from '@stripe/stripe-js';
-import { Component, createResource, createSignal, For, onMount, Show, } from 'solid-js';
+import { Component, createSignal, For, onMount, Show, } from 'solid-js';
 import SeoHead from '../components/common/seo/SeoHead';
 import { siteName, } from '../stores/siteSettings';
 import { cms, } from '../services/cmsClient';
+import { createSafeResource, } from '../hooks/createSafeResource';
 import { useAuth, } from '../stores/auth';
 
 interface Plan {
@@ -31,22 +32,18 @@ const SubscribePage: Component = () => {
     const [error, setError,] = createSignal('',);
     const [successMessage, setSuccessMessage,] = createSignal('',);
 
-    const [plans,] = createResource(async () => {
-        try {
-            return await cms.payments.plans() as unknown as Plan[];
-        } catch {
-            return [];
-        }
-    },);
+    const [plans,] = createSafeResource(
+        async () => await cms.payments.plans() as unknown as Plan[],
+        [] as Plan[],
+    );
 
-    const [subscriptions, { refetch: refetchSubs, },] = createResource(async () => {
-        if (!auth.user) return [];
-        try {
+    const [subscriptions, { refetch: refetchSubs, },] = createSafeResource(
+        async () => {
+            if (!auth.user) return [] as UserSubscription[];
             return await cms.payments.subscriptions() as unknown as UserSubscription[];
-        } catch {
-            return [];
-        }
-    },);
+        },
+        [] as UserSubscription[],
+    );
 
     onMount(async () => {
         const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;

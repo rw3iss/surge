@@ -1,6 +1,6 @@
 import { Title, } from '@solidjs/meta';
 import { useNavigate, useParams, } from '@solidjs/router';
-import { Component, createResource, createSignal, For, onMount, Show, } from 'solid-js';
+import { Component, createResource, createSignal, For, Show, } from 'solid-js';
 import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
 import Toggle from '../../components/admin/common/Toggle';
 import { useAutoSave, } from '../../hooks/useAutoSave';
@@ -9,7 +9,7 @@ import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
 import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
 import { invalidateCampaignsCache, } from '../../services/adminData';
 import { cms, } from '../../services/cmsClient';
-import { isPluginEnabled, loadEnabledPlugins, } from '../../stores/plugins';
+import { usePluginEnabled, } from '../../hooks/usePluginGate';
 
 interface GbCampaign { id: number; code: string; title: string; }
 
@@ -36,7 +36,7 @@ const CampaignEditor: Component = () => {
     const [featuredImage, setFeaturedImage,] = createSignal('',);
 
     // GiveButter (only surfaced when the plugin is enabled)
-    const [gbAvailable, setGbAvailable,] = createSignal(false,);
+    const gbAvailable = usePluginEnabled('givebutter',);
     const [donationProvider, setDonationProvider,] = createSignal<'internal' | 'givebutter'>('internal',);
     const [gbMode, setGbMode,] = createSignal<'link' | 'create'>('link',);
     const [gbCampaignId, setGbCampaignId,] = createSignal<number | null>(null,);
@@ -44,11 +44,6 @@ const CampaignEditor: Component = () => {
     const [gbList, setGbList,] = createSignal<GbCampaign[]>([],);
     const [gbLoadingList, setGbLoadingList,] = createSignal(false,);
     const [gbStatus, setGbStatus,] = createSignal('',);
-
-    onMount(async () => {
-        await loadEnabledPlugins();
-        setGbAvailable(isPluginEnabled('givebutter',),);
-    },);
 
     const loadGbCampaigns = async () => {
         setGbLoadingList(true,); setGbStatus('Loading GiveButter campaigns…',);

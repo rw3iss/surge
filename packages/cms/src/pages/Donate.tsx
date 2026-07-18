@@ -1,19 +1,17 @@
 import { A, } from '@solidjs/router';
 import type { Campaign, } from '@sitesurge/types';
-import { Component, createResource, For, Show, } from 'solid-js';
+import { Component, For, Show, } from 'solid-js';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
+import { createSafeResource, } from '../hooks/createSafeResource';
 import { siteName, } from '../stores/siteSettings';
 import './Donate.scss';
 
 const DonatePage: Component = () => {
-    const [campaigns,] = createResource(async () => {
-        try {
-            return await cms.campaigns.listPublic({ includePast: 'true', },) as Campaign[];
-        } catch {
-            return [];
-        }
-    },);
+    const [campaigns,] = createSafeResource(
+        async () => await cms.campaigns.listPublic({ includePast: 'true', },) as Campaign[],
+        [] as Campaign[],
+    );
 
     const activeCampaigns = () => campaigns()?.filter(c => c.status === 'active') || [];
     const pastCampaigns = () => campaigns()?.filter(c => c.status === 'completed') || [];

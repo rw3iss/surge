@@ -1,5 +1,6 @@
 import { Title, } from '@solidjs/meta';
-import { Component, createResource, createSignal, For, Show, } from 'solid-js';
+import { Component, createSignal, For, Show, } from 'solid-js';
+import { createSafeResource, } from '../../../hooks/createSafeResource';
 import type { ShopCollection, ShopCollectionCreateBody, ShopProduct, } from '@sitesurge/types';
 import { FormCheck, FormField, } from '../../../components/admin/forms';
 import { useToast, } from '../../../components/common/toast';
@@ -21,12 +22,14 @@ const emptyDraft = (): Draft => ({ title: '', slug: '', description: '', isPubli
 
 const ShopCollectionsInner: Component = () => {
     const toast = useToast();
-    const [collections, { refetch, },] = createResource(async () => {
-        try { return await cms.shop.collections.list({ all: 'true', },) as ShopCollection[]; } catch { return [] as ShopCollection[]; }
-    },);
-    const [products,] = createResource(async () => {
-        try { return (await cms.shop.products.list({ limit: 200, },)).data as ShopProduct[]; } catch { return [] as ShopProduct[]; }
-    },);
+    const [collections, { refetch, },] = createSafeResource(
+        async () => await cms.shop.collections.list({ all: 'true', },) as ShopCollection[],
+        [] as ShopCollection[],
+    );
+    const [products,] = createSafeResource(
+        async () => (await cms.shop.products.list({ limit: 200, },)).data as ShopProduct[],
+        [] as ShopProduct[],
+    );
 
     const [draft, setDraft,] = createSignal<Draft | null>(null,);
     const [saving, setSaving,] = createSignal(false,);

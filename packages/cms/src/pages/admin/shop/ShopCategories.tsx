@@ -1,5 +1,6 @@
 import { Title, } from '@solidjs/meta';
-import { Component, createResource, createSignal, For, Show, } from 'solid-js';
+import { Component, createSignal, For, Show, } from 'solid-js';
+import { createSafeResource, } from '../../../hooks/createSafeResource';
 import type { ShopCategory, ShopCategoryCreateBody, } from '@sitesurge/types';
 import { FormField, } from '../../../components/admin/forms';
 import { useToast, } from '../../../components/common/toast';
@@ -20,9 +21,10 @@ const emptyDraft = (): Draft => ({ name: '', slug: '', description: '', parentId
 
 const ShopCategoriesInner: Component = () => {
     const toast = useToast();
-    const [categories, { refetch, },] = createResource(async () => {
-        try { return await cms.shop.categories.list() as ShopCategory[]; } catch { return [] as ShopCategory[]; }
-    },);
+    const [categories, { refetch, },] = createSafeResource(
+        async () => await cms.shop.categories.list() as ShopCategory[],
+        [] as ShopCategory[],
+    );
 
     const [draft, setDraft,] = createSignal<Draft | null>(null,);
     const [saving, setSaving,] = createSignal(false,);

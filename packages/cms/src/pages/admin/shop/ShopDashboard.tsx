@@ -1,6 +1,7 @@
 import { Title, } from '@solidjs/meta';
 import { A, } from '@solidjs/router';
 import { Component, createResource, For, Show, } from 'solid-js';
+import { createSafeResource, } from '../../../hooks/createSafeResource';
 import type { ShopOrder, ShopProduct, } from '@sitesurge/types';
 import { cms, } from '../../../services/cmsClient';
 import { getStatusBadgeClass, } from '../../../utils/badges';
@@ -13,50 +14,38 @@ const PAID_STATUSES = new Set(['paid', 'processing', 'shipped', 'delivered',],);
 
 const ShopDashboardInner: Component = () => {
     // Recent orders (rows for the table) + the true total for the nav count.
-    const [ordersData,] = createResource(async () => {
-        try {
+    const [ordersData,] = createSafeResource(
+        async () => {
             const res = await cms.shop.orders.list({ limit: 10, },);
             return { rows: res.data as ShopOrder[], total: res.meta?.total ?? res.data.length, };
-        } catch {
-            return { rows: [] as ShopOrder[], total: 0, };
-        }
-    },);
+        },
+        { rows: [] as ShopOrder[], total: 0, },
+    );
     const orders = () => ordersData()?.rows ?? [];
 
-    const [productsData,] = createResource(async () => {
-        try {
+    const [productsData,] = createSafeResource(
+        async () => {
             const res = await cms.shop.products.list({ limit: 100, },);
             return { rows: res.data as ShopProduct[], total: res.meta?.total ?? res.data.length, };
-        } catch {
-            return { rows: [] as ShopProduct[], total: 0, };
-        }
-    },);
+        },
+        { rows: [] as ShopProduct[], total: 0, },
+    );
     const products = () => productsData()?.rows ?? [];
 
-    const [categoriesCount,] = createResource(async () => {
-        try {
-            return (await cms.shop.categories.list()).length;
-        } catch {
-            return 0;
-        }
-    },);
+    const [categoriesCount,] = createSafeResource(async () => (await cms.shop.categories.list()).length, 0,);
 
-    const [collectionsCount,] = createResource(async () => {
-        try {
-            return (await cms.shop.collections.list({ all: 'true', },)).length;
-        } catch {
-            return 0;
-        }
-    },);
+    const [collectionsCount,] = createSafeResource(
+        async () => (await cms.shop.collections.list({ all: 'true', },)).length,
+        0,
+    );
 
-    const [reviewsCount,] = createResource(async () => {
-        try {
+    const [reviewsCount,] = createSafeResource(
+        async () => {
             const res = await cms.shop.reviews.adminList({ limit: 1, },);
             return res.meta?.total ?? res.data.length;
-        } catch {
-            return 0;
-        }
-    },);
+        },
+        0,
+    );
 
     const totalSales = () =>
         orders()

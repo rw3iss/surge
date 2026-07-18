@@ -96,9 +96,14 @@ Method: two parallel sub-audits (frontend; backend + SCSS), every "dead"/"unused
 
 ## 5. Execution plan
 
-- **Phase A (applied automatically):** F1, F2, S1, S2, A1, A2 — all green (`tsc --noEmit` clean, admin build ✓).
-- **Phase B (recommended next, needs a review/own pass):** S3 (move `.gb-panel`), A3 (`useGiveButterAvailable`/`FeatureGuard`), A4 (`createSafeResource`), A5 (plugin `ctx.httpJson` + shared config-ui), A6 (`updatePost` → `buildUpdateSet`).
-- **Phase C (plan separately / `/dead-code`):** F3 (`AdminListPage` adopt-or-delete), A7 (backend dead/unwired exports).
+- **Phase A (applied):** F1, F2, S1, S2, A1, A2 — green (`tsc` clean, admin build ✓). Committed `a7e0132`, deployed.
+- **Phase B (applied, user-approved):**
+  - **S3** ✅ — `.gb-panel` moved from `_buttons-badges.scss` → `_editor-properties.scss`.
+  - **A3** ✅ — added `hooks/usePluginGate.ts` (`usePluginEnabled`) + `components/common/FeatureReadyGuard.tsx`; `ShopGuard`/`ShopStoreGuard` now render the shared guard (dropped duplicated load+gate logic); `Campaign.tsx`/`BlockRenderer`/`CampaignEditor` use `usePluginEnabled('givebutter')`.
+  - **A4** ✅ — added `hooks/createSafeResource.ts`; migrated **14** call sites (ShopDashboard ×5, ShopCategories, ShopCollections ×2, ShopSettings ×2, Donate, Subscribe ×2, PostEditor) off the hand-rolled try/catch pattern. Remaining ~13 sites can adopt incrementally (source-arg resources + non-shop pages) — helper is in place.
+  - **A6** ✅ — `posts.repo.ts` `updatePost` now uses `buildUpdateSet` + an allowlist (kept content-sanitize + `published_at` COALESCE). 118 api tests pass.
+  - **A5** — deferred (plugin `ctx.httpJson` + host-served shared config-ui): optional; revisit before a 4th plugin lands.
+- **Phase C (plan separately / `/dead-code`):** F3 (`AdminListPage` adopt-or-delete), A7 (backend dead/unwired exports), A8 (frontend dead exports).
 
 ## 6. Docs touched
 - `docs/improvement-audit-2026-07-17.md` (this file).

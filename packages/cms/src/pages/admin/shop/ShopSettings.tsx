@@ -1,5 +1,6 @@
 import { Title, } from '@solidjs/meta';
-import { Component, createResource, createSignal, For, Show, } from 'solid-js';
+import { Component, createSignal, For, Show, } from 'solid-js';
+import { createSafeResource, } from '../../../hooks/createSafeResource';
 import { createStore, } from 'solid-js/store';
 import type { ShopAppearance, ShopSettings as ShopSettingsModel, } from '@sitesurge/types';
 import { FormCheck, FormField, } from '../../../components/admin/forms';
@@ -41,25 +42,20 @@ const ShopSettingsInner: Component = () => {
     const [flat, setFlat,] = createSignal('',);
     const [freeThreshold, setFreeThreshold,] = createSignal('',);
 
-    const [loaded,] = createResource(async () => {
-        try {
-            const res = await cms.shop.settings.getAdmin();
-            setSettings(res.settings,);
-            setAppearance(res.appearance,);
-            setFlat(centsToDollars(res.settings.shipping?.flatCents,),);
-            setFreeThreshold(centsToDollars(res.settings.shipping?.freeThresholdCents,),);
-            return res;
-        } catch {
-            return null;
-        }
-    },);
+    const [loaded,] = createSafeResource(async () => {
+        const res = await cms.shop.settings.getAdmin();
+        setSettings(res.settings,);
+        setAppearance(res.appearance,);
+        setFlat(centsToDollars(res.settings.shipping?.flatCents,),);
+        setFreeThreshold(centsToDollars(res.settings.shipping?.freeThresholdCents,),);
+        return res;
+    }, null,);
 
     // Live Stripe connection status (cached ~60s server-side). Loads on mount
     // so the Payments tab is ready; "Recheck" forces a fresh server-side check.
-    const [stripeStatus, { mutate: setStripeStatus, },] = createResource(
-        async () => {
-            try { return await cms.shop.settings.stripeStatus(); } catch { return null; }
-        },
+    const [stripeStatus, { mutate: setStripeStatus, },] = createSafeResource(
+        async () => await cms.shop.settings.stripeStatus(),
+        null,
     );
     const [rechecking, setRechecking,] = createSignal(false,);
     const recheckStripe = async () => {
