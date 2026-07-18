@@ -156,7 +156,13 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
     };
 
     return (
-        <div class="html-inline-editor">
+        // Swallow clicks so they never reach the block's select/deselect
+        // handler. CodeMirror's fold gutter re-renders on click (detaching the
+        // arrow that was clicked), which made the bubbled click look like a
+        // click OUTSIDE the editor to ContentBlock — deselecting the block and
+        // dropping back to Preview. The editor only renders while selected, so
+        // stopping propagation here costs nothing.
+        <div class="html-inline-editor" onClick={(e,) => e.stopPropagation()}>
             <div class="html-inline-editor__toolbar">
                 <button
                     type="button"

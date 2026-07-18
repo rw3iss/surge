@@ -1,4 +1,4 @@
-import { Component, Show, } from 'solid-js';
+import { Component, onCleanup, onMount, Show, } from 'solid-js';
 import { BlockRenderer, } from '../../blocks/BlockRenderer';
 import { BlockStyleService, } from '../../../services/blockStyles';
 import type { BlockData, } from './ContentBlock';
@@ -13,6 +13,24 @@ interface BlockPreviewProps {
  * references to actual style objects.
  */
 const BlockPreview: Component<BlockPreviewProps> = (props,) => {
+    let guardRef: HTMLDivElement | undefined;
+
+    // While authoring, neutralize clicks that originate inside the rendered
+    // preview content. A Custom HTML block (or any block) may contain links,
+    // buttons, or forms that would otherwise navigate, open a new tab, submit,
+    // or run inline handlers when the operator clicks the preview. Handling
+    // this in the capture phase + stopPropagation also keeps the click from
+    // reaching the block's select/toggle handler, so a block is selected via
+    // its hover bar instead. The empty-state placeholder is exempted so a
+    // brand-new block can still be selected by clicking it.
+    const silenceContentClick = (e: MouseEvent,) => {
+        if ((e.target as HTMLElement).closest('.block-preview__empty',)) return;
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    onMount(() => guardRef?.addEventListener('click', silenceContentClick, true,));
+    onCleanup(() => guardRef?.removeEventListener('click', silenceContentClick, true,));
+
     const renderBlock = () => {
         const { title, content, __styleRef: _drop, ...rest } = props.block.data || {};
 
@@ -54,19 +72,21 @@ const BlockPreview: Component<BlockPreviewProps> = (props,) => {
     };
 
     return (
-        <Show
-            when={!isEmpty()}
-            fallback={
-                <div class="block-preview__empty">
-                    <span class="block-preview__empty-label">
-                        {props.block.type.replace(/_/g, ' ',)}
-                    </span>
-                    <span class="block-preview__empty-hint">Click edit to configure</span>
-                </div>
-            }
-        >
-            <BlockRenderer block={renderBlock() as any} preview={true} />
-        </Show>
+        <div ref={guardRef} style={{ display: 'contents', }}>
+            <Show
+                when={!isEmpty()}
+                fallback={
+                    <div class="block-preview__empty">
+                        <span class="block-preview__empty-label">
+                            {props.block.type.replace(/_/g, ' ',)}
+                        </span>
+                        <span class="block-preview__empty-hint">Click edit to configure</span>
+                    </div>
+                }
+            >
+                <BlockRenderer block={renderBlock() as any} preview={true} />
+            </Show>
+        </div>
     );
 };
 
