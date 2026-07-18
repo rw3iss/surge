@@ -68,6 +68,19 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
     let cmHostEl: HTMLDivElement | undefined;
     let view: EditorView | undefined;
 
+    /**
+     * Lift the editor's current text up to the parent — but ONLY at moments we
+     * actually need it (blur, Preview toggle, Format, Ctrl+S), NOT on every
+     * keystroke. Propagating per keystroke updated the block store on each
+     * character, which re-rendered this editor and stole focus. CodeMirror keeps
+     * its own document, so nothing is lost by deferring the sync.
+     */
+    const flush = () => {
+        if (!view) return;
+        const text = view.state.doc.toString();
+        if (text !== props.content) props.onChange(text,);
+    };
+
     onMount(() => {
         if (!cmHostEl) return;
         const startState = EditorState.create({
@@ -77,13 +90,16 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
                 lineNumbers(),
                 htmlLang(),
                 EditorView.lineWrapping,
-                EditorView.updateListener.of((update,) => {
-                    if (update.docChanged) {
-                        const text = update.state.doc.toString();
-                        // Compare to props.content to avoid feedback loops
-                        // when the parent re-emits the same string.
-                        if (text !== props.content) props.onChange(text,);
-                    }
+                EditorView.domEventHandlers({
+                    // Sync on blur (covers clicking away, Save, or "going back").
+                    blur: () => { flush(); return false; },
+                    // Ctrl/Cmd+S: flush BEFORE the global Save shortcut runs so the
+                    // save captures the freshest content (keydown bubbles from here
+                    // to the document-level handler). Don't preventDefault.
+                    keydown: (e) => {
+                        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) flush();
+                        return false;
+                    },
                 },),
             ],
         },);
@@ -106,11 +122,16 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
     },);
 
     /** Pretty-print the current HTML (and any embedded <style> CSS) and push
-     *  it back through onChange. Switches to Code view so the result shows. */
+     *  it back through onChange. Switches to Code view so the result shows.
+     *  Reads from the live editor (state isn't synced per keystroke). */
     const handleFormat = () => {
-        const next = formatHtml(props.content || '',);
-        if (next && next !== props.content) {
+        const current = view ? view.state.doc.toString() : (props.content || '');
+        const next = formatHtml(current,);
+        if (next && next !== current) {
             setMode('code',);
+            if (view) {
+                view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next, }, },);
+            }
             props.onChange(next,);
         }
     };
@@ -148,7 +169,7 @@ const HtmlInlineEditor: Component<HtmlInlineEditorProps> = (props,) => {
                 <button
                     type="button"
                     class={`html-inline-editor__tab ${mode() === 'preview' ? 'html-inline-editor__tab--active' : ''}`}
-                    onClick={() => setMode('preview',)}
+                    onClick={() => { flush(); setMode('preview',); }}
                     title="Preview rendered output"
                 >
                     Preview
