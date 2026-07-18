@@ -1,6 +1,7 @@
 import { createSignal, onMount, Show, } from 'solid-js';
 import { isServer, } from 'solid-js/web';
 import { pluginConfig, } from '../../stores/plugins';
+import './GiveButterWidget.scss';
 
 /**
  * Renders a GiveButter donation widget for a campaign. Loads the GiveButter

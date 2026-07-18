@@ -31,10 +31,10 @@ const AdminPlugins: Component = () => {
     }
 
     function statusOf(p: Plugin,): { label: string; cls: string; } {
-        if (p.error) return { label: 'Error', cls: 'badge-danger', };
-        if (p.enabled) return { label: 'Enabled', cls: 'badge-success', };
-        if (p.installed) return { label: 'Installed', cls: 'badge-info', };
-        return { label: 'Discovered', cls: 'badge-muted', };
+        if (p.error) return { label: 'Error', cls: 'badge--error', };
+        if (p.enabled) return { label: 'Enabled', cls: 'badge--success', };
+        if (p.installed) return { label: 'Installed', cls: 'badge--info', };
+        return { label: 'Discovered', cls: 'badge--muted', };
     }
 
     return (
@@ -55,7 +55,7 @@ const AdminPlugins: Component = () => {
             </div>
 
             <Show when={error()}>
-                <div class="alert alert-danger">{error()}</div>
+                <div class="alert alert--error">{error()}</div>
             </Show>
 
             <Show when={(plugins()?.length ?? 0) > 0} fallback={<div class="empty-state">No plugins yet. Upload a .zip, or drop a plugin folder into the backend <code>plugins/</code> directory and Rescan.</div>}>
@@ -75,7 +75,7 @@ const AdminPlugins: Component = () => {
                                         </td>
                                         <td>
                                             {p.version}
-                                            <Show when={p.updateAvailable}><span class="badge badge-warning" style={{ 'margin-left': '.5em', }}>update</span></Show>
+                                            <Show when={p.updateAvailable}><span class="badge badge--warning" style={{ 'margin-left': '.5em', }}>update</span></Show>
                                         </td>
                                         <td>{p.source}</td>
                                         <td><span class={`badge ${s.cls}`}>{s.label}</span></td>
@@ -132,7 +132,7 @@ const MarketplaceModal: Component<{ onClose: () => void; onChanged: () => void; 
                 <div class="modal__header"><h2>Plugin Marketplace</h2><button class="modal__close" onClick={props.onClose}>×</button></div>
                 <div class="modal__body">
                     <input class="input" placeholder="Search plugins…" value={q()} onInput={(e,) => setQ(e.currentTarget.value,)} />
-                    <Show when={msg()}><div class="alert alert-warning" style={{ 'margin-top': '.75em', }}>{msg()}</div></Show>
+                    <Show when={msg()}><div class="alert alert--warning" style={{ 'margin-top': '.75em', }}>{msg()}</div></Show>
                     <div class="marketplace-list" style={{ 'margin-top': '1em', }}>
                         <For each={results()} fallback={<div class="text-muted">No results.</div>}>
                             {(m,) => (
@@ -141,7 +141,7 @@ const MarketplaceModal: Component<{ onClose: () => void; onChanged: () => void; 
                                         <strong>{m.label}</strong> <span class="text-muted text-sm">v{m.version}</span>
                                         <div class="text-muted text-sm">{m.description}</div>
                                     </div>
-                                    <Show when={!m.installed} fallback={<span class="badge badge-muted">installed</span>}>
+                                    <Show when={!m.installed} fallback={<span class="badge badge--muted">installed</span>}>
                                         <button class="btn btn-sm btn-primary" onClick={() => install(m.id,)}>Install</button>
                                     </Show>
                                 </div>

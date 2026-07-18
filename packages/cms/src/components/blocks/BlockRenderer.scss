@@ -176,6 +176,12 @@
   border-radius: $border-radius-lg;
   text-align: center;
 
+  // Inline GiveButter donation widget (rendered in place of the teaser card
+  // when a campaign uses GiveButter).
+  &__givebutter {
+    margin-top: $spacing-md;
+  }
+
   &__title {
     margin-bottom: $spacing-sm;
   }

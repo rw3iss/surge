@@ -209,7 +209,7 @@
   &--warning {
     background: $warning-bg;
     color: $warning-fg;
-    border: 1px solid color.adjust($warning-bg, $lightness: -12%);
+    border: 1px solid $warning-border;
   }
 }
 

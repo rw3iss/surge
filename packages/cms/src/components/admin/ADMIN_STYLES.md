@@ -20,7 +20,9 @@ frontend/src/pages/admin/
     _admin-typography.scss ← --admin-font-* CSS custom properties
     _admin-shell.scss      ← .admin-layout / .admin-header / .admin-table*
                             / .admin-form* / .admin-filter-bar / .admin-list-page
-    _buttons-badges.scss   ← .btn / .badge / .alert / .table-link
+    _buttons-badges.scss   ← .btn / .badge / .alert (--error/--success/--warning,
+                            each themed from $*-bg/$*-fg/$*-border tokens) / .table-link
+                            / .gb-panel (GiveButter campaign-editor panel)
     _forms.scss            ← .form-section / .form-group / .form-row
                             / .form-help / .checkbox-label / .form-actions
                             / .questions-list / .question-card
@@ -54,6 +56,9 @@ frontend/src/pages/admin/
                               / .global-search / .skeleton / .text-muted
     _entity-search.scss     ← .entity-search (popover-based search input)
     _pagination.scss        ← .pagination
+    _shop.scss              ← .shop-admin* (dashboard/product editor/orders)
+                              / .shopify-banner (Shopify-override notice; themes
+                              from the $success-* tokens)
 ```
 
 ## Where to put a new admin style

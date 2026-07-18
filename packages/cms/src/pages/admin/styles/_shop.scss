@@ -9,10 +9,11 @@
     gap: $spacing-md;
     padding: $spacing-sm $spacing-md;
     margin-bottom: $spacing-lg;
-    background: #f0fdf4;
-    border: 1px solid #86efac;
+    // Themes from the shared success palette (no literal hex — see CLAUDE.md).
+    background: $success-bg;
+    border: 1px solid $success-border;
     border-radius: $border-radius-md;
-    color: #14532d;
+    color: $success-fg;
 
     &__icon { font-size: 1.4rem; line-height: 1; }
     &__body { flex: 1; font-size: $font-size-sm; }

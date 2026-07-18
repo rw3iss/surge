@@ -49,12 +49,12 @@ const AdminPluginConfig: Component = () => {
                     <>
                         <div class="plugin-detail-meta">
                             <span>v{p().version}</span>
-                            <span class={`badge ${p().enabled ? 'badge-success' : p().installed ? 'badge-info' : 'badge-muted'}`}>
+                            <span class={`badge ${p().enabled ? 'badge--success' : p().installed ? 'badge--info' : 'badge--muted'}`}>
                                 {p().enabled ? 'Enabled' : p().installed ? 'Installed' : 'Discovered'}
                             </span>
-                            <Show when={p().error}><span class="badge badge-danger">Error</span></Show>
+                            <Show when={p().error}><span class="badge badge--error">Error</span></Show>
                         </div>
-                        <Show when={p().error}><div class="alert alert-danger">{p().error}</div></Show>
+                        <Show when={p().error}><div class="alert alert--error">{p().error}</div></Show>
                         <Show when={p().manifest?.homepage}>
                             <p class="text-muted text-sm">{p().manifest.description} · <a href={p().manifest.homepage} target="_blank" rel="noreferrer">Homepage</a></p>
                         </Show>
@@ -84,7 +84,7 @@ const AdminPluginConfig: Component = () => {
                             </Show>
                         </div>
 
-                        <Show when={error()}><div class="alert alert-danger">{error()}</div></Show>
+                        <Show when={error()}><div class="alert alert--error">{error()}</div></Show>
 
                         <section class="plugin-config-section">
                             <h2>Configuration</h2>

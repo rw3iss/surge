@@ -1,13 +1,10 @@
 /** Small shared helpers for the shop admin pages. */
+import { formatCurrency, formatDate as formatDateShared, } from '@sitesurge/types';
 
-/** Format an integer cents amount as a currency string. */
+/** Format an integer cents amount as a currency string (null/undefined → 0).
+ *  Delegates to the shared `formatCurrency` so money formatting lives in one place. */
 export function formatCents(cents: number | null | undefined, currency = 'USD',): string {
-    const value = (cents ?? 0) / 100;
-    try {
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency, },).format(value,);
-    } catch {
-        return `$${value.toFixed(2,)}`;
-    }
+    return formatCurrency(cents ?? 0, currency,);
 }
 
 /** Parse a dollars string (e.g. "12.50") into integer cents. Empty → 0. */
@@ -31,8 +28,8 @@ export function slugify(text: string,): string {
         .replace(/(^-|-$)/g, '',);
 }
 
+/** Format an ISO date (null/undefined → em dash). Delegates to the shared
+ *  `formatDate`, which already defaults to short-month/day/year. */
 export function formatDate(iso: string | null | undefined,): string {
-    if (!iso) return '—';
-    const d = new Date(iso,);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', },);
+    return iso ? formatDateShared(iso,) : '—';
 }

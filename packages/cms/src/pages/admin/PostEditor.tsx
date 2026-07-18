@@ -256,11 +256,11 @@ const AdminPostEditor: Component = () => {
                         <small class="form-help">Comma-separated</small>
                     </div>
                     <div class="form-group">
-                        <div class="u-flex-row" style={{ 'align-items': 'center', 'justify-content': 'space-between', gap: '8px', }}>
+                        <div class="u-flex-between">
                             <label style={{ 'margin-bottom': 0, }}>Banner Image</label>
                             {/* Image layout selector — only meaningful with a banner set. */}
                             <Show when={featuredImage()}>
-                                <div class="u-flex-row" style={{ 'align-items': 'center', gap: '6px', }}>
+                                <div class="u-flex-row u-gap-xs">
                                     <label style={{ 'margin-bottom': 0, 'font-size': '11px', }}>Image Layout</label>
                                     <select
                                         value={bannerLayout()}
@@ -320,7 +320,7 @@ const AdminPostEditor: Component = () => {
                         </small>
                     </div>
                     <div class="form-group">
-                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
+                        <div class="u-flex-row">
                             <Toggle
                                 checked={applyPostPadding()}
                                 onChange={(next,) => { setApplyPostPadding(next,); editor.markDirty(); }}
@@ -331,7 +331,7 @@ const AdminPostEditor: Component = () => {
                                 content="Apply the site's Post Padding (Settings → Appearance → Layout) to this post — primarily top/bottom. Default 0 until you set a value there."
                             />
                         </div>
-                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', 'margin-top': '8px', }}>
+                        <div class="u-flex-row" style={{ 'margin-top': '8px', }}>
                             <Toggle
                                 checked={applySiteGutter()}
                                 onChange={(next,) => { setApplySiteGutter(next,); editor.markDirty(); }}
@@ -345,7 +345,7 @@ const AdminPostEditor: Component = () => {
                     </div>
                     <div class="form-group">
                         <label>Header Style</label>
-                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
+                        <div class="u-flex-row">
                             <select
                                 value={headerStyle()}
                                 onChange={(e,) => { setHeaderStyle(e.currentTarget.value,); editor.markDirty(); }}
@@ -362,7 +362,7 @@ const AdminPostEditor: Component = () => {
                     </div>
                     <div class="form-group">
                         <label>Header Position</label>
-                        <div class="u-flex-row" style={{ 'align-items': 'center', gap: '8px', }}>
+                        <div class="u-flex-row">
                             <select
                                 value={headerPosition()}
                                 onChange={(e,) => { setHeaderPosition(e.currentTarget.value,); editor.markDirty(); }}

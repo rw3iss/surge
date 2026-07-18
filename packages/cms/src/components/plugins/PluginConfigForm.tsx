@@ -57,7 +57,7 @@ const PluginConfigForm: Component<{
                     )}
                 </For>
             </Show>
-            <Show when={err()}><div class="alert alert-danger">{err()}</div></Show>
+            <Show when={err()}><div class="alert alert--error">{err()}</div></Show>
             <div class="form-actions">
                 <button class="btn btn-primary" disabled={saving()} onClick={save}>
                     {saving() ? 'Saving…' : saved() ? 'Saved ✓' : 'Save configuration'}
