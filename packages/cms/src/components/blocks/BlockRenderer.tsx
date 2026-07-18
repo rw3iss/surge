@@ -284,6 +284,10 @@ const ImageBlock: Component<{ block: Block; }> = (props,) => {
     const itemMaxHeight = () => (s().itemMaxHeight as string) || undefined;
     // Per-block spacing between multiple images.
     const gap = () => (s().gap as string) || undefined;
+    // Cross-axis alignment of the images within the flex container: for a row
+    // this aligns them vertically, for a column horizontally. Stored as
+    // start|center|end (valid `align-items` keywords); defaults to start.
+    const align = () => (s().align as string) || 'start';
 
     // Legacy single-image alignment / maxWidth fields stay supported for
     // pages that haven't been re-edited since the multi-image upgrade.
@@ -335,7 +339,7 @@ const ImageBlock: Component<{ block: Block; }> = (props,) => {
             display: 'flex',
             'flex-direction': direction() === 'vertical' ? 'column' : 'row',
             'flex-wrap': 'wrap',
-            'align-items': 'flex-start',
+            'align-items': align(),
             gap: gap(),
         };
     };

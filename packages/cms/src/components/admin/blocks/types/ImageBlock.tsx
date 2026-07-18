@@ -262,7 +262,7 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
 
                 {/* ─── Block-level layout ─── */}
                 <FormSection title="Layout">
-                    {/* Direction + Gap share a row (each half width). */}
+                    {/* Direction + Alignment + Gap share a row. */}
                     <div class="admin-form-row-2">
                         <FormField label="Direction">
                             <select
@@ -271,6 +271,19 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
                             >
                                 <option value="horizontal">Horizontal (row)</option>
                                 <option value="vertical">Vertical (column)</option>
+                            </select>
+                        </FormField>
+                        <FormField
+                            label="Alignment"
+                            tooltip="Cross-axis alignment of the images. In a row this aligns them vertically; in a column it aligns them horizontally (start = left/top, end = right/bottom)."
+                        >
+                            <select
+                                value={(props.data.align as string) || 'start'}
+                                onChange={(e,) => updateBlock({ align: e.currentTarget.value, },)}
+                            >
+                                <option value="start">Start</option>
+                                <option value="center">Center</option>
+                                <option value="end">End</option>
                             </select>
                         </FormField>
                         <FormField
