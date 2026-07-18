@@ -61,8 +61,11 @@ module.exports = {
 sanctioned way for a plugin to expose backend logic (a plugin can't register its
 own routes). Not txn-wrapped (actions usually make external HTTP calls); an action
 that writes plugin tables should manage its own transaction. Client SDK:
-`cms.plugins.action(name, action, payload)`. Reference: the **GiveButter** plugin
-(`docs/GIVEBUTTER.md`).
+`cms.plugins.action(name, action, payload)`. Reference plugins: **GiveButter**
+(`docs/GIVEBUTTER.md`) and **Shopify** (`docs/SHOPIFY.md`) — the latter an
+**override-style** plugin that takes over the whole Shop feature (public storefront
++ admin) via the action-RPC and a frontend `shopifySource` seam gated on
+`isPluginEnabled('shopify')`.
 - `ctx.db` — `query(sql,params)`, `tableName(suffix)` → `plugin_<name>_<suffix>`, `migrate()`.
 - `ctx.storage` — `dir`, `dataDir`, `read/write/exists`, `download(url, rel, {force})`.
 - **Idempotency:** check `ctx.installedVersion` + actual state before acting; never overwrite existing data. `update()` applies only the forward delta.

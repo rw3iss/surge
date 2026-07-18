@@ -8,7 +8,10 @@ import { useSearchFilter, } from '../../../hooks/useSearchFilter';
 import { cms, } from '../../../services/cmsClient';
 import { getStatusBadgeClass, } from '../../../utils/badges';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
 import { formatCents, formatDate, } from './shopUtils';
+import { createResource, } from 'solid-js';
+import { isShopifyActive, shopifyAdminUrl, shopifySource, } from '../../../services/shopifySource';
 
 const ShopOrdersInner: Component = () => {
     const { searchParams, setSearchParams, } = useSearchFilter();
@@ -98,9 +101,62 @@ const ShopOrdersInner: Component = () => {
     );
 };
 
+/** Read-only Shopify orders (override). Requires an Admin API token. */
+const ShopifyOrdersInner: Component = () => {
+    const [data,] = createResource(async () => {
+        const r = await shopifySource.listOrders(50,);
+        return r?.ok ? { orders: r.orders, error: '', } : { orders: [], error: r?.error || 'Could not load orders', };
+    },);
+
+    return (
+        <div class="shop-admin">
+            <Title>Shop Orders - Admin - RW</Title>
+            <div class="admin-header">
+                <h1>Orders</h1>
+                <Show when={shopifyAdminUrl()}>
+                    <a href={`${shopifyAdminUrl()}/orders`} target="_blank" rel="noopener" class="btn btn--secondary">
+                        Manage in Shopify ↗
+                    </a>
+                </Show>
+            </div>
+            <ShopifyManagedBanner note="Orders are managed in Shopify. This list is read-only (last 60 days unless read_all_orders is granted)." />
+            <Show when={!data.loading} fallback={<div class="empty-state">Loading…</div>}>
+                <Show
+                    when={(data()?.orders ?? []).length}
+                    fallback={<div class="empty-state">{data()?.error || 'No orders found.'}</div>}
+                >
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>Order</th><th>Date</th><th>Customer</th><th>Total</th><th>Payment</th><th>Fulfillment</th></tr>
+                            </thead>
+                            <tbody>
+                                <For each={data()?.orders}>
+                                    {(o,) => (
+                                        <tr>
+                                            <td>{o.name}</td>
+                                            <td>{formatDate(o.createdAt,)}</td>
+                                            <td>{o.customerName || o.email || '—'}</td>
+                                            <td>{formatCents(o.totalCents, o.currency,)}</td>
+                                            <td><span class="badge">{o.financialStatus || '—'}</span></td>
+                                            <td class="form-help-muted">{o.fulfillmentStatus || '—'}</td>
+                                        </tr>
+                                    )}
+                                </For>
+                            </tbody>
+                        </table>
+                    </div>
+                </Show>
+            </Show>
+        </div>
+    );
+};
+
 const ShopOrders: Component = () => (
     <ShopGuard>
-        <ShopOrdersInner />
+        <Show when={isShopifyActive()} fallback={<ShopOrdersInner />}>
+            <ShopifyOrdersInner />
+        </Show>
     </ShopGuard>
 );
 

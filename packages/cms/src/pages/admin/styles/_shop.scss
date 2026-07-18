@@ -1,6 +1,23 @@
 @use 'sass:color';
 @use '../../../styles/variables' as *;
 
+// Shopify override banner — shown across admin shop pages while the Shopify
+// plugin manages the store. Reused component: ShopifyManagedBanner.
+.shopify-banner {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-lg;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: $border-radius-md;
+    color: #14532d;
+
+    &__icon { font-size: 1.4rem; line-height: 1; }
+    &__body { flex: 1; font-size: $font-size-sm; }
+}
+
 // Shop admin section — dashboard cards, product editor (options/variants/
 // media), order detail, reviews queue. Reuses shared helpers where it can
 // (.admin-table, .badge, .confirm-modal*, .form-help-muted, .stat-card,

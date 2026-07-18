@@ -6,6 +6,7 @@ import { FormCheck, FormField, } from '../../../components/admin/forms';
 import { useToast, } from '../../../components/common/toast';
 import { cms, } from '../../../services/cmsClient';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
 import { centsToDollars, dollarsToCents, } from './shopUtils';
 
 type Tab = 'general' | 'payments' | 'shipping' | 'appearance';
@@ -108,6 +109,7 @@ const ShopSettingsInner: Component = () => {
                     {saving() ? 'Saving...' : 'Save'}
                 </button>
             </div>
+            <ShopifyManagedBanner note="Storefront, checkout, and payment settings are controlled in Shopify while the plugin is enabled. These internal settings are inactive." />
 
             <Show when={loaded.state !== 'pending'} fallback={<div class="empty-state">Loading...</div>}>
                 <div class="settings-tabs">

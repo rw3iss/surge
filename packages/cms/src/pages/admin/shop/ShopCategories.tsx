@@ -5,6 +5,7 @@ import { FormField, } from '../../../components/admin/forms';
 import { useToast, } from '../../../components/common/toast';
 import { cms, } from '../../../services/cmsClient';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
 import { slugify, } from './shopUtils';
 
 interface Draft {
@@ -83,6 +84,7 @@ const ShopCategoriesInner: Component = () => {
                 <h1>Categories</h1>
                 <button class="btn btn--primary" onClick={openNew}>New Category</button>
             </div>
+            <ShopifyManagedBanner note="Categories map to Shopify collections while Shopify is enabled; internal categories aren't used on the storefront." />
 
             <Show
                 when={(categories() || []).length}

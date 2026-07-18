@@ -8,6 +8,8 @@ import { useAuth, } from '../../stores/auth';
 import { cartItems, cartSubtotal, clearCart, } from '../../stores/shopCart';
 import ShopStoreGuard from './ShopStoreGuard';
 import { money, } from './shopFormat';
+import { For, } from 'solid-js';
+import { isShopifyActive, shopifySource, } from '../../services/shopifySource';
 import './shop.scss';
 
 const ShopCheckoutInner: Component = () => {
@@ -339,9 +341,91 @@ const ShopCheckoutInner: Component = () => {
     );
 };
 
+/**
+ * Shopify checkout override: no Stripe. Builds a Shopify cart from the local cart
+ * lines and full-page-redirects to Shopify's hosted checkout (`cart.checkoutUrl`)
+ * — the only supported headless checkout. The subtotal shown is informational;
+ * Shopify computes the authoritative price/tax/shipping at checkout.
+ */
+const ShopifyCheckoutInner: Component = () => {
+    const [placing, setPlacing,] = createSignal(false,);
+    const [error, setError,] = createSignal('',);
+
+    const startCheckout = async () => {
+        if (cartItems().length === 0) { setError('Your cart is empty.',); return; }
+        setError('',);
+        setPlacing(true,);
+        try {
+            const res = await shopifySource.cartCreate(
+                cartItems().map((l,) => ({ merchandiseId: l.variantId, quantity: l.qty, }),),
+            );
+            if (!res?.ok || !res.cart?.checkoutUrl) {
+                setError(res?.error || 'Could not start checkout. Please try again.',);
+                setPlacing(false,);
+                return;
+            }
+            // Hand off to Shopify's hosted checkout (full-page redirect).
+            clearCart();
+            window.location.href = res.cart.checkoutUrl;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Checkout failed. Please try again.',);
+            setPlacing(false,);
+        }
+    };
+
+    return (
+        <div class="shop-store shop-checkout page-wrapper">
+            <SeoHead title="Checkout" canonical={`${window.location.origin}/shop/checkout`} type="website" />
+            <header class="page-header shop-store__header">
+                <h1>Checkout</h1>
+            </header>
+            <Show
+                when={cartItems().length > 0}
+                fallback={<div class="shop-store__empty">Your cart is empty.</div>}
+            >
+                <div class="shop-checkout__layout">
+                    <aside class="shop-checkout__summary">
+                        <h2>Order summary</h2>
+                        <ul class="shop-checkout__lines">
+                            <For each={cartItems()}>
+                                {(l,) => (
+                                    <li class="shop-checkout__line">
+                                        <span>{l.title}{l.variantTitle ? ` — ${l.variantTitle}` : ''} × {l.qty}</span>
+                                        <span>{money(l.priceCents * l.qty,)}</span>
+                                    </li>
+                                )}
+                            </For>
+                        </ul>
+                        <div class="shop-checkout__total-row shop-checkout__total-row--grand">
+                            <span>Subtotal</span>
+                            <strong>{money(cartSubtotal(),)}</strong>
+                        </div>
+                        <p class="shop-checkout__updating">
+                            Taxes &amp; shipping are calculated at Shopify's secure checkout.
+                        </p>
+                        <Show when={error()}>
+                            <div class="shop-store__error">{error()}</div>
+                        </Show>
+                        <button
+                            type="button"
+                            class="btn btn--primary shop-checkout__place"
+                            disabled={placing()}
+                            onClick={startCheckout}
+                        >
+                            {placing() ? 'Redirecting…' : 'Continue to secure checkout'}
+                        </button>
+                    </aside>
+                </div>
+            </Show>
+        </div>
+    );
+};
+
 const ShopCheckout: Component = () => (
     <ShopStoreGuard>
-        <ShopCheckoutInner />
+        <Show when={isShopifyActive()} fallback={<ShopCheckoutInner />}>
+            <ShopifyCheckoutInner />
+        </Show>
     </ShopStoreGuard>
 );
 

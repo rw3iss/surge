@@ -5,6 +5,7 @@ import SeoHead from '../../components/common/seo/SeoHead';
 import { cms, } from '../../services/cmsClient';
 import ProductCard from './ProductCard';
 import ShopStoreGuard from './ShopStoreGuard';
+import { isShopifyActive, shopifySource, } from '../../services/shopifySource';
 import './shop.scss';
 
 interface Config {
@@ -27,6 +28,10 @@ const ShopCollectionInner: Component = () => {
         () => params.slug,
         async (slug,) => {
             try {
+                if (isShopifyActive()) {
+                    const r = await shopifySource.getCollection(slug,);
+                    return r?.ok && r.collection ? { collection: r.collection, products: r.products, } : null;
+                }
                 return await cms.shop.collections.getBySlug(slug,);
             } catch {
                 return null;

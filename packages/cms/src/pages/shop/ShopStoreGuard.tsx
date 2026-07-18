@@ -1,5 +1,6 @@
 import { createResource, ParentComponent, Show, } from 'solid-js';
 import { isFeatureEnabled, loadSiteSettings, } from '../../stores/siteSettings';
+import { loadEnabledPlugins, } from '../../stores/plugins';
 
 /**
  * Page-level guard for the public /shop/* storefront. Mirrors the admin
@@ -11,7 +12,9 @@ import { isFeatureEnabled, loadSiteSettings, } from '../../stores/siteSettings';
  */
 const ShopStoreGuard: ParentComponent = (props,) => {
     const [ready,] = createResource(async () => {
-        await loadSiteSettings();
+        // Load plugins alongside settings so isShopifyActive() is resolved before
+        // children render (the Shopify plugin overrides the storefront when on).
+        await Promise.all([loadSiteSettings(), loadEnabledPlugins(),],);
         return true;
     },);
 

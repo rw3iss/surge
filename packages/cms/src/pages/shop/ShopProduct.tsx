@@ -9,6 +9,7 @@ import { addToCart, } from '../../stores/shopCart';
 import ShopStoreGuard from './ShopStoreGuard';
 import StarRating from './StarRating';
 import { money, ratingLabel, } from './shopFormat';
+import { isShopifyActive, shopifySource, } from '../../services/shopifySource';
 import './shop.scss';
 
 const ShopProductInner: Component = () => {
@@ -19,6 +20,10 @@ const ShopProductInner: Component = () => {
         () => params.slug,
         async (slug,) => {
             try {
+                if (isShopifyActive()) {
+                    const r = await shopifySource.getProduct(slug,);
+                    return r?.ok && r.product ? r.product : null;
+                }
                 return await cms.shop.products.getBySlug(slug,) as ShopProductDetail;
             } catch {
                 return null;
@@ -116,7 +121,7 @@ const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean
 
     // ── Reviews ──────────────────────────────────────────────────────
     const [reviews, { refetch: refetchReviews, },] = createResource(
-        () => product().id,
+        () => isShopifyActive() ? null : product().id,
         async (productId,) => {
             try {
                 const { data, } = await cms.shop.reviews.list(productId,);
@@ -280,7 +285,8 @@ const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean
                 </div>
             </div>
 
-            {/* Reviews */}
+            {/* Reviews — internal shop only (Shopify reviews aren't exposed via the Storefront API). */}
+            <Show when={!isShopifyActive()}>
             <section class="shop-reviews">
                 <h2>Reviews</h2>
                 <Show when={product().ratingCount > 0}>
@@ -377,6 +383,7 @@ const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean
                     </Show>
                 </div>
             </section>
+            </Show>
         </>
     );
 };

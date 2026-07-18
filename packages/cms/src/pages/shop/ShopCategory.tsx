@@ -5,6 +5,7 @@ import SeoHead from '../../components/common/seo/SeoHead';
 import { cms, } from '../../services/cmsClient';
 import ProductCard from './ProductCard';
 import ShopStoreGuard from './ShopStoreGuard';
+import { isShopifyActive, shopifySource, } from '../../services/shopifySource';
 import './shop.scss';
 
 interface Config {
@@ -27,6 +28,18 @@ const ShopCategoryInner: Component = () => {
         () => params.slug,
         async (slug,) => {
             try {
+                if (isShopifyActive()) {
+                    // Shopify has no "categories" — treat the slug as a collection handle.
+                    const r = await shopifySource.getCollection(slug,);
+                    if (!r?.ok || !r.collection) return null;
+                    const c = r.collection;
+                    const category: ShopCategory = {
+                        id: c.id, name: c.title, slug: c.slug, parentId: null,
+                        description: c.description ?? null, imageId: null, position: c.position,
+                        createdAt: c.createdAt, updatedAt: c.updatedAt,
+                    };
+                    return { category, products: r.products, };
+                }
                 return await cms.shop.categories.getBySlug(slug,);
             } catch {
                 return null;

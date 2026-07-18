@@ -9,6 +9,9 @@ import { cms, } from '../../../services/cmsClient';
 import { getStatusBadgeClass, } from '../../../utils/badges';
 import { money, } from '../../shop/shopFormat';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
+import { createResource, } from 'solid-js';
+import { isShopifyActive, shopifyAdminUrl, shopifySource, } from '../../../services/shopifySource';
 
 const ShopProductsInner: Component = () => {
     const { searchInput, handleSearchInput, searchParams, setSearchParams, } = useSearchFilter();
@@ -186,9 +189,63 @@ const ShopProductsInner: Component = () => {
     );
 };
 
+/** Read-only Shopify product list (override). Products live in Shopify; rows
+ *  link to the public storefront page (which renders Shopify data) + Shopify admin. */
+const ShopifyProductsInner: Component = () => {
+    const [data,] = createResource(async () => {
+        const r = await shopifySource.listProducts({ limit: 100, },);
+        return r?.ok ? r.products : [];
+    },);
+
+    return (
+        <div class="shop-admin">
+            <Title>Shop Products - Admin - RW</Title>
+            <div class="admin-header">
+                <h1>Products</h1>
+                <Show when={shopifyAdminUrl()}>
+                    <a href={`${shopifyAdminUrl()}/products`} target="_blank" rel="noopener" class="btn btn--secondary">
+                        Manage in Shopify ↗
+                    </a>
+                </Show>
+            </div>
+            <ShopifyManagedBanner note="Products are managed in Shopify. This list is read-only." />
+            <Show when={!data.loading} fallback={<div class="empty-state">Loading…</div>}>
+                <Show when={(data() ?? []).length} fallback={<div class="empty-state">No products found in Shopify.</div>}>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>Title</th><th>From price</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                <For each={data()}>
+                                    {(p,) => (
+                                        <tr>
+                                            <td><A href={`/shop/${p.slug}`} class="table-link">{p.title}</A></td>
+                                            <td>
+                                                <Show when={p.fromPriceCents != null} fallback={<span class="form-help-muted">—</span>}>
+                                                    {money(p.fromPriceCents!,)}
+                                                </Show>
+                                            </td>
+                                            <td>
+                                                <A href={`/shop/${p.slug}`} class="btn btn--small btn--secondary">View</A>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </For>
+                            </tbody>
+                        </table>
+                    </div>
+                </Show>
+            </Show>
+        </div>
+    );
+};
+
 const ShopProducts: Component = () => (
     <ShopGuard>
-        <ShopProductsInner />
+        <Show when={isShopifyActive()} fallback={<ShopProductsInner />}>
+            <ShopifyProductsInner />
+        </Show>
     </ShopGuard>
 );
 

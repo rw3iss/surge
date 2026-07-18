@@ -5,6 +5,7 @@ import { cms, } from '../../services/cmsClient';
 import { siteName, } from '../../stores/siteSettings';
 import ProductCard from './ProductCard';
 import ShopStoreGuard from './ShopStoreGuard';
+import { isShopifyActive, shopifySource, } from '../../services/shopifySource';
 import './shop.scss';
 
 const PAGE_SIZE = 24;
@@ -21,6 +22,9 @@ const ShopIndexInner: Component = () => {
     const [search, setSearch,] = createSignal('',);
     const [loading, setLoading,] = createSignal(true,);
     const [loadingMore, setLoadingMore,] = createSignal(false,);
+    // Shopify override uses cursor pagination (not page/total).
+    const [cursor, setCursor,] = createSignal<string | undefined>(undefined,);
+    const [shopifyHasMore, setShopifyHasMore,] = createSignal(false,);
 
     const [config] = createResource<StorefrontConfig | null>(async () => {
         try {
@@ -34,12 +38,26 @@ const ShopIndexInner: Component = () => {
         config()?.appearance ?? { gridColumns: 3, showRatings: true, cardStyle: 'standard', };
     const currency = () => config()?.settings.currency || 'USD';
 
-    const hasMore = () => products().length < total();
+    const hasMore = () => isShopifyActive() ? shopifyHasMore() : products().length < total();
 
     const load = async (pageNum: number, append = false,) => {
         if (append) setLoadingMore(true,);
         else setLoading(true,);
         try {
+            if (isShopifyActive()) {
+                // Shopify: cursor-based. A fresh load (append=false) resets the cursor.
+                const res = await shopifySource.listProducts({
+                    limit: PAGE_SIZE,
+                    cursor: append ? cursor() : undefined,
+                    search: search() || undefined,
+                },);
+                const items = res?.ok ? res.products : [];
+                setProducts((prev,) => append ? [...prev, ...items,] : items,);
+                setCursor(res?.pageInfo?.endCursor,);
+                setShopifyHasMore(Boolean(res?.pageInfo?.hasNextPage),);
+                setPage(pageNum,);
+                return;
+            }
             const { data, meta, } = await cms.shop.products.listPublic({
                 page: pageNum,
                 limit: PAGE_SIZE,

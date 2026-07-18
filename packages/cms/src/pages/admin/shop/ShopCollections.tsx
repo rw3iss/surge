@@ -5,6 +5,7 @@ import { FormCheck, FormField, } from '../../../components/admin/forms';
 import { useToast, } from '../../../components/common/toast';
 import { cms, } from '../../../services/cmsClient';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
 import { slugify, } from './shopUtils';
 
 interface Draft {
@@ -115,6 +116,7 @@ const ShopCollectionsInner: Component = () => {
                 <h1>Collections</h1>
                 <button class="btn btn--primary" onClick={openNew}>New Collection</button>
             </div>
+            <ShopifyManagedBanner note="Collections are managed in Shopify while the plugin is enabled; the storefront reads Shopify collections." />
 
             <Show
                 when={(collections() || []).length}

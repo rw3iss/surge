@@ -1,6 +1,7 @@
 import { A, } from '@solidjs/router';
 import { createResource, ParentComponent, Show, } from 'solid-js';
 import { isFeatureEnabled, loadSiteSettings, } from '../../../stores/siteSettings';
+import { loadEnabledPlugins, } from '../../../stores/plugins';
 
 /**
  * Page-level guard for the /admin/shop/* section. The nav hides the Shop
@@ -11,7 +12,7 @@ import { isFeatureEnabled, loadSiteSettings, } from '../../../stores/siteSetting
  */
 const ShopGuard: ParentComponent = (props,) => {
     const [ready,] = createResource(async () => {
-        await loadSiteSettings();
+        await Promise.all([loadSiteSettings(), loadEnabledPlugins(),],);
         return true;
     },);
 

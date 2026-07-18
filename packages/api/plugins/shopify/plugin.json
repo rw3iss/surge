@@ -1,0 +1,21 @@
+{
+  "name": "shopify",
+  "label": "Shopify Storefront",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "server": "server.js",
+  "client": "client.js",
+  "capabilities": ["config-page"],
+  "adminOnlyToggle": true,
+  "csp": {
+    "imgSrc": ["https://cdn.shopify.com", "https://*.myshopify.com"],
+    "connectSrc": ["https://*.myshopify.com"],
+    "frameSrc": ["https://*.myshopify.com"]
+  },
+  "configSchema": [
+    { "key": "shopDomain", "label": "Shop domain (my-store.myshopify.com)", "type": "string", "required": true },
+    { "key": "storefrontToken", "label": "Storefront API access token", "type": "secret", "required": true },
+    { "key": "adminToken", "label": "Admin API access token (shpat_…)", "type": "secret" },
+    { "key": "apiVersion", "label": "API version", "type": "string", "default": "2024-10" }
+  ]
+}

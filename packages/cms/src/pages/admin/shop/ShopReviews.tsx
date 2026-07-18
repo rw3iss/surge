@@ -7,6 +7,7 @@ import { useSearchFilter, } from '../../../hooks/useSearchFilter';
 import { useToast, } from '../../../components/common/toast';
 import { cms, } from '../../../services/cmsClient';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
 import { formatDate, } from './shopUtils';
 
 const ShopReviewsInner: Component = () => {
@@ -52,6 +53,7 @@ const ShopReviewsInner: Component = () => {
             <div class="admin-header">
                 <h1>Reviews</h1>
             </div>
+            <ShopifyManagedBanner note="Reviews aren't synced from Shopify; these internal reviews aren't shown on the storefront while Shopify is enabled." />
             <div class="admin-filter-bar">
                 <select
                     class="admin-filter-bar__select"

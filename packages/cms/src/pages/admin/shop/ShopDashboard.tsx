@@ -5,7 +5,9 @@ import type { ShopOrder, ShopProduct, } from '@sitesurge/types';
 import { cms, } from '../../../services/cmsClient';
 import { getStatusBadgeClass, } from '../../../utils/badges';
 import ShopGuard from './ShopGuard';
+import ShopifyManagedBanner from './ShopifyManagedBanner';
 import { formatCents, formatDate, } from './shopUtils';
+import { isShopifyActive, shopifyAdminUrl, shopifySource, } from '../../../services/shopifySource';
 
 const PAID_STATUSES = new Set(['paid', 'processing', 'shipped', 'delivered',],);
 
@@ -63,6 +65,16 @@ const ShopDashboardInner: Component = () => {
 
     const paidCount = () => orders().filter((o,) => PAID_STATUSES.has(o.status,)).length;
 
+    // Shopify override: stats + recent orders sourced from Shopify (read-only).
+    const [shopifyStats,] = createResource(
+        () => isShopifyActive() ? 'shopify' : null,
+        () => shopifySource.shopStats(),
+    );
+    const [shopifyOrders,] = createResource(
+        () => isShopifyActive() ? 'shopify' : null,
+        async () => (await shopifySource.listOrders(10,)).orders ?? [],
+    );
+
     // Left-nav entries. `count: null` renders no badge (Settings has no items).
     const navLinks = (): { href: string; label: string; count: number | null; }[] => [
         { href: '/admin/shop/products', label: 'Products', count: productsData()?.total ?? 0, },
@@ -78,9 +90,75 @@ const ShopDashboardInner: Component = () => {
             <Title>Shop - Admin - RW</Title>
             <div class="admin-header">
                 <h1>Shop</h1>
-                <A href="/admin/shop/products/new" class="btn btn--primary">New Product</A>
+                <Show when={!isShopifyActive()}>
+                    <A href="/admin/shop/products/new" class="btn btn--primary">New Product</A>
+                </Show>
             </div>
 
+            <ShopifyManagedBanner />
+
+            {/* Shopify-backed lightweight dashboard (read-only) when the plugin is on. */}
+            <Show when={isShopifyActive()}>
+                <div class="shop-admin__main">
+                    <div class="shop-admin__cards">
+                        <div class="shop-admin__card stat-card">
+                            <span class="stat-card__label">Products</span>
+                            <span class="stat-card__value">{shopifyStats()?.productCount ?? '—'}</span>
+                        </div>
+                        <div class="shop-admin__card stat-card">
+                            <span class="stat-card__label">Orders</span>
+                            <span class="stat-card__value">{shopifyStats()?.orderCount ?? '—'}</span>
+                        </div>
+                        <div class="shop-admin__card stat-card">
+                            <span class="stat-card__label">Recent sales</span>
+                            <span class="stat-card__value">
+                                {formatCents(shopifyStats()?.recentSalesCents ?? 0, shopifyStats()?.currency,)}
+                            </span>
+                            <Show when={shopifyStats() && !shopifyStats()!.ok}>
+                                <span class="form-help-muted">Add an Admin API token to see order stats.</span>
+                            </Show>
+                        </div>
+                    </div>
+
+                    <div class="shop-admin__section">
+                        <div class="shop-admin__section-header">
+                            <h2>Recent Shopify orders</h2>
+                            <Show when={shopifyAdminUrl()}>
+                                <a href={`${shopifyAdminUrl()}/orders`} target="_blank" rel="noopener" class="table-link">
+                                    Open in Shopify ↗
+                                </a>
+                            </Show>
+                        </div>
+                        <Show
+                            when={(shopifyOrders() ?? []).length}
+                            fallback={<div class="empty-state">No orders (or no Admin API token configured).</div>}
+                        >
+                            <div class="admin-table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr><th>Order</th><th>Date</th><th>Customer</th><th>Total</th><th>Status</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <For each={shopifyOrders()}>
+                                            {(o,) => (
+                                                <tr>
+                                                    <td>{o.name}</td>
+                                                    <td>{formatDate(o.createdAt,)}</td>
+                                                    <td>{o.customerName || o.email || '—'}</td>
+                                                    <td>{formatCents(o.totalCents, o.currency,)}</td>
+                                                    <td><span class="badge">{o.financialStatus || '—'}</span></td>
+                                                </tr>
+                                            )}
+                                        </For>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Show>
+                    </div>
+                </div>
+            </Show>
+
+            <Show when={!isShopifyActive()}>
             <div class="shop-admin__layout">
                 {/* Left: thin nav column — one link per section with its item count. */}
                 <nav class="shop-admin__nav" aria-label="Shop sections">
@@ -166,6 +244,7 @@ const ShopDashboardInner: Component = () => {
                     </div>
                 </div>
             </div>
+            </Show>
         </div>
     );
 };
