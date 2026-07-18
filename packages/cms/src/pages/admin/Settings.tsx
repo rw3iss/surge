@@ -402,7 +402,32 @@ function ConnectionsPanel() {
 // ─── Site Colors Panel ───
 
 function isValidHex(hex: string,): boolean {
-    return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex,);
+    // #rgb, #rrggbb, or #rrggbbaa (8-digit carries the alpha channel).
+    return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(hex,);
+}
+
+/** Normalize any accepted hex to a 6-digit `#rrggbb` base (drops alpha,
+ *  expands shorthand) — used to feed the color wheel and recompose. */
+function hexBase6(hex: string,): string {
+    const m = hex.replace('#', '',);
+    if (m.length === 3) return '#' + m.split('',).map((c,) => c + c).join('',);
+    return '#' + m.substring(0, 6,).padEnd(6, '0',);
+}
+
+/** Extract the alpha channel from a hex as a 0–100 percentage. 6-digit (no
+ *  alpha) → 100%. */
+function hexAlphaPct(hex: string,): number {
+    const m = hex.replace('#', '',);
+    if (m.length === 8) return Math.round((parseInt(m.substring(6, 8,), 16,) / 255) * 100,);
+    return 100;
+}
+
+/** Recompose a base color + opacity into a stored hex. 100% stays a simple
+ *  6-digit `#rrggbb`; below 100% appends the alpha pair (`#rrggbbaa`). */
+function composeHex(base6: string, alphaPct: number,): string {
+    if (alphaPct >= 100) return base6;
+    const a = Math.round((Math.max(0, Math.min(100, alphaPct,)) / 100) * 255,);
+    return base6 + a.toString(16,).padStart(2, '0',);
 }
 
 /**
@@ -429,6 +454,9 @@ function SiteColorsPanel() {
     const [working, setWorking,] = createSignal<SiteSwatch[]>([],);
     const [editingIndex, setEditingIndex,] = createSignal<number | null>(null,);
     const [draftHex, setDraftHex,] = createSignal('#ffffff',);
+    // Opacity (0–100) for the color-with-alpha. 100 = fully opaque, stored as a
+    // plain 6-digit hex; below 100 appends an alpha pair (`#rrggbbaa`).
+    const [draftAlpha, setDraftAlpha,] = createSignal(100,);
     const [draftId, setDraftId,] = createSignal('',);
     const [draftName, setDraftName,] = createSignal('',);
     const [showWheel, setShowWheel,] = createSignal(false,);
@@ -459,6 +487,7 @@ function SiteColorsPanel() {
         if (!s) return;
         setEditingIndex(index,);
         setDraftHex(s.hex,);
+        setDraftAlpha(hexAlphaPct(s.hex,),);
         setDraftId(s.id,);
         setDraftName(s.name || '',);
         setShowWheel(false,);
@@ -552,6 +581,16 @@ function SiteColorsPanel() {
         let v = value.trim();
         if (v && !v.startsWith('#',)) v = '#' + v;
         setDraftHex(v,);
+        // Typing a hex that carries an alpha pair (`#rrggbbaa`) syncs the
+        // opacity slider; a plain 6/3-digit hex resets it to fully opaque.
+        if (isValidHex(v,)) setDraftAlpha(hexAlphaPct(v,),);
+    };
+
+    /** Drag the opacity slider — recompose the stored hex from the current base
+     *  color + the new opacity. */
+    const handleAlphaInput = (pct: number,) => {
+        setDraftAlpha(pct,);
+        setDraftHex(composeHex(hexBase6(draftHex(),), pct,),);
     };
 
     // Use the shared signal as a fallback render source. We display the
@@ -599,17 +638,23 @@ function SiteColorsPanel() {
                             class={`site-colors-editor__preview ${
                                 showWheel() ? 'site-colors-editor__preview--active' : ''
                             }`}
-                            style={{ background: isValidHex(draftHex(),) ? draftHex() : '#fff', }}
                             onClick={() => setShowWheel(!showWheel(),)}
                             title={showWheel() ? 'Close color wheel' : 'Open color wheel'}
-                        />
+                        >
+                            {/* Fill sits over the checkerboard so an alpha
+                                color reads as translucent. */}
+                            <span
+                                class="site-colors-editor__preview-fill"
+                                style={{ background: isValidHex(draftHex(),) ? draftHex() : 'transparent', }}
+                            />
+                        </button>
                         <input
                             type="text"
                             class="site-colors-editor__hex"
                             value={draftHex()}
                             onInput={(e,) => handleHexInput(e.currentTarget.value,)}
                             placeholder="#ffffff"
-                            maxLength={7}
+                            maxLength={9}
                         />
                     </div>
 
@@ -645,10 +690,24 @@ function SiteColorsPanel() {
                     <Show when={showWheel()}>
                         <div class="site-colors-editor__wheel-wrap">
                             <ColorWheel
-                                value={draftHex()}
-                                onChange={(c,) => setDraftHex(c.hex,)}
+                                value={hexBase6(draftHex(),)}
+                                onChange={(c,) => setDraftHex(composeHex(c.hex, draftAlpha(),),)}
                                 size={260}
                             />
+                            <div class="site-colors-editor__opacity" title="Opacity">
+                                <span class="site-colors-editor__opacity-value">{draftAlpha()}%</span>
+                                <input
+                                    type="range"
+                                    class="site-colors-editor__opacity-slider"
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={draftAlpha()}
+                                    onInput={(e,) => handleAlphaInput(Number(e.currentTarget.value,),)}
+                                    aria-label="Opacity"
+                                />
+                                <span class="site-colors-editor__opacity-caption">Opacity</span>
+                            </div>
                         </div>
                     </Show>
 

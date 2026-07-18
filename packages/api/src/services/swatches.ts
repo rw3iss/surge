@@ -20,7 +20,9 @@ import { cache, } from './cache';
 import { uuidOrNull, } from '../utils/uuid';
 import type { AuditContext, } from './types';
 
-const HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+// #rgb, #rrggbb, or #rrggbbaa — the 8-digit form carries the alpha channel so
+// operators can define translucent swatches.
+const HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/;
 /** Swatch IDs: alphanumeric + dash/underscore, 1–32 chars. Tight
  *  enough to keep CSS custom-property names safe and JSONB-text scans
  *  trustworthy. */

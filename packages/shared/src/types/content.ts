@@ -412,7 +412,9 @@ export interface SiteFooterSettings {
  *   id   — stable identifier. Defaults to a short random string;
  *          users can override with a custom slug (lowercase, digits,
  *          dash, underscore). Must be unique within the swatch list.
- *   hex  — concrete color value. Always a 3 or 6-char hex string.
+ *   hex  — concrete color value: a 3-, 6-, or 8-digit hex string. The
+ *          8-digit form (`#rrggbbaa`) carries an alpha channel for
+ *          translucent swatches; 3/6-digit are fully opaque.
  *   name — optional human-friendly label shown in pickers next to
  *          the swatch and ID (e.g. "Brand Red", "Background").
  */
