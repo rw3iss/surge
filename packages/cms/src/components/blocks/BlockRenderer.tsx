@@ -583,8 +583,13 @@ const CampaignBlock: Component<{ block: Block; }> = (props,) => {
     return (
         <>
             <Show when={!isAllCampaigns() && campaign()}>
-                <CampaignCard campaign={campaign()!} />
-                <Show when={showGiveButter(campaign(),)}>
+                {/* When GiveButter drives this campaign, its widget renders the
+                    donation form inline — so the teaser card (a link to the campaign
+                    page) is redundant. Show the widget instead of the card. */}
+                <Show
+                    when={showGiveButter(campaign(),)}
+                    fallback={<CampaignCard campaign={campaign()!} />}
+                >
                     <div class="campaign-block__givebutter">
                         <GiveButterWidget code={campaign()!.givebutterCampaignCode} type="giving-form" />
                     </div>
