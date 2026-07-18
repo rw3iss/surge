@@ -11,6 +11,10 @@
     // the site gutter on the left/right when the post opts in.
     max-width: var(--site-max-width, 800px);
     margin: 0 auto;
+    // Query container so the post title can scale with the content column's
+    // width (see `&__title` — it uses `cqi`). Narrowing the post width (or a
+    // smaller Max Content Width) shrinks the title accordingly.
+    container-type: inline-size;
   }
 
   &__header {
@@ -18,7 +22,11 @@
   }
 
   &__title {
-    font-size: $font-size-4xl;
+    // Fluid title: scales with the content column's inline size (like the
+    // homepage carousel post slides). Caps at ~40px on a full-width column and
+    // shrinks to ~26px (≈20pt) as the post width narrows.
+    font-size: clamp(1.625rem, 5cqi, 2.5rem);
+    line-height: 1.15;
     margin-bottom: $spacing-md;
   }
 

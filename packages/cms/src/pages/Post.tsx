@@ -171,9 +171,12 @@ const PostPage: Component = () => {
                         });
                         const heading = () => (
                             <>
-                                <h1>{postData().title}</h1>
+                                <h1 class="post-page__title">{postData().title}</h1>
                                 <div class="post-page__meta">
-                                    <span>By {postData().author}</span>
+                                    {/* Only show the byline when an author is actually set. */}
+                                    <Show when={postData().author}>
+                                        <span>By {postData().author}</span>
+                                    </Show>
                                     <Show when={postData().publishedAt}>
                                         <span>{new Date(postData().publishedAt!,).toLocaleDateString()}</span>
                                     </Show>
