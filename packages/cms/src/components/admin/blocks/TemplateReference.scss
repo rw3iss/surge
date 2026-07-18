@@ -1,0 +1,66 @@
+@use '../../../styles/variables' as *;
+
+.tpl-ref {
+  font-size: $font-size-sm;
+
+  &__intro {
+    margin: 0 0 $spacing-md;
+    color: $text-light;
+    line-height: 1.5;
+  }
+
+  &__heading {
+    margin: $spacing-md 0 $spacing-xs;
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-light;
+  }
+
+  &__group { margin-bottom: $spacing-sm; }
+
+  &__group-title {
+    font-weight: 600;
+    font-size: $font-size-xs;
+    margin: $spacing-sm 0 2px;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+
+    &--block { gap: $spacing-xs; }
+  }
+
+  &__code {
+    font-family: var(--admin-font-mono, ui-monospace, Menlo, monospace);
+    font-size: 12px;
+    color: var(--site-primary, #{$primary-color});
+    word-break: break-word;
+  }
+
+  &__desc { color: $text-light; line-height: 1.4; }
+
+  &__pre {
+    margin: 0;
+    padding: $spacing-sm;
+    background: $background-dark;
+    border-radius: $border-radius-sm;
+    font-family: var(--admin-font-mono, ui-monospace, Menlo, monospace);
+    font-size: 11px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  &__more {
+    display: inline-block;
+    margin-top: $spacing-md;
+    font-weight: 600;
+    color: var(--site-primary, #{$primary-color});
+    text-decoration: none;
+  }
+}

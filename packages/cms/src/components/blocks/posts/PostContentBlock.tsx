@@ -1,5 +1,6 @@
 import { Component, } from 'solid-js';
 import { BlockRenderer, } from '../BlockRenderer';
+import type { RuntimeOptions, } from '../../../services/template/runtime';
 
 /**
  * Renders a single post content block on the public post page.
@@ -13,7 +14,7 @@ import { BlockRenderer, } from '../BlockRenderer';
  * (background, padding, overflow, alignment, etc.) regardless of
  * whether it lives in a post or a page.
  */
-const PostContentBlock: Component<{ block: any; }> = (props,) => {
+const PostContentBlock: Component<{ block: any; templateContext?: RuntimeOptions['entities']; }> = (props,) => {
     const renderBlock = () => {
         const raw = props.block;
         const data = raw.data || {};
@@ -38,7 +39,7 @@ const PostContentBlock: Component<{ block: any; }> = (props,) => {
         };
     };
 
-    return <BlockRenderer block={renderBlock() as any} />;
+    return <BlockRenderer block={renderBlock() as any} templateContext={props.templateContext} />;
 };
 
 export default PostContentBlock;

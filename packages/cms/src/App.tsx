@@ -54,6 +54,8 @@ const AdminMailSend = lazy(() => import('./pages/admin/MailSend'));
 const AdminMailJob = lazy(() => import('./pages/admin/MailJob'));
 const AdminMedia = lazy(() => import('./pages/admin/Media'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
+const AdminHelp = lazy(() => import('./pages/admin/Help'));
+const AdminHelpVariables = lazy(() => import('./pages/admin/HelpVariables'));
 const AdminShopDashboard = lazy(() => import('./pages/admin/shop/ShopDashboard'));
 const AdminShopProducts = lazy(() => import('./pages/admin/shop/ShopProducts'));
 const AdminShopProductEditor = lazy(() => import('./pages/admin/shop/ShopProductEditor'));
@@ -153,6 +155,8 @@ const App: Component = () => {
 										<Route path="/plugins" component={AdminPlugins} />
 										<Route path="/plugins/:name" component={AdminPluginConfig} />
 										<Route path="/settings" component={AdminSettings} />
+										<Route path="/help" component={AdminHelp} />
+										<Route path="/help/variables-and-functions" component={AdminHelpVariables} />
 									</Route>
 
 									{/* Setup wizard — outside the main Layout so it can render its own chrome. */}

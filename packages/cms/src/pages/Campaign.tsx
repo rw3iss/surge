@@ -3,6 +3,7 @@ import type { Campaign, } from '@sitesurge/types';
 import { Component, createResource, Show, } from 'solid-js';
 import DonationForm from '../components/forms/donations/DonationForm';
 import GiveButterWidget from '../components/blocks/GiveButterWidget';
+import TemplatedContent from '../components/blocks/TemplatedContent';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
 import { siteName, } from '../stores/siteSettings';
@@ -148,8 +149,12 @@ const CampaignPage: Component = () => {
                                 </div>
                             </div>
 
-                            {/* Description */}
-                            <div class="campaign-page__description rich-text" innerHTML={c().description} />
+                            {/* Description — resolves {{campaign.*}} against this campaign. */}
+                            <TemplatedContent
+                                class="campaign-page__description rich-text"
+                                html={c().description}
+                                entities={{ campaign: { kind: 'campaign', data: c() as unknown as Record<string, unknown>, id: c().id } }}
+                            />
 
                             {/* Donation Form — GiveButter widget when this campaign
                                 uses GiveButter and the plugin is enabled, else the

@@ -1,0 +1,128 @@
+@use '../../styles/variables' as *;
+
+.admin-help {
+  &__intro { margin: 0 0 $spacing-lg; }
+
+  &__topics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: $spacing-md;
+  }
+
+  &__card {
+    display: block;
+    padding: $spacing-lg;
+    background: var(--admin-panel-bg, #{$background});
+    border: 1px solid $border-color;
+    border-radius: $border-radius-lg;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s, border-color 0.15s;
+
+    &:hover { box-shadow: $shadow-md; border-color: var(--site-primary, #{$primary-color}); }
+  }
+
+  &__card-title { margin: 0 0 $spacing-xs; font-size: $font-size-lg; }
+  &__card-desc { margin: 0; color: $text-light; font-size: $font-size-sm; line-height: 1.5; }
+}
+
+// ─── Full documentation page ───
+.help-doc {
+  max-width: 860px;
+
+  &__back {
+    display: inline-block;
+    font-size: $font-size-sm;
+    color: $text-light;
+    text-decoration: none;
+    margin-bottom: $spacing-sm;
+
+    &:hover { color: var(--site-primary, #{$primary-color}); }
+  }
+
+  &__lead { font-size: $font-size-base; line-height: 1.6; color: $text-color; margin-bottom: $spacing-xl; }
+
+  &__section {
+    margin-bottom: $spacing-xl;
+
+    h2 { margin: 0 0 $spacing-md; padding-bottom: $spacing-xs; border-bottom: 1px solid $border-color; }
+    h3 { margin: $spacing-md 0 $spacing-xs; font-size: $font-size-base; }
+  }
+
+  &__example {
+    margin-bottom: $spacing-sm;
+
+    &--block { margin-bottom: $spacing-md; }
+  }
+
+  &__code {
+    font-family: var(--admin-font-mono, ui-monospace, Menlo, monospace);
+    font-size: 13px;
+    color: var(--site-primary, #{$primary-color});
+    background: $background-dark;
+    padding: 2px 6px;
+    border-radius: $border-radius-sm;
+  }
+
+  &__desc { margin: 4px 0 0; color: $text-color; line-height: 1.5; }
+
+  &__pre {
+    margin: $spacing-xs 0 0;
+    padding: $spacing-md;
+    background: $background-dark;
+    border-radius: $border-radius-md;
+    font-family: var(--admin-font-mono, ui-monospace, Menlo, monospace);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  &__fn-table, &__fn-group table {
+    width: 100%;
+    border-collapse: collapse;
+
+    td { padding: 5px 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.05); vertical-align: top; }
+    td:first-child { white-space: nowrap; }
+    code { font-family: var(--admin-font-mono, ui-monospace, Menlo, monospace); font-size: 12px; color: var(--site-primary, #{$primary-color}); }
+  }
+}
+
+.help-entity {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  margin-bottom: $spacing-sm;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: var(--admin-panel-bg, #{$background});
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: $font-size-sm;
+
+    &:hover { background: $background-dark; }
+  }
+
+  &__chev { color: $text-light; width: 12px; flex-shrink: 0; }
+  &__name { font-weight: 700; }
+  &__kind { font-family: var(--admin-font-mono, monospace); font-size: 11px; color: $text-light; }
+  &__desc { color: $text-light; flex: 1; min-width: 0; }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: $font-size-sm;
+
+    th { text-align: left; padding: 6px $spacing-md; background: $background-dark; font-size: $font-size-xs; text-transform: uppercase; color: $text-light; }
+    td { padding: 5px $spacing-md; border-top: 1px solid rgba(0, 0, 0, 0.05); }
+    code { font-family: var(--admin-font-mono, monospace); font-size: 12px; }
+  }
+
+  &__type { font-family: var(--admin-font-mono, monospace); font-size: 12px; color: var(--site-primary, #{$primary-color}); }
+}

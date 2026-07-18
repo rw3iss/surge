@@ -1,6 +1,7 @@
 import { batch, Component, createSignal, For, Match, onMount, Show, Switch, } from 'solid-js';
 import { BlockStyleData, BlockStyleService, } from '../../../services/blockStyles';
 import Toggle from '../common/Toggle';
+import TemplateReference from './TemplateReference';
 import type { BlockData, BlockType, } from './ContentBlock';
 import BlockStyleEditor from './blockStyles/BlockStyleEditor';
 import CampaignBlock from './types/CampaignBlock';
@@ -101,6 +102,7 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
     const [currentStyle, setCurrentStyle,] = createSignal<BlockStyleData>(BlockStyleService.getDefault(),);
     const [selectedStyleId, setSelectedStyleId,] = createSignal<string>('none',);
     const [showRemoveConfirm, setShowRemoveConfirm,] = createSignal(false,);
+    const [showTplRef, setShowTplRef,] = createSignal(false,);
 
     // Load styles once on mount — NOT reactive on props.block changes,
     // so style changes don't re-resolve and cause scroll jumps or resets.
@@ -357,6 +359,22 @@ const BlockEditController: Component<BlockEditControllerProps> = (props,) => {
                     />
                 </div>
             </Show>
+
+            {/* ── Variable & Function Reference (collapsible, bottom of panel) ── */}
+            <div class="block-edit-controller__tpl-ref">
+                <button
+                    type="button"
+                    class="block-edit-controller__tpl-ref-toggle"
+                    onClick={() => setShowTplRef(!showTplRef(),)}
+                    aria-expanded={showTplRef()}
+                >
+                    <span>{showTplRef() ? '▾' : '▸'}</span>
+                    Variable &amp; Function Reference
+                </button>
+                <Show when={showTplRef()}>
+                    <TemplateReference />
+                </Show>
+            </div>
 
             <ConfirmModal
                 open={showRemoveConfirm()}

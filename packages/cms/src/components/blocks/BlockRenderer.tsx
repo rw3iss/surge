@@ -12,7 +12,12 @@ import ResolvedHeroCarousel from './ResolvedHeroCarousel';
 import PostListRenderer, { type PostListSettings, } from './posts/PostListRenderer';
 import SocialEmbed from './social/SocialEmbed';
 import { usePluginEnabled, } from '../../hooks/usePluginGate';
+import TemplatedContent from './TemplatedContent';
+import type { RuntimeOptions, } from '../../services/template/runtime';
 import './BlockRenderer.scss';
+
+/** Page-entity context threaded into a block's `{{ … }}` template resolution. */
+type TplCtx = RuntimeOptions['entities'];
 
 /** Render a stored color value through the swatch resolver. Returns
  *  `undefined` when nothing should be emitted so the consumer can drop
@@ -27,6 +32,9 @@ interface BlockRendererProps {
      *  out by the surrounding editor) so operators can see them. On the public
      *  site (default), a disabled block is skipped entirely. */
     preview?: boolean;
+    /** Page-entity variables (e.g. `{ post: {kind,data,id} }`) exposed to this
+     *  block's `{{ … }}` template resolution — the containing post/campaign/page. */
+    templateContext?: TplCtx;
 }
 
 export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
@@ -100,10 +108,10 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
             >
                 <Switch>
                     <Match when={props.block.type === 'hero'}>
-                        <HeroBlock block={props.block} />
+                        <HeroBlock block={props.block} ctx={props.templateContext} />
                     </Match>
                     <Match when={props.block.type === 'rich_text'}>
-                        <RichTextBlock block={props.block} />
+                        <RichTextBlock block={props.block} ctx={props.templateContext} />
                     </Match>
                     <Match when={props.block.type === 'image'}>
                         <ImageBlock block={props.block} />
@@ -112,7 +120,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                         <VideoBlock block={props.block} />
                     </Match>
                     <Match when={props.block.type === 'post'}>
-                        <PostBlock block={props.block} />
+                        <PostBlock block={props.block} ctx={props.templateContext} />
                     </Match>
                     <Match when={props.block.type === 'post_list'}>
                         <PostListRenderer settings={(props.block.settings || {}) as PostListSettings} />
@@ -127,7 +135,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                         <SocialBlock block={props.block} />
                     </Match>
                     <Match when={props.block.type === 'text'}>
-                        <RichTextBlock block={props.block} />
+                        <RichTextBlock block={props.block} ctx={props.templateContext} />
                     </Match>
                     <Match when={props.block.type === 'document'}>
                         <DocumentLink block={props.block} />
@@ -136,7 +144,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                         <UrlLinkCard block={props.block} />
                     </Match>
                     <Match when={props.block.type === 'html'}>
-                        <HTMLBlock block={props.block} />
+                        <HTMLBlock block={props.block} ctx={props.templateContext} />
                     </Match>
                     <Match when={props.block.type === 'carousel'}>
                         <CarouselBlockRenderer block={props.block} />
@@ -170,7 +178,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
     );
 };
 
-const HeroBlock: Component<{ block: Block; }> = (props,) => {
+const HeroBlock: Component<{ block: Block; ctx?: TplCtx; }> = (props,) => {
     const bgImage = () => (props.block.settings.backgroundImage as string) || undefined;
     const bgSize = () => (props.block.settings.backgroundSize as string) || 'cover';
     const heroTitle = () => props.block.title || (props.block.settings.title as string) || '';
@@ -197,15 +205,19 @@ const HeroBlock: Component<{ block: Block; }> = (props,) => {
                 <p class="hero-block__subtitle">{heroSubtitle()}</p>
             </Show>
             <Show when={props.block.content}>
-                <div class="hero-block__content rich-text" innerHTML={props.block.content} />
+                <TemplatedContent class="hero-block__content rich-text" html={props.block.content} entities={props.ctx} />
             </Show>
         </section>
     );
 };
 
-const RichTextBlock: Component<{ block: Block; }> = (props,) => (
+const RichTextBlock: Component<{ block: Block; ctx?: TplCtx; }> = (props,) => (
     <div class="rich-text-block">
-        <div class="rich-text" innerHTML={props.block.content || (props.block.settings?.content as string) || ''} />
+        <TemplatedContent
+            class="rich-text"
+            html={props.block.content || (props.block.settings?.content as string) || ''}
+            entities={props.ctx}
+        />
     </div>
 );
 
@@ -428,7 +440,7 @@ const VideoBlock: Component<{ block: Block; }> = (props,) => (
     </div>
 );
 
-const PostBlock: Component<{ block: Block; }> = (props,) => {
+const PostBlock: Component<{ block: Block; ctx?: TplCtx; }> = (props,) => {
     const postId = () => props.block.settings.postId as string;
 
     const [post,] = createResource(postId, async (id,) => {
@@ -440,6 +452,12 @@ const PostBlock: Component<{ block: Block; }> = (props,) => {
         }
     },);
 
+    // Inside a post embed, `{{post.*}}` refers to the embedded post.
+    const ctx = (): TplCtx => ({
+        ...props.ctx,
+        post: { kind: 'post', data: post() as unknown as Record<string, unknown>, id: post()?.id },
+    });
+
     return (
         <Show when={post()}>
             <article class="post-block">
@@ -447,7 +465,7 @@ const PostBlock: Component<{ block: Block; }> = (props,) => {
                     <img src={post()!.featuredImage} alt={post()!.title} class="post-block__image" />
                 </Show>
                 <h2 class="post-block__title">{post()!.title}</h2>
-                <div class="rich-text" innerHTML={post()!.content} />
+                <TemplatedContent class="rich-text" html={post()!.content} entities={ctx()} />
             </article>
         </Show>
     );
@@ -776,8 +794,12 @@ const UrlLinkCard: Component<{ block: Block; }> = (props,) => {
     );
 };
 
-const HTMLBlock: Component<{ block: Block; }> = (props,) => (
-    <div class="html-block" innerHTML={props.block.content || (props.block.settings?.content as string) || ''} />
+const HTMLBlock: Component<{ block: Block; ctx?: TplCtx; }> = (props,) => (
+    <TemplatedContent
+        class="html-block"
+        html={props.block.content || (props.block.settings?.content as string) || ''}
+        entities={props.ctx}
+    />
 );
 
 const CarouselBlockRenderer: Component<{ block: Block; }> = (props,) => {

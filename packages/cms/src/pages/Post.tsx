@@ -4,6 +4,7 @@ import { ContentLockedError, } from '@sitesurge/client';
 import { Component, createEffect, createResource, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js';
 import ContentGate from '../components/auth/ContentGate';
 import PostContentBlock from '../components/blocks/posts/PostContentBlock';
+import TemplatedContent from '../components/blocks/TemplatedContent';
 import SeoHead from '../components/common/seo/SeoHead';
 import { cms, } from '../services/cmsClient';
 import { contentPaddingStyle, } from '../utils/appearanceStyle';
@@ -163,6 +164,10 @@ const PostPage: Component = () => {
                         const bannerLayout = () =>
                             ((postData() as any).bannerLayout as 'hero' | 'standalone' | 'thumbnail') || 'standalone';
                         const hasBanner = () => !!postData().featuredImage;
+                        // Expose the current post to `{{post.*}}` in its blocks.
+                        const postCtx = () => ({
+                            post: { kind: 'post', data: postData() as unknown as Record<string, unknown>, id: postData().id },
+                        });
                         const heading = () => (
                             <>
                                 <h1>{postData().title}</h1>
@@ -240,14 +245,14 @@ const PostPage: Component = () => {
                                 <Show when={(postData() as any).contentBlocks?.length}>
                                     <div class="post-page__blocks">
                                         <For each={(postData() as any).contentBlocks}>
-                                            {(block: any,) => <PostContentBlock block={block} />}
+                                            {(block: any,) => <PostContentBlock block={block} templateContext={postCtx()} />}
                                         </For>
                                     </div>
                                 </Show>
 
                                 {/* Fallback to legacy content field if no blocks */}
                                 <Show when={!(postData() as any).contentBlocks?.length && postData().content}>
-                                    <div class="rich-text" innerHTML={postData().content} />
+                                    <TemplatedContent class="rich-text" html={postData().content} entities={postCtx()} />
                                 </Show>
                             </article>
                         </>
