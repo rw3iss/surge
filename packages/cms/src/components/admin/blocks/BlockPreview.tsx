@@ -68,7 +68,11 @@ const BlockPreview: Component<BlockPreviewProps> = (props,) => {
         return !d.content && !d.url && !d.postId && !d.postUrl &&
             !d.socialPlatform && !d.platform && !d.campaignId &&
             !d.formId && !d.slug && !d.galleryId &&
-            !(d.items && d.items.length > 0);
+            !(d.items && d.items.length > 0) &&
+            // Multi-image blocks store their images in `images[]` (the legacy
+            // single-image `url` is handled above) — treat a block with any
+            // image as non-empty so its preview renders instead of the hint.
+            !(Array.isArray(d.images,) && d.images.some((img: { url?: string; },) => img && img.url));
     };
 
     return (

@@ -262,63 +262,78 @@ const ImageBlock: Component<ImageBlockProps> = (props,) => {
 
                 {/* ─── Block-level layout ─── */}
                 <FormSection title="Layout">
-                    <FormField label="Direction" inline>
-                        <select
-                            value={(props.data.direction as string) || 'horizontal'}
-                            onChange={(e,) => updateBlock({ direction: e.currentTarget.value, },)}
+                    {/* Direction + Gap share a row (each half width). */}
+                    <div class="admin-form-row-2">
+                        <FormField label="Direction">
+                            <select
+                                value={(props.data.direction as string) || 'horizontal'}
+                                onChange={(e,) => updateBlock({ direction: e.currentTarget.value, },)}
+                            >
+                                <option value="horizontal">Horizontal (row)</option>
+                                <option value="vertical">Vertical (column)</option>
+                            </select>
+                        </FormField>
+                        <FormField
+                            label="Gap"
+                            tooltip="Spacing between images when there are multiple. Any valid CSS length: 8px, 1rem, 2%."
                         >
-                            <option value="horizontal">Horizontal (row)</option>
-                            <option value="vertical">Vertical (column)</option>
-                        </select>
-                    </FormField>
-                    <FormField
-                        label="Item min width"
-                        tooltip="Smallest width each image can shrink to before the row wraps. Any valid CSS length: 200px, 25%, 12rem."
-                        inline
-                    >
-                        <input
-                            type="text"
-                            value={(props.data.itemMinWidth as string) || ''}
-                            onChange={(e,) => updateBlock({ itemMinWidth: e.currentTarget.value, },)}
-                            placeholder="e.g. 200px, 25%"
-                        />
-                    </FormField>
-                    <FormField
-                        label="Item max width"
-                        tooltip="Largest width each image can grow to. Any valid CSS length."
-                        inline
-                    >
-                        <input
-                            type="text"
-                            value={(props.data.itemMaxWidth as string) || ''}
-                            onChange={(e,) => updateBlock({ itemMaxWidth: e.currentTarget.value, },)}
-                            placeholder="e.g. 600px, 50%"
-                        />
-                    </FormField>
-                    <FormField
-                        label="Item min height"
-                        tooltip="Smallest height each image renders at. Any valid CSS length."
-                        inline
-                    >
-                        <input
-                            type="text"
-                            value={(props.data.itemMinHeight as string) || ''}
-                            onChange={(e,) => updateBlock({ itemMinHeight: e.currentTarget.value, },)}
-                            placeholder="e.g. 100px"
-                        />
-                    </FormField>
-                    <FormField
-                        label="Item max height"
-                        tooltip="Largest height each image can grow to. Any valid CSS length."
-                        inline
-                    >
-                        <input
-                            type="text"
-                            value={(props.data.itemMaxHeight as string) || ''}
-                            onChange={(e,) => updateBlock({ itemMaxHeight: e.currentTarget.value, },)}
-                            placeholder="e.g. 400px"
-                        />
-                    </FormField>
+                            <input
+                                type="text"
+                                value={(props.data.gap as string) || ''}
+                                onChange={(e,) => updateBlock({ gap: e.currentTarget.value, },)}
+                                placeholder="e.g. 12px, 1rem"
+                            />
+                        </FormField>
+                    </div>
+                    {/* Min / max width share a row; min / max height share a row. */}
+                    <div class="admin-form-row-2">
+                        <FormField
+                            label="Item min width"
+                            tooltip="Smallest width each image can shrink to before the row wraps. Any valid CSS length: 200px, 25%, 12rem."
+                        >
+                            <input
+                                type="text"
+                                value={(props.data.itemMinWidth as string) || ''}
+                                onChange={(e,) => updateBlock({ itemMinWidth: e.currentTarget.value, },)}
+                                placeholder="e.g. 200px, 25%"
+                            />
+                        </FormField>
+                        <FormField
+                            label="Item max width"
+                            tooltip="Largest width each image can grow to. Any valid CSS length."
+                        >
+                            <input
+                                type="text"
+                                value={(props.data.itemMaxWidth as string) || ''}
+                                onChange={(e,) => updateBlock({ itemMaxWidth: e.currentTarget.value, },)}
+                                placeholder="e.g. 600px, 50%"
+                            />
+                        </FormField>
+                    </div>
+                    <div class="admin-form-row-2">
+                        <FormField
+                            label="Item min height"
+                            tooltip="Smallest height each image renders at. Any valid CSS length."
+                        >
+                            <input
+                                type="text"
+                                value={(props.data.itemMinHeight as string) || ''}
+                                onChange={(e,) => updateBlock({ itemMinHeight: e.currentTarget.value, },)}
+                                placeholder="e.g. 100px"
+                            />
+                        </FormField>
+                        <FormField
+                            label="Item max height"
+                            tooltip="Largest height each image can grow to. Any valid CSS length."
+                        >
+                            <input
+                                type="text"
+                                value={(props.data.itemMaxHeight as string) || ''}
+                                onChange={(e,) => updateBlock({ itemMaxHeight: e.currentTarget.value, },)}
+                                placeholder="e.g. 400px"
+                            />
+                        </FormField>
+                    </div>
                 </FormSection>
 
                 <Show when={showSelect()}>

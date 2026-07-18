@@ -791,6 +791,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                     </Show>
                     <div class="add-block-dropdown">
                         <AddBlockMenu
+                            triggerSize="small"
                             types={blockTypes()}
                             onSelect={(type, initialData,) => addBlock(type, 'bottom', null, initialData,)}
                         />

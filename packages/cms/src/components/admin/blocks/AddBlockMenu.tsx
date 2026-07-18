@@ -86,21 +86,19 @@ export const AddBlockMenu: Component<AddBlockMenuProps> = (props,) => {
         const vw = window.innerWidth;
 
         const desiredMaxHeight = Math.floor(vh * (MENU_MAX_HEIGHT_VH / 100),);
-        let top = r.bottom + MENU_OFFSET_PX;
+        const top = r.bottom + MENU_OFFSET_PX;
         let left = r.left;
 
         if (left + MENU_MIN_WIDTH > vw - 12) {
             left = Math.max(12, vw - MENU_MIN_WIDTH - 12,);
         }
-        const spaceBelow = vh - r.bottom - MENU_OFFSET_PX;
-        const spaceAbove = r.top - MENU_OFFSET_PX;
-        let maxHeight = desiredMaxHeight;
-        if (spaceBelow < 240 && spaceAbove > spaceBelow) {
-            maxHeight = Math.min(desiredMaxHeight, Math.max(160, spaceAbove - 12,),);
-            top = r.top - MENU_OFFSET_PX - maxHeight;
-        } else {
-            maxHeight = Math.min(desiredMaxHeight, Math.max(160, spaceBelow - 12,),);
-        }
+        // Always open directly BELOW the trigger and cap the height to the
+        // space available below, so the panel stays anchored to its own button
+        // (it scrolls internally when short). Flipping the menu above the
+        // trigger made the bottom "Add Block" render its menu high in the
+        // viewport — visually under the top button.
+        const spaceBelow = vh - top - 12;
+        const maxHeight = Math.min(desiredMaxHeight, Math.max(160, spaceBelow,),);
         setPos({ top, left, maxHeight, },);
     };
 

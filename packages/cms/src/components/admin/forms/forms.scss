@@ -88,6 +88,16 @@
   }
 }
 
+// Two-up row: pairs of stacked FormFields side by side (e.g. min/max width),
+// collapsing to a single column when the panel/window is narrow. Shared so
+// every block editor lays paired fields out identically.
+.admin-form-row-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: $spacing-sm $spacing-md;
+  align-items: start;
+}
+
 // ─── FormCheck ───
 .admin-form-check {
   display: inline-flex;
