@@ -5,7 +5,7 @@ import { Portal, } from 'solid-js/web';
 import { cms, } from '../../services/cmsClient';
 import { colorCssValue, } from '../../services/colorResolver';
 import { fontStack, } from '../../utils/appearanceStyle';
-import { groupColumns, groupContainerStyle, } from '../../utils/groupStyle';
+import { groupColumns, groupContainerStyle, groupSlotItemStyle, } from '../../utils/groupStyle';
 import FormRenderer from '../forms/FormRenderer';
 import GiveButterWidget from './GiveButterWidget';
 import ResolvedHeroCarousel from './ResolvedHeroCarousel';
@@ -65,6 +65,16 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
     const bgImageValue = () => (s().backgroundImage as string | undefined) || undefined;
     const hasBgOverlay = () => Boolean(bgColorValue() && bgImageValue());
 
+    // A group_item's wrapper IS the flex/grid item of its parent group, so the
+    // slot's sizing (flex + width/min/max) must live on THIS element — not on
+    // GroupItemBlock's inner div (the parent flex container can't see that far
+    // down). Otherwise the wrapper keeps the default `width: 100%` and every
+    // slot wraps to its own row. `settings` already carries the parent's item
+    // defaults (merged via withSlotDefaults).
+    const isGroupItem = () => props.block.type === 'group_item';
+    const slotStyle = () =>
+        isGroupItem() ? groupSlotItemStyle(props.block.settings as Record<string, unknown>, {},) : {};
+
     return (
         <Show when={!isHidden()}>
         <div
@@ -98,9 +108,12 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                 'font-size': s().fontSize || undefined,
                 'line-height': s().lineHeight || undefined,
                 'font-family': fontStack(s().fontFamily,),
-                width: s().width || undefined,
-                'max-width': s().maxWidth || undefined,
-                height: s().height || undefined,
+                // For a group_item the slot sizing (spread below) owns width /
+                // flex; the default style width (100%) would otherwise force
+                // each slot to a full row.
+                width: isGroupItem() ? undefined : (s().width || undefined),
+                'max-width': isGroupItem() ? undefined : (s().maxWidth || undefined),
+                height: isGroupItem() ? undefined : (s().height || undefined),
                 padding: isCarousel() ? undefined : (
                     s().padding || (props.block.settings.padding as string) ||
                     // Only apply the site default padding when it isn't
@@ -125,6 +138,9 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                 })(),
                 'overflow-x': s().overflowX || undefined,
                 'overflow-y': s().overflowY || undefined,
+                // group_item slot sizing (flex + width/min/max/align-self) —
+                // makes THIS wrapper the correctly-sized parent-group flex item.
+                ...slotStyle(),
             }}
         >
             {/* Color/gradient overlay painted on top of the background image
