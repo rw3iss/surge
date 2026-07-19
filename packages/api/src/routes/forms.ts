@@ -50,6 +50,7 @@ const formSchema = z.object({
     allowMultipleSubmissions: z.boolean().optional(),
     requiresAuth: z.boolean().optional(),
     successMessage: z.string().optional(),
+    submitButtonText: z.string().max(100,).optional(),
     action: z.enum(['submit', 'subscribe', 'email',],).optional(),
     actionConfig: actionConfigSchema.optional(),
     maxSubmissions: z.number().int().min(0,).nullish(),

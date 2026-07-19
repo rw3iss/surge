@@ -200,10 +200,16 @@
 
     // ─── Submit ───
 
+    // Own full-width row; inherits the content block's `text-align`, so the
+    // inline-block button below follows the block's alignment (left / center /
+    // right → margin auto handled by text-align on this row).
+    &__submit-row {
+        flex: 0 0 100%;
+        text-align: inherit;
+    }
+
     &__submit {
-        flex: 0 0 100%; // own row in the wrapping flex form
-        align-self: flex-start;
-        max-width: fit-content; // …but keep the button its natural size
+        display: inline-block; // positioned by the submit-row's text-align
         padding: $spacing-sm $spacing-xl;
         background: var(--site-primary, #{$primary-color});
         color: #fff;

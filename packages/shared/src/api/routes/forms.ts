@@ -150,6 +150,7 @@ export interface FormCreateBody {
     allowMultipleSubmissions?: boolean;
     requiresAuth?: boolean;
     successMessage?: string;
+    submitButtonText?: string;
     action?: FormActionType;
     actionConfig?: FormActionConfig;
     maxSubmissions?: number | null;

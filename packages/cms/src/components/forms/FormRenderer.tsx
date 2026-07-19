@@ -315,13 +315,17 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                             <div class="form-renderer__error">{error()}</div>
                         </Show>
 
-                        <button
-                            type="submit"
-                            class="form-renderer__submit"
-                            disabled={submitting()}
-                        >
-                            {submitting() ? 'Submitting...' : 'Submit'}
-                        </button>
+                        <div class="form-renderer__submit-row">
+                            <button
+                                type="submit"
+                                class="form-renderer__submit"
+                                disabled={submitting()}
+                            >
+                                {submitting()
+                                    ? 'Submitting...'
+                                    : (props.form.submitButtonText?.trim() || 'Submit')}
+                            </button>
+                        </div>
                     </form>
                 }
             >

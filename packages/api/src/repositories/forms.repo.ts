@@ -83,8 +83,8 @@ export async function createForm(data: Record<string, unknown>, userId: string,)
     const result = await query(
         `INSERT INTO forms (title, slug, description, status, show_results,
                         allow_multiple_submissions, requires_auth, success_message,
-                        action, action_config, max_submissions, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                        submit_button_text, action, action_config, max_submissions, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
         [
             data.title,
@@ -95,6 +95,7 @@ export async function createForm(data: Record<string, unknown>, userId: string,)
             data.allowMultipleSubmissions ?? false,
             data.requiresAuth ?? false,
             data.successMessage,
+            (data.submitButtonText as string | undefined) || null,
             data.action || 'submit',
             JSON.stringify(data.actionConfig ?? {},),
             (data.maxSubmissions as number | null | undefined) ?? null,
@@ -125,6 +126,7 @@ export async function updateForm(id: string, data: Record<string, unknown>,): Pr
         allowMultipleSubmissions: 'allow_multiple_submissions',
         requiresAuth: 'requires_auth',
         successMessage: 'success_message',
+        submitButtonText: 'submit_button_text',
         action: 'action',
         maxSubmissions: 'max_submissions',
     };

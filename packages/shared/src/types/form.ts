@@ -65,6 +65,8 @@ export interface Form {
     allowMultipleSubmissions: boolean;
     requiresAuth: boolean;
     successMessage?: string;
+    /** Submit button label. Falls back to `Submit` when empty. */
+    submitButtonText?: string;
     /** On-submit action (default `submit` = save only). */
     action: FormActionType;
     /** Settings for the selected action. */

@@ -43,6 +43,7 @@ const FormEditor: Component = () => {
     const [allowMultiple, setAllowMultiple,] = createSignal(false,);
     const [requiresAuth, setRequiresAuth,] = createSignal(false,);
     const [successMessage, setSuccessMessage,] = createSignal('',);
+    const [submitButtonText, setSubmitButtonText,] = createSignal('',);
     const [maxSubmissions, setMaxSubmissions,] = createSignal('',);
 
     // On-submit action
@@ -105,6 +106,7 @@ const FormEditor: Component = () => {
                 setAllowMultiple(data.allowMultipleSubmissions || false,);
                 setRequiresAuth(data.requiresAuth || false,);
                 setSuccessMessage(data.successMessage || '',);
+                setSubmitButtonText(data.submitButtonText || '',);
                 setMaxSubmissions(data.maxSubmissions != null ? String(data.maxSubmissions,) : '',);
                 setAction((data.action as FormActionType) || 'submit',);
                 const ac = data.actionConfig || {};
@@ -217,6 +219,7 @@ const FormEditor: Component = () => {
             allowMultiple: allowMultiple(),
             requiresAuth: requiresAuth(),
             successMessage: successMessage(),
+            submitButtonText: submitButtonText(),
             maxSubmissions: maxSubmissions(),
             action: action(),
             mailingListId: mailingListId(),
@@ -261,6 +264,7 @@ const FormEditor: Component = () => {
                 allowMultipleSubmissions: allowMultiple(),
                 requiresAuth: requiresAuth(),
                 successMessage: successMessage(),
+                submitButtonText: submitButtonText().trim() || undefined,
                 maxSubmissions: Number.isFinite(parsedMax,) && parsedMax > 0 ? parsedMax : null,
                 action: action(),
                 actionConfig: {
@@ -399,6 +403,18 @@ const FormEditor: Component = () => {
                                     markDirty();
                                 }}
                                 placeholder="Thank you for your submission!"
+                            />
+                        </FormField>
+
+                        <FormField label="Submit Button Text">
+                            <input
+                                type="text"
+                                value={submitButtonText()}
+                                onInput={(e,) => {
+                                    setSubmitButtonText((e.target as HTMLInputElement).value,);
+                                    markDirty();
+                                }}
+                                placeholder="Submit"
                             />
                         </FormField>
 

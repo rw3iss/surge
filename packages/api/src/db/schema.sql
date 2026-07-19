@@ -370,6 +370,7 @@ CREATE TABLE forms (
     allow_multiple_submissions BOOLEAN NOT NULL DEFAULT false,
     requires_auth BOOLEAN NOT NULL DEFAULT false,
     success_message TEXT,
+    submit_button_text VARCHAR(100),
     -- On-submit action + settings (migration 060): submit | subscribe | email.
     action VARCHAR(16) NOT NULL DEFAULT 'submit',
     action_config JSONB NOT NULL DEFAULT '{}'::jsonb,
