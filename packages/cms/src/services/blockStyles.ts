@@ -18,6 +18,7 @@ export interface BlockStyleData {
     fontSize?: string;
     lineHeight?: string;
     width?: string;
+    maxWidth?: string;
     height?: string;
     padding?: string;
     margin?: string;
@@ -33,7 +34,7 @@ export interface BlockStyleData {
 export const BLOCK_STYLE_DEFAULTS: Required<
     Pick<
         BlockStyleData,
-        'backgroundColor' | 'backgroundImage' | 'textColor' | 'textAlign' | 'verticalAlign' | 'fontFamily' | 'fontSize' | 'lineHeight' | 'width' | 'height' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
+        'backgroundColor' | 'backgroundImage' | 'textColor' | 'textAlign' | 'verticalAlign' | 'fontFamily' | 'fontSize' | 'lineHeight' | 'width' | 'maxWidth' | 'height' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
     >
 > = {
     backgroundColor: '',
@@ -45,6 +46,7 @@ export const BLOCK_STYLE_DEFAULTS: Required<
     fontSize: '',
     lineHeight: '',
     width: '100%',
+    maxWidth: '',
     height: '',
     padding: '',
     margin: '',

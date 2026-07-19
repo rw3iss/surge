@@ -13,6 +13,7 @@ export interface BlockStyle {
     fontSize?: string; // e.g. '16px'
     lineHeight?: string; // e.g. '1.5' (unitless) or '24px'
     width?: string; // CSS width value
+    maxWidth?: string; // CSS max-width value (same value space as width)
     height?: string; // CSS height value
     padding?: string; // CSS padding value
     margin?: string; // CSS margin value

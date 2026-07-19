@@ -39,6 +39,9 @@ const WIDTH_OPTIONS = ['100%', '66.666%', '50%', '33.333%', '25%', '20%',];
 const PADDING_OPTIONS = ['15px', '30px', '45px', '60px',];
 const MARGIN_OPTIONS = ['auto', '15px', '30px', '45px', '60px',];
 
+/** Sentinel dropdown value that switches padding/margin to a custom text input. */
+const CUSTOM = '__custom__';
+
 /** Check if a value is not in the preset list (i.e. it's a custom value) */
 const isCustomValue = (value: string | undefined, presets: string[], defaultVal: string,): boolean => {
     if (!value || value === defaultVal) return false;
@@ -50,6 +53,9 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
     const [templateName, setTemplateName,] = createSignal(props.style.name || '',);
     const [customWidth, setCustomWidth,] = createSignal(
         isCustomValue(props.style.width, WIDTH_OPTIONS, BLOCK_STYLE_DEFAULTS.width,),
+    );
+    const [customMaxWidth, setCustomMaxWidth,] = createSignal(
+        isCustomValue(props.style.maxWidth, WIDTH_OPTIONS, BLOCK_STYLE_DEFAULTS.maxWidth,),
     );
     const [customPadding, setCustomPadding,] = createSignal(
         isCustomValue(props.style.padding, PADDING_OPTIONS, BLOCK_STYLE_DEFAULTS.padding,),
@@ -118,11 +124,13 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
             padding: undefined,
             verticalAlign: undefined,
             width: undefined,
+            maxWidth: undefined,
             margin: undefined,
             overflowX: undefined,
             overflowY: undefined,
         },);
         setCustomWidth(false,);
+        setCustomMaxWidth(false,);
         setCustomPadding(false,);
         setCustomMargin(false,);
         toast.info('Style reset to defaults',);
@@ -131,6 +139,11 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
     const handleCancelCustomWidth = () => {
         update('width', undefined,);
         setCustomWidth(false,);
+    };
+
+    const handleCancelCustomMaxWidth = () => {
+        update('maxWidth', undefined,);
+        setCustomMaxWidth(false,);
     };
 
     const handleCancelCustomPadding = () => {
@@ -259,20 +272,6 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                     </select>
                 </div>
 
-                {/* Vertical Alignment */}
-                <div class="block-style-editor__field">
-                    <label class="block-style-editor__label">Vertical Alignment</label>
-                    <select
-                        class="block-style-editor__select"
-                        value={props.style.verticalAlign || BLOCK_STYLE_DEFAULTS.verticalAlign}
-                        onChange={(e,) => update('verticalAlign', e.currentTarget.value,)}
-                    >
-                        <option value="top">Top</option>
-                        <option value="center">Center</option>
-                        <option value="bottom">Bottom</option>
-                    </select>
-                </div>
-
                 {/* Font Size */}
                 <div class="block-style-editor__field">
                     <label class="block-style-editor__label">Font Size</label>
@@ -344,6 +343,53 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                     </div>
                 </div>
 
+                {/* Max Width */}
+                <div class="block-style-editor__field">
+                    <label class="block-style-editor__label">Max Width</label>
+                    <div class="block-style-editor__field-right">
+                        <Show
+                            when={!customMaxWidth()}
+                            fallback={
+                                <div class="block-style-editor__custom-input-row">
+                                    <input
+                                        type="text"
+                                        class="block-style-editor__custom-input"
+                                        value={props.style.maxWidth || ''}
+                                        onChange={(e,) => update('maxWidth', e.currentTarget.value,)}
+                                        placeholder="e.g. 640px, 80%"
+                                    />
+                                    <Tooltip
+                                        content="Valid values: %, px, vw, rem, em, none, max-content, min-content, or calc() expressions"
+                                        header="CSS Max Width"
+                                    />
+                                    <button class="btn btn--small btn--ghost" onClick={handleCancelCustomMaxWidth}>
+                                        Cancel
+                                    </button>
+                                </div>
+                            }
+                        >
+                            <div class="block-style-editor__preset-row">
+                                <select
+                                    class="block-style-editor__select"
+                                    value={props.style.maxWidth || ''}
+                                    onChange={(e,) => update('maxWidth', e.currentTarget.value || undefined,)}
+                                >
+                                    <option value="">None</option>
+                                    <option value="100%">Full</option>
+                                    <option value="66.666%">2/3</option>
+                                    <option value="50%">Half</option>
+                                    <option value="33.333%">1/3</option>
+                                    <option value="25%">1/4</option>
+                                    <option value="20%">1/5</option>
+                                </select>
+                                <button class="btn btn--small btn--link" onClick={() => setCustomMaxWidth(true,)}>
+                                    Custom
+                                </button>
+                            </div>
+                        </Show>
+                    </div>
+                </div>
+
                 {/* Height */}
                 <div class="block-style-editor__field">
                     <label class="block-style-editor__label">Height</label>
@@ -360,9 +406,29 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                     </div>
                 </div>
 
+                {/* Vertical Alignment (after Height) */}
+                <div class="block-style-editor__field">
+                    <label class="block-style-editor__label">Vertical Alignment</label>
+                    <select
+                        class="block-style-editor__select"
+                        value={props.style.verticalAlign || BLOCK_STYLE_DEFAULTS.verticalAlign}
+                        onChange={(e,) => update('verticalAlign', e.currentTarget.value,)}
+                    >
+                        <option value="top">Top</option>
+                        <option value="center">Center</option>
+                        <option value="bottom">Bottom</option>
+                    </select>
+                </div>
+
                 {/* Padding */}
                 <div class="block-style-editor__field">
-                    <label class="block-style-editor__label">Padding</label>
+                    <label class="block-style-editor__label">
+                        Padding
+                        <Tooltip
+                            header="Padding"
+                            content="Space inside the content block (between its edge and its content). Valid: px, rem, em, %, or shorthand like '10px 20px 10px 20px'."
+                        />
+                    </label>
                     <div class="block-style-editor__field-right">
                         <Show
                             when={!customPadding()}
@@ -370,46 +436,53 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                                 <div class="block-style-editor__custom-input-row">
                                     <input
                                         type="text"
-                                        class="block-style-editor__custom-input"
+                                        class="block-style-editor__custom-input block-style-editor__custom-input--short"
                                         value={props.style.padding || ''}
                                         onChange={(e,) => update('padding', e.currentTarget.value,)}
                                         placeholder="e.g. 10px 20px"
                                     />
-                                    <Tooltip
-                                        content="Valid values: px, vw, rem, em, %, or shorthand like '10px 20px 10px 20px'"
-                                        header="CSS Padding"
-                                    />
-                                    <button class="btn btn--small btn--ghost" onClick={handleCancelCustomPadding}>
-                                        Cancel
+                                    <button
+                                        type="button"
+                                        class="block-style-editor__custom-clear"
+                                        title="Remove custom value"
+                                        aria-label="Remove custom value"
+                                        onClick={handleCancelCustomPadding}
+                                    >
+                                        ×
                                     </button>
                                 </div>
                             }
                         >
-                            <div class="block-style-editor__preset-row">
-                                <select
-                                    class="block-style-editor__select"
-                                    value={props.style.padding || BLOCK_STYLE_DEFAULTS.padding}
-                                    onChange={(e,) => update('padding', e.currentTarget.value,)}
-                                >
-                                    <option value={BLOCK_STYLE_DEFAULTS.padding}>
-                                        Default ({BLOCK_STYLE_DEFAULTS.padding})
-                                    </option>
-                                    <For each={PADDING_OPTIONS}>
-                                        {(val,) => <option value={val}>{val}</option>}
-                                    </For>
-                                </select>
-                                <button class="btn btn--small btn--link" onClick={() => setCustomPadding(true,)}>
-                                    Custom
-                                </button>
-                            </div>
+                            <select
+                                class="block-style-editor__select"
+                                value={props.style.padding || BLOCK_STYLE_DEFAULTS.padding}
+                                onChange={(e,) => {
+                                    const v = e.currentTarget.value;
+                                    if (v === CUSTOM) { setCustomPadding(true,); return; }
+                                    update('padding', v,);
+                                }}
+                            >
+                                <option value={BLOCK_STYLE_DEFAULTS.padding}>
+                                    Default ({BLOCK_STYLE_DEFAULTS.padding || '0'})
+                                </option>
+                                <For each={PADDING_OPTIONS}>
+                                    {(val,) => <option value={val}>{val}</option>}
+                                </For>
+                                <option value={CUSTOM}>Custom…</option>
+                            </select>
                         </Show>
-                        <span class="block-style-editor__help-text">Applied inside the content block</span>
                     </div>
                 </div>
 
                 {/* Margin */}
                 <div class="block-style-editor__field">
-                    <label class="block-style-editor__label">Margin</label>
+                    <label class="block-style-editor__label">
+                        Margin
+                        <Tooltip
+                            header="Margin"
+                            content="Space outside the content block (between it and neighbours). Valid: px, rem, em, %, auto, or shorthand like '10px 20px 10px 20px'."
+                        />
+                    </label>
                     <div class="block-style-editor__field-right">
                         <Show
                             when={!customMargin()}
@@ -417,46 +490,53 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                                 <div class="block-style-editor__custom-input-row">
                                     <input
                                         type="text"
-                                        class="block-style-editor__custom-input"
+                                        class="block-style-editor__custom-input block-style-editor__custom-input--short"
                                         value={props.style.margin || ''}
                                         onChange={(e,) => update('margin', e.currentTarget.value,)}
                                         placeholder="e.g. 10px 0"
                                     />
-                                    <Tooltip
-                                        content="Valid values: px, vw, rem, em, %, auto, or shorthand like '10px 20px 10px 20px'"
-                                        header="CSS Margin"
-                                    />
-                                    <button class="btn btn--small btn--ghost" onClick={handleCancelCustomMargin}>
-                                        Cancel
+                                    <button
+                                        type="button"
+                                        class="block-style-editor__custom-clear"
+                                        title="Remove custom value"
+                                        aria-label="Remove custom value"
+                                        onClick={handleCancelCustomMargin}
+                                    >
+                                        ×
                                     </button>
                                 </div>
                             }
                         >
-                            <div class="block-style-editor__preset-row">
-                                <select
-                                    class="block-style-editor__select"
-                                    value={props.style.margin || BLOCK_STYLE_DEFAULTS.margin}
-                                    onChange={(e,) => update('margin', e.currentTarget.value,)}
-                                >
-                                    <option value={BLOCK_STYLE_DEFAULTS.margin}>
-                                        Default ({BLOCK_STYLE_DEFAULTS.margin})
-                                    </option>
-                                    <For each={MARGIN_OPTIONS}>
-                                        {(val,) => <option value={val}>{val}</option>}
-                                    </For>
-                                </select>
-                                <button class="btn btn--small btn--link" onClick={() => setCustomMargin(true,)}>
-                                    Custom
-                                </button>
-                            </div>
+                            <select
+                                class="block-style-editor__select"
+                                value={props.style.margin || BLOCK_STYLE_DEFAULTS.margin}
+                                onChange={(e,) => {
+                                    const v = e.currentTarget.value;
+                                    if (v === CUSTOM) { setCustomMargin(true,); return; }
+                                    update('margin', v,);
+                                }}
+                            >
+                                <option value={BLOCK_STYLE_DEFAULTS.margin}>
+                                    Default ({BLOCK_STYLE_DEFAULTS.margin || '0'})
+                                </option>
+                                <For each={MARGIN_OPTIONS}>
+                                    {(val,) => <option value={val}>{val}</option>}
+                                </For>
+                                <option value={CUSTOM}>Custom…</option>
+                            </select>
                         </Show>
-                        <span class="block-style-editor__help-text">Applied outside the content block</span>
                     </div>
                 </div>
 
                 {/* Gap */}
                 <div class="block-style-editor__field">
-                    <label class="block-style-editor__label">Gap</label>
+                    <label class="block-style-editor__label">
+                        Gap
+                        <Tooltip
+                            header="Gap"
+                            content="Spacing between the block's inner content items (e.g. a campaign or posts list). Valid: px, rem, em, vw."
+                        />
+                    </label>
                     <div class="block-style-editor__field-right">
                         <div class="block-style-editor__custom-input-row">
                             <input
@@ -466,12 +546,7 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                                 onChange={(e,) => update('gap', e.currentTarget.value,)}
                                 placeholder="e.g. 1rem, 16px"
                             />
-                            <Tooltip
-                                content="Spacing between child items. Valid values: px, rem, em, vw. Applied when the block contains multiple items (e.g. campaign list)."
-                                header="CSS Gap"
-                            />
                         </div>
-                        <span class="block-style-editor__help-text">Spacing between inner content items</span>
                     </div>
                 </div>
 

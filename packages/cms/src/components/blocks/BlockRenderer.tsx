@@ -95,6 +95,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                 'line-height': s().lineHeight || undefined,
                 'font-family': fontStack(s().fontFamily,),
                 width: s().width || undefined,
+                'max-width': s().maxWidth || undefined,
                 height: s().height || undefined,
                 padding: isCarousel() ? undefined : (
                     s().padding || (props.block.settings.padding as string) ||
