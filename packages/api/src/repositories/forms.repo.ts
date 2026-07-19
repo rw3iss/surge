@@ -185,8 +185,8 @@ export async function createQuestion(formId: string, data: Record<string, unknow
 
     const result = await query(
         `INSERT INTO form_questions (form_id, type, question, description, options,
-                                 is_required, "order", validation)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                                 is_required, "order", validation, width)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
         [
             formId,
@@ -197,6 +197,7 @@ export async function createQuestion(formId: string, data: Record<string, unknow
             data.isRequired ?? false,
             data.order ?? maxOrder.rows[0].next_order,
             data.validation ? JSON.stringify(data.validation,) : null,
+            data.width ?? 'full',
         ],
     );
 
@@ -218,6 +219,7 @@ export async function updateQuestion(
         options: 'options',
         isRequired: 'is_required',
         order: '"order"',
+        width: 'width',
     };
 
     for (const [key, dbCol,] of Object.entries(fieldMap,)) {
@@ -287,25 +289,26 @@ export async function syncQuestions(
             const order = (raw.order as number | undefined) ?? i;
             const options = (raw.options as string[] | undefined) ?? null;
             const validation = raw.validation ? JSON.stringify(raw.validation,) : null;
+            const width = (raw.width as string | undefined) ?? 'full';
 
             if (qid && existingIds.has(qid,)) {
                 await client.query(
                     `UPDATE form_questions
                      SET type = $1, question = $2, description = $3, options = $4,
-                         is_required = $5, "order" = $6, validation = $7, updated_at = NOW()
-                     WHERE id = $8 AND form_id = $9`,
+                         is_required = $5, "order" = $6, validation = $7, width = $8, updated_at = NOW()
+                     WHERE id = $9 AND form_id = $10`,
                     [raw.type, raw.question, raw.description ?? null, options,
-                        raw.isRequired ?? false, order, validation, qid, formId,],
+                        raw.isRequired ?? false, order, validation, width, qid, formId,],
                 );
                 kept.push(qid,);
             } else {
                 const ins = await client.query<{ id: string; }>(
                     `INSERT INTO form_questions (form_id, type, question, description, options,
-                                                 is_required, "order", validation)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                                                 is_required, "order", validation, width)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                      RETURNING id`,
                     [formId, raw.type, raw.question, raw.description ?? null, options,
-                        raw.isRequired ?? false, order, validation,],
+                        raw.isRequired ?? false, order, validation, width,],
                 );
                 kept.push(ins.rows[0].id,);
             }

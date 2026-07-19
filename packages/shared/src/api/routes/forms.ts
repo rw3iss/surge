@@ -14,6 +14,7 @@ import type {
     FormSubmission,
     QuestionType,
     QuestionValidation,
+    QuestionWidth,
 } from '../../types/form';
 import type { BulkActionResult, } from './_shared';
 
@@ -30,6 +31,7 @@ export interface FormQuestionInput {
     isRequired?: boolean;
     order?: number;
     validation?: QuestionValidation;
+    width?: QuestionWidth;
 }
 
 // ─── GET /forms ───────────────────────────────────────────────────

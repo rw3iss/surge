@@ -394,6 +394,7 @@ CREATE TABLE form_questions (
     is_required BOOLEAN NOT NULL DEFAULT false,
     "order" INTEGER NOT NULL DEFAULT 0,
     validation JSONB,
+    width VARCHAR(8) NOT NULL DEFAULT 'full',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -23,6 +23,7 @@ const questionSchema = z.object({
     options: z.array(z.string(),).optional(),
     isRequired: z.boolean().optional(),
     order: z.number().int().optional(),
+    width: z.enum(['full', 'half',],).optional(),
     validation: z.object({
         minLength: z.number().optional(),
         maxLength: z.number().optional(),

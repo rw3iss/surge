@@ -24,9 +24,13 @@
 
     // ─── Form fields ───
 
+    // Fields flow left-to-right and wrap. A field is full-width (its own row)
+    // by default; a `--half` field takes 50% so two sit side by side. The error
+    // banner + submit always break to their own full-width row.
     &__form {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
+        align-items: flex-start;
         gap: $spacing-lg;
     }
 
@@ -53,6 +57,18 @@
         display: flex;
         flex-direction: column;
         gap: $spacing-sm;
+        flex: 1 1 100%; // full width (default)
+        min-width: 0;
+    }
+
+    // Half-width field: 50% of the row (accounting for the flex gap), so two
+    // halves pair up. Mobile ignores width for now → back to full width.
+    &__field--half {
+        flex: 0 1 calc(50% - (#{$spacing-lg} / 2));
+
+        @include mobile-only {
+            flex-basis: 100%;
+        }
     }
 
     &__label {
@@ -185,7 +201,9 @@
     // ─── Submit ───
 
     &__submit {
+        flex: 0 0 100%; // own row in the wrapping flex form
         align-self: flex-start;
+        max-width: fit-content; // …but keep the button its natural size
         padding: $spacing-sm $spacing-xl;
         background: var(--site-primary, #{$primary-color});
         color: #fff;
@@ -207,6 +225,7 @@
     }
 
     &__error {
+        flex: 0 0 100%; // own full-width row in the wrapping flex form
         padding: $spacing-sm $spacing-md;
         background: rgba($error-color, 0.08);
         border: 1px solid rgba($error-color, 0.3);

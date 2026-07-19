@@ -167,7 +167,10 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                             {(q: FormQuestion,) => (
                                 <div
                                     class="form-renderer__field"
-                                    classList={{ 'form-renderer__field--invalid': !!fieldErrors()[q.id], }}
+                                    classList={{
+                                        'form-renderer__field--invalid': !!fieldErrors()[q.id],
+                                        'form-renderer__field--half': q.width === 'half',
+                                    }}
                                 >
                                     <label class="form-renderer__label">
                                         {q.question}

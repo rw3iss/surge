@@ -24,6 +24,7 @@ interface FormQuestion {
     options: string[];
     isRequired: boolean;
     order: number;
+    width?: 'full' | 'half';
 }
 
 const FormEditor: Component = () => {
@@ -122,6 +123,7 @@ const FormEditor: Component = () => {
                         options: q.options || [],
                         isRequired: q.isRequired || false,
                         order: q.order ?? index,
+                        width: q.width || 'full',
                     })),);
                 }
 
@@ -156,6 +158,7 @@ const FormEditor: Component = () => {
             options: [],
             isRequired: false,
             order: questions().length,
+            width: 'full',
         };
         setQuestions([...questions(), newQuestion,],);
         markDirty();
@@ -665,6 +668,19 @@ const FormEditor: Component = () => {
                                                         <option value="radio">{questionTypeLabels.radio}</option>
                                                         <option value="checkbox">{questionTypeLabels.checkbox}</option>
                                                         <option value="select">{questionTypeLabels.select}</option>
+                                                    </select>
+
+                                                    <label style={{ 'margin-top': '0.5rem', }}>Width</label>
+                                                    <select
+                                                        value={question.width || 'full'}
+                                                        onChange={(e,) =>
+                                                            updateQuestion(index(), {
+                                                                width: (e.target as HTMLSelectElement)
+                                                                    .value as 'full' | 'half',
+                                                            },)}
+                                                    >
+                                                        <option value="full">Full width</option>
+                                                        <option value="half">Half width</option>
                                                     </select>
                                                 </div>
                                             </div>

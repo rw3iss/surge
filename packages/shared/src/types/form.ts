@@ -10,6 +10,10 @@ export type QuestionType =
     | 'email'
     | 'date';
 
+/** Field width in the rendered form row. `full` = 100%, `half` = 50%.
+ *  Defaults to `full`; mobile always renders full-width for now. */
+export type QuestionWidth = 'full' | 'half';
+
 export interface FormQuestion {
     id: string;
     formId: string;
@@ -20,6 +24,8 @@ export interface FormQuestion {
     isRequired: boolean;
     order: number;
     validation?: QuestionValidation;
+    /** Rendered width (`full` default). */
+    width?: QuestionWidth;
     createdAt: Date;
     updatedAt: Date;
 }
