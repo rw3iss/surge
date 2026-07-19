@@ -130,6 +130,31 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
         setStoreBlocks(reconcile(props.blocks, { key: 'id', merge: true, },),);
     },);
 
+    // Self-heal group slots: a `group` must always have at least `columns`
+    // group_item children so the slot pickers render immediately — including
+    // right after the group is added, before the columns field is touched.
+    // Only ever ADDS missing slots (never removes — decreasing columns is the
+    // columns-sync in updateBlock), so it converges in one pass and can't loop.
+    createEffect(() => {
+        const tree = treeify(props.blocks,);
+        let changed = false;
+        const heal = (nodes: BlockNode[],) => {
+            for (const n of nodes) {
+                if (n.type === 'group') {
+                    const cols = (n.data.columns as number) || 2;
+                    const items = n.children.filter(c => c.type === 'group_item',);
+                    for (let i = items.length; i < cols; i++) {
+                        n.children.push({ ...newGroupItem(n.id,), children: [], },);
+                        changed = true;
+                    }
+                }
+                heal(n.children,);
+            }
+        };
+        heal(tree,);
+        if (changed) props.onBlocksChange(flattenTree(tree,),);
+    },);
+
     // ─── Saved-state snapshots for dirty detection ───
     // savedSnapshots stores the last-saved version of each block keyed by id.
     const [savedSnapshots, setSavedSnapshots,] = createSignal<Map<string, BlockData>>(new Map(),);
@@ -753,7 +778,7 @@ const BlockEditor: Component<BlockEditorProps> = (props,) => {
                                         selectedBlockId={selectedBlockId()}
                                         dirtyBlockIds={dirtyBlockIds()}
                                         draggingId={draggingId()}
-                                        onToggleEdit={() => selectBlock(block.id,)}
+                                        onToggleEdit={selectBlock}
                                         onCancel={deselectBlock}
                                         onUpdate={updateBlock}
                                         onRemove={removeBlock}

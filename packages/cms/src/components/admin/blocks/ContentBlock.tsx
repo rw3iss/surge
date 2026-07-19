@@ -176,20 +176,14 @@ const ContentBlock: Component<ContentBlockProps> = (props,) => {
             onClick={(e,) => {
                 const tgt = e.target as HTMLElement;
                 if (tgt.closest('button, .content-block__hover-drag, .content-block__options-menu, .add-block-dropdown',)) return;
-                // Inline editors (HTML / Rich Text) own their own focus
-                // semantics — clicks inside should select the block (so
-                // the settings panel opens) but never deselect it. The
-                // user moves out of edit mode by clicking the block's
-                // hover bar, another block, or outside.
-                const insideInlineEditor = tgt.closest(
-                    '.html-inline-editor, .rich-text-inline-editor, .rich-text-editor',
-                );
-                if (insideInlineEditor) {
-                    if (!props.isSelected) props.onToggleEdit(props.block.id,);
-                    return;
-                }
+                // A click anywhere in a block SELECTS it (opens its settings
+                // panel) but never DESELECTS — toggling off is the header's job
+                // (the hover-bar label). Always stop propagation so a click on
+                // a child block inside a group can't bubble up and toggle the
+                // parent group/slot's selection. Inline editors (HTML / Rich
+                // Text) own their own focus; selecting on click is still safe.
                 e.stopPropagation();
-                props.onToggleEdit(props.block.id,);
+                if (!props.isSelected) props.onToggleEdit(props.block.id,);
             }}
             onPointerDown={(e,) => {
                 if ((e.target as HTMLElement).closest('.content-block__hover-drag',)) {
@@ -202,7 +196,12 @@ const ContentBlock: Component<ContentBlockProps> = (props,) => {
                 <span class="content-block__hover-drag" title="Drag to reorder">
                     &#9776;
                 </span>
-                <span class="content-block__hover-label">
+                <span
+                    class="content-block__hover-label"
+                    style={{ cursor: 'pointer', }}
+                    title="Select / deselect this block"
+                    onClick={(e,) => { e.stopPropagation(); props.onToggleEdit(props.block.id,); }}
+                >
                     {getBlockLabel(props.block.type,)}
                     <Show when={isCollapsed()}>
                         <span class="content-block__hover-tag"> (Collapsed)</span>
