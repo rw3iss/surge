@@ -747,7 +747,7 @@ const SocialBlock: Component<{ block: Block; }> = (props,) => {
                         ...(itemWidth() ? { '--social-item-width': itemWidth(), } : {}),
                         ...(itemHeight() ? { '--social-item-height': itemHeight(), } : {}),
                         ...(itemWidth() && layout() !== 'row'
-                            ? { 'grid-template-columns': `repeat(auto-fill, minmax(min(${itemWidth()}, 100%), 1fr))`, }
+                            ? { 'grid-template-columns': `repeat(auto-fill, min(${itemWidth()}, 100%))`, }
                             : {}),
                     }}
                 >

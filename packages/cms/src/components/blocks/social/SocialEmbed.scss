@@ -290,8 +290,12 @@
 .social-block__grid:not(.social-block__grid--row) {
   align-items: stretch;
 
+  // Fill the grid cell exactly (the base card centers via margin auto, which
+  // otherwise shrinks cards to their content width → ragged/"random" widths).
   .social-embed {
     height: 100%;
+    width: 100%;
+    margin-inline: 0;
     display: flex;
     flex-direction: column;
   }
@@ -319,9 +323,15 @@
     object-fit: cover;
   }
 
-  // Body grows to fill the stretched card so short captions don't leave a gap.
+  // Body grows to fill the stretched card; the caption sits against the bottom.
   .social-embed__card-body {
     flex: 1 0 auto;
+    justify-content: flex-end;
+  }
+
+  // Abbreviate captions harder so long text can't push the media rows around.
+  .social-embed__card-text {
+    -webkit-line-clamp: 2;
   }
 }
 
