@@ -65,7 +65,7 @@ function buildContext(
     return ctx;
 }
 
-/** Value of the first question matching a predicate (by derived key or type). */
+/** Value of the first question whose derived key exactly matches `key`. */
 function valueByKey(
     questions: FormQuestion[],
     answers: SubmittedAnswer[],
@@ -78,6 +78,24 @@ function valueByKey(
     const v = formatValue(ans?.value,).trim();
     return v || null;
 }
+
+/** First non-empty value among several candidate derived keys — lets a form
+ *  label its fields naturally ("First name" → first_name) and still map to a
+ *  subscriber's name/phone. */
+function valueByAnyKey(
+    questions: FormQuestion[],
+    answers: SubmittedAnswer[],
+    candidates: string[],
+): string | null {
+    for (const key of candidates) {
+        const v = valueByKey(questions, answers, key,);
+        if (v) return v;
+    }
+    return null;
+}
+
+const NAME_KEYS = ['name', 'full_name', 'fullname', 'your_name', 'first_name', 'firstname',];
+const PHONE_KEYS = ['phone', 'phone_number', 'telephone', 'mobile',];
 
 /** The submitter's email: a question of type `email`, else derived key `email`. */
 function extractEmail(questions: FormQuestion[], answers: SubmittedAnswer[],): string | null {
@@ -132,8 +150,8 @@ async function runSubscribe(
         logger.warn('form subscribe action: mailing list not found', { listId: cfg.mailingListId, },);
         return;
     }
-    const name = valueByKey(questions, answers, 'name',) ?? undefined;
-    const phone = valueByKey(questions, answers, 'phone',) ?? undefined;
+    const name = valueByAnyKey(questions, answers, NAME_KEYS,) ?? undefined;
+    const phone = valueByAnyKey(questions, answers, PHONE_KEYS,) ?? undefined;
     await mailingLists.publicSubscribe(
         list.slug,
         { email, name, phone, },
