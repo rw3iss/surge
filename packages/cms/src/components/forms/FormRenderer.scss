@@ -50,6 +50,29 @@
         margin-left: 2px;
     }
 
+    &__field-error {
+        font-size: $font-size-sm;
+        color: $error-color;
+        font-weight: 500;
+    }
+
+    // Invalid field: tint the control borders red until corrected.
+    &__field--invalid {
+        .form-renderer__input,
+        .form-renderer__textarea,
+        .form-renderer__select,
+        .form-renderer__option {
+            border-color: $error-color;
+        }
+
+        .form-renderer__input:focus,
+        .form-renderer__textarea:focus,
+        .form-renderer__select:focus {
+            border-color: $error-color;
+            box-shadow: 0 0 0 3px rgba($error-color, 0.12);
+        }
+    }
+
     &__description {
         font-size: $font-size-sm;
         color: $text-light;

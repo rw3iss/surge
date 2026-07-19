@@ -42,14 +42,64 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
     const [error, setError,] = createSignal('',);
     const [results, setResults,] = createSignal<FormResults | null>(null,);
     const [loadingResults, setLoadingResults,] = createSignal(false,);
+    const [fieldErrors, setFieldErrors,] = createSignal<Record<string, string>>({},);
 
     const updateAnswer = (questionId: string, value: unknown,) => {
         setAnswers(prev => ({ ...prev, [questionId]: value, }),);
+        // Clear a field's error as soon as the visitor edits it.
+        if (fieldErrors()[questionId]) {
+            setFieldErrors(prev => {
+                const next = { ...prev, };
+                delete next[questionId];
+                return next;
+            },);
+        }
+    };
+
+    const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+    /** Validate one answer against its question's rules → error message or null. */
+    const validateQuestion = (q: FormQuestion, value: unknown,): string | null => {
+        const empty = value == null || value === '' || (Array.isArray(value,) && value.length === 0);
+        if (q.isRequired && empty) return 'This field is required.';
+        if (empty) return null;
+        const v = q.validation;
+        if (q.type === 'email' && typeof value === 'string' && !EMAIL_RE.test(value,)) {
+            return 'Enter a valid email address.';
+        }
+        if (typeof value === 'string' && (q.type === 'text' || q.type === 'textarea' || q.type === 'email')) {
+            if (v?.minLength && value.length < v.minLength) return `Must be at least ${v.minLength} characters.`;
+            if (v?.maxLength && value.length > v.maxLength) return `Must be ${v.maxLength} characters or fewer.`;
+            if (v?.pattern) {
+                try {
+                    if (!new RegExp(v.pattern,).test(value,)) return v.patternMessage || 'Please match the requested format.';
+                } catch { /* invalid stored pattern — skip */ }
+            }
+        }
+        if (q.type === 'number' && typeof value === 'number' && !Number.isNaN(value,)) {
+            if (v?.min != null && value < v.min) return `Must be at least ${v.min}.`;
+            if (v?.max != null && value > v.max) return `Must be at most ${v.max}.`;
+        }
+        return null;
+    };
+
+    const validateAll = (): Record<string, string> => {
+        const errs: Record<string, string> = {};
+        for (const q of props.form.questions) {
+            const err = validateQuestion(q, answers()[q.id],);
+            if (err) errs[q.id] = err;
+        }
+        return errs;
     };
 
     const handleSubmit = async (e: Event,) => {
         e.preventDefault();
         setError('',);
+
+        const errs = validateAll();
+        setFieldErrors(errs,);
+        if (Object.keys(errs,).length > 0) return;
+
         setSubmitting(true,);
 
         try {
@@ -90,10 +140,13 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
             <Show
                 when={submitted()}
                 fallback={
-                    <form onSubmit={handleSubmit} class="form-renderer__form">
+                    <form onSubmit={handleSubmit} class="form-renderer__form" noValidate>
                         <For each={props.form.questions}>
                             {(q: FormQuestion,) => (
-                                <div class="form-renderer__field">
+                                <div
+                                    class="form-renderer__field"
+                                    classList={{ 'form-renderer__field--invalid': !!fieldErrors()[q.id], }}
+                                >
                                     <label class="form-renderer__label">
                                         {q.question}
                                         <Show when={q.isRequired}>
@@ -223,6 +276,12 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                             </div>
                                         </Match>
                                     </Switch>
+
+                                    <Show when={fieldErrors()[q.id]}>
+                                        <span class="form-renderer__field-error" role="alert">
+                                            {fieldErrors()[q.id]}
+                                        </span>
+                                    </Show>
                                 </div>
                             )}
                         </For>

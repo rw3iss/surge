@@ -12,8 +12,7 @@
 import {
     entityRef,
     hasTemplateSyntax,
-    type OutputNode,
-    renderTemplate,
+    renderTemplateToString,
     resolveValueFunction,
     type TemplateRuntime,
     UNRESOLVED,
@@ -171,8 +170,7 @@ export async function resolveContentForSsr(
     if (!content || !hasTemplateSyntax(content)) return content ?? '';
     try {
         const rt = buildSsrRuntime(entities);
-        const nodes: OutputNode[] = await renderTemplate(content, rt);
-        return nodes.map((n) => (n.type === 'html' ? n.html : entityToHtml(n.kind, n.data))).join('');
+        return await renderTemplateToString(content, rt, (kind, data) => entityToHtml(kind, data));
     } catch (e) {
         logger.warn('SSR template resolution failed', { error: (e as Error).message });
         return content;

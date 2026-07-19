@@ -38,6 +38,23 @@ function getAst(src: string): Node[] {
     return ast;
 }
 
+/**
+ * Render a template source to a plain string using `runtime`. Whole-entity
+ * segments are serialized by `onEntity` (defaults to dropping them, i.e. plain
+ * variable/function output). Fast-paths sources with no `{{ }}`. Parse errors
+ * degrade to the source (via `renderTemplate`); resolver errors are NOT caught
+ * here — wrap the call if you need "never throw".
+ */
+export async function renderTemplateToString(
+    src: string | null | undefined,
+    runtime: TemplateRuntime,
+    onEntity: (kind: string, data: Record<string, unknown> | null) => string = () => '',
+): Promise<string> {
+    if (!src || !hasTemplateSyntax(src)) return src ?? '';
+    const nodes = await renderTemplate(src, runtime);
+    return nodes.map((n) => (n.type === 'html' ? n.html : onEntity(n.kind, n.data))).join('');
+}
+
 export async function renderTemplate(src: string, runtime: TemplateRuntime): Promise<OutputNode[]> {
     if (!hasTemplateSyntax(src)) return [{ type: 'html', html: src }];
     let ast: Node[];

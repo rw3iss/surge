@@ -80,11 +80,23 @@ directly related.
 - Unifying every block/form/settings input onto `FormField` is a broad,
   cross-cutting refactor (>10 files). Deserves a dedicated plan.
 
+### A7 — BUG: question edits to an existing form were silently dropped *(applied — Phase B)*
+- Location: `packages/api/src/services/forms.ts` `update()`.
+- Problem: `forms.update` only patched form columns; the `questions` array the
+  editor sends on save was ignored, so editing/adding/removing questions on an
+  existing form never persisted (create worked; update didn't).
+- Fix: `syncQuestions()` reconciles the submitted list — update by id, create
+  new, delete removed. Question `id` now survives validation (`FormQuestionInput.id`
+  + zod). Risk: medium (new behavior) — API test suite (118) still green.
+
 ## 5. Recommended execution plan
-- **Phase A (applied automatically):** A1 (shared value functions → forms gain
-  functions), F1 (form validation attributes), S1 (token fixes), A5 (editor help
-  + docs), `submitted_at` exposed as a Date so `formatDate` works.
-- **Phase B (needs approval):** F2 (FormField in FormEditor), F3 (requiresAuth
-  toggle), F4 (per-field errors), A2 (shared render-to-string), A3 (typed editor),
-  A4 (shared answer formatter).
-- **Phase C (plan separately):** A6 (app-wide FormField migration).
+- **Phase A (applied):** A1 (shared value functions → forms gain functions),
+  F1 (form validation attributes), S1 (token fixes), A5 (editor help + docs),
+  `submitted_at` as a Date. *(committed 717022f, deployed)*
+- **Phase B (applied):** F2 (FormField for Form-Details fields), F3 (requiresAuth
+  toggle), F4 (per-field inline errors), A2 (shared `renderTemplateToString`),
+  A3 (typed editor — dropped `any`), A4 (shared `formatAnswerValue`), **A7**
+  (question-persistence bug fix). Build + 118 API tests green.
+- **Phase C (plan separately):** A6 (app-wide FormField migration — the question
+  cards and other admin editors still use raw `.form-group`); wrapping
+  `syncQuestions` in a DB transaction.

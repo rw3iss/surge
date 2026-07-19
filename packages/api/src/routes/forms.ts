@@ -15,6 +15,8 @@ import * as forms from '../services/forms';
 // ─── Schemas ──────────────────────────────────────────────────────
 
 const questionSchema = z.object({
+    // Present on update so the server can match existing rows (new questions omit it).
+    id: z.string().uuid().optional(),
     type: z.enum(['radio', 'checkbox', 'text', 'textarea', 'select', 'number', 'email', 'date',],),
     question: z.string().min(1,),
     description: z.string().nullish(),

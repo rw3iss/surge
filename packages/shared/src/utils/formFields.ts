@@ -18,6 +18,15 @@ export function slugifyFieldKey(text: string,): string {
     return key || 'field';
 }
 
+/** Flatten a submitted answer value to a display string. Arrays (checkbox
+ *  answers) join with `separator` (a comma by default; CSV export passes `; `
+ *  to avoid clashing with its own delimiter). */
+export function formatAnswerValue(value: unknown, separator = ', ',): string {
+    if (value == null) return '';
+    if (Array.isArray(value,)) return value.join(separator,);
+    return String(value,);
+}
+
 /** Map each question id → a UNIQUE derived key. Collisions get numeric suffixes
  *  (`name`, `name_2`, `name_3`) so every field is addressable. Order-stable. */
 export function deriveFieldKeys(questions: ReadonlyArray<{ id: string; question: string; }>,): Record<string, string> {

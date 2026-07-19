@@ -15,7 +15,13 @@
  * in the editor match what resolves here.
  */
 import type { Form, FormActionConfig, FormQuestion, TemplateRuntime, } from '@sitesurge/types';
-import { deriveFieldKeys, hasTemplateSyntax, renderTemplate, resolveValueFunction, UNRESOLVED, } from '@sitesurge/types';
+import {
+    deriveFieldKeys,
+    formatAnswerValue,
+    renderTemplateToString,
+    resolveValueFunction,
+    UNRESOLVED,
+} from '@sitesurge/types';
 import * as mailingListsRepo from '../repositories/mailingLists.repo';
 import { sendEmail, } from './email';
 import * as mailingLists from './mailingLists';
@@ -35,12 +41,8 @@ export interface FormActor {
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-/** Flatten an answer value to a display string. */
-function formatValue(v: unknown,): string {
-    if (v == null) return '';
-    if (Array.isArray(v,)) return v.join(', ',);
-    return String(v,);
-}
+/** Flatten an answer value to a display string (shared with CSV export). */
+const formatValue = formatAnswerValue;
 
 /**
  * Build the flat `{ key: value }` template context from the submitted answers.
@@ -112,7 +114,6 @@ function extractEmail(questions: FormQuestion[], answers: SubmittedAnswer[],): s
 
 /** Render a `{{ … }}` template against a flat form-value context → string. */
 async function renderTpl(tpl: string, context: Record<string, unknown>,): Promise<string> {
-    if (!tpl || !hasTemplateSyntax(tpl,)) return tpl ?? '';
     const runtime: TemplateRuntime = {
         context,
         // Form templates get the shared value functions (upper, formatDate,
@@ -124,8 +125,7 @@ async function renderTpl(tpl: string, context: Record<string, unknown>,): Promis
         warn: (m,) => logger.debug?.(m,),
     };
     try {
-        const nodes = await renderTemplate(tpl, runtime,);
-        return nodes.map((n,) => (n.type === 'html' ? n.html : '')).join('',);
+        return await renderTemplateToString(tpl, runtime,);
     } catch (e) {
         logger.warn('form email template render failed', { error: (e as Error).message, },);
         return tpl;

@@ -1,12 +1,13 @@
 import { Title, } from '@solidjs/meta';
 import { A, useNavigate, useParams, } from '@solidjs/router';
 import { Component, createMemo, createResource, createSignal, For, Show, } from 'solid-js';
-import { deriveFieldKeys, type FormActionType, } from '@sitesurge/types';
+import { deriveFieldKeys, type Form, type FormActionType, type FormCreateBody, } from '@sitesurge/types';
 import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
 import EditorSaveBar from '../../components/admin/common/EditorSaveBar';
 import RichTextEditor from '../../components/admin/editors/RichTextEditor';
 import Toggle from '../../components/admin/common/Toggle';
 import Tooltip from '../../components/admin/common/Tooltip';
+import { FormField, } from '../../components/admin/forms';
 import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
@@ -40,6 +41,7 @@ const FormEditor: Component = () => {
     const [status, setStatus,] = createSignal('draft',);
     const [showResults, setShowResults,] = createSignal(false,);
     const [allowMultiple, setAllowMultiple,] = createSignal(false,);
+    const [requiresAuth, setRequiresAuth,] = createSignal(false,);
     const [successMessage, setSuccessMessage,] = createSignal('',);
     const [maxSubmissions, setMaxSubmissions,] = createSignal('',);
 
@@ -85,10 +87,10 @@ const FormEditor: Component = () => {
     },);
 
     // Load existing form
-    const [form,] = createResource(
+    const [form,] = createResource<Form | null, string>(
         () => !isNew() ? params.id : null,
         async (id,) => {
-            let data: any = null;
+            let data: Form | null = null;
             try {
                 data = await cms.forms.getById(id,);
             } catch {
@@ -101,6 +103,7 @@ const FormEditor: Component = () => {
                 setStatus(data.status || 'draft',);
                 setShowResults(data.showResults || false,);
                 setAllowMultiple(data.allowMultipleSubmissions || false,);
+                setRequiresAuth(data.requiresAuth || false,);
                 setSuccessMessage(data.successMessage || '',);
                 setMaxSubmissions(data.maxSubmissions != null ? String(data.maxSubmissions,) : '',);
                 setAction((data.action as FormActionType) || 'submit',);
@@ -112,9 +115,9 @@ const FormEditor: Component = () => {
 
                 // Load questions
                 if (data.questions && Array.isArray(data.questions,)) {
-                    setQuestions(data.questions.map((q: any, index: number,) => ({
+                    setQuestions(data.questions.map((q, index,) => ({
                         id: q.id,
-                        type: q.type || 'text',
+                        type: (q.type || 'text') as QuestionKind,
                         question: q.question || '',
                         description: q.description || '',
                         options: q.options || [],
@@ -210,6 +213,7 @@ const FormEditor: Component = () => {
             status: status(),
             showResults: showResults(),
             allowMultiple: allowMultiple(),
+            requiresAuth: requiresAuth(),
             successMessage: successMessage(),
             maxSubmissions: maxSubmissions(),
             action: action(),
@@ -246,13 +250,14 @@ const FormEditor: Component = () => {
 
         try {
             const parsedMax = parseInt(maxSubmissions(), 10,);
-            const payload = {
+            const payload: FormCreateBody = {
                 title: title(),
                 slug: slug(),
                 description: description(),
-                status: status(),
+                status: status() as FormCreateBody['status'],
                 showResults: showResults(),
                 allowMultipleSubmissions: allowMultiple(),
+                requiresAuth: requiresAuth(),
                 successMessage: successMessage(),
                 maxSubmissions: Number.isFinite(parsedMax,) && parsedMax > 0 ? parsedMax : null,
                 action: action(),
@@ -274,9 +279,9 @@ const FormEditor: Component = () => {
             };
 
             if (isNew()) {
-                await cms.forms.create(payload as any,);
+                await cms.forms.create(payload,);
             } else {
-                await cms.forms.update(params.id, payload as any,);
+                await cms.forms.update(params.id, payload,);
             }
 
             invalidateFormsCache();
@@ -329,9 +334,9 @@ const FormEditor: Component = () => {
                 <h1>{isNew() ? 'New Form' : 'Edit Form'}</h1>
                 <div class="admin-header__actions">
                     <AutoSaveIndicator status={autoSave.status()} lastSavedAt={autoSave.lastSavedAt()} />
-                    <Show when={!isNew() && form() && (form() as any).submissionCount > 0}>
+                    <Show when={!isNew() && (form()?.submissionCount ?? 0) > 0}>
                         <A href={`/admin/forms/${params.id}/submissions`} class="btn btn--secondary btn--small">
-                            View Responses ({(form() as any).submissionCount})
+                            View Responses ({form()?.submissionCount})
                         </A>
                     </Show>
                 </div>
@@ -347,23 +352,19 @@ const FormEditor: Component = () => {
                     <section class="form-section">
                         <h2>Form Details</h2>
 
-                        <div class="form-group">
-                            <label for="title">Title *</label>
+                        <FormField label="Title *">
                             <input
                                 type="text"
-                                id="title"
                                 value={title()}
                                 onInput={handleTitleChange}
                                 required
                                 placeholder="Form title"
                             />
-                        </div>
+                        </FormField>
 
-                        <div class="form-group">
-                            <label for="slug">URL Slug *</label>
+                        <FormField label="URL Slug *" hint={`Used in the URL: /forms/${slug() || 'slug'}`}>
                             <input
                                 type="text"
-                                id="slug"
                                 value={slug()}
                                 onInput={(e,) => {
                                     setSlug((e.target as HTMLInputElement).value,);
@@ -372,13 +373,10 @@ const FormEditor: Component = () => {
                                 required
                                 placeholder="form-url-slug"
                             />
-                            <small class="form-help">Used in the URL: /forms/{slug() || 'slug'}</small>
-                        </div>
+                        </FormField>
 
-                        <div class="form-group">
-                            <label for="description">Description</label>
+                        <FormField label="Description">
                             <textarea
-                                id="description"
                                 value={description()}
                                 onInput={(e,) => {
                                     setDescription((e.target as HTMLTextAreaElement).value,);
@@ -387,13 +385,11 @@ const FormEditor: Component = () => {
                                 placeholder="Instructions or description for respondents..."
                                 rows={3}
                             />
-                        </div>
+                        </FormField>
 
-                        <div class="form-group">
-                            <label for="successMessage">Success Message</label>
+                        <FormField label="Success Message">
                             <input
                                 type="text"
-                                id="successMessage"
                                 value={successMessage()}
                                 onInput={(e,) => {
                                     setSuccessMessage((e.target as HTMLInputElement).value,);
@@ -401,7 +397,7 @@ const FormEditor: Component = () => {
                                 }}
                                 placeholder="Thank you for your submission!"
                             />
-                        </div>
+                        </FormField>
 
                         <div class="form-row">
                             <div class="form-group">
@@ -435,6 +431,14 @@ const FormEditor: Component = () => {
                                 checked={allowMultiple()}
                                 onChange={(next,) => { setAllowMultiple(next,); markDirty(); }}
                                 label="Allow multiple submissions per user"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <Toggle
+                                checked={requiresAuth()}
+                                onChange={(next,) => { setRequiresAuth(next,); markDirty(); }}
+                                label="Require sign-in to submit"
                             />
                         </div>
 

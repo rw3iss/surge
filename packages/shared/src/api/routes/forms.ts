@@ -19,8 +19,10 @@ import type { BulkActionResult, } from './_shared';
 
 // ─── Question / form input shapes ─────────────────────────────────
 
-/** A question as supplied on form create / add-question. */
+/** A question as supplied on form create / add-question. On a form update the
+ *  existing question's `id` is echoed back so the server can match rows. */
 export interface FormQuestionInput {
+    id?: string;
     type: QuestionType;
     question: string;
     description?: string | null;

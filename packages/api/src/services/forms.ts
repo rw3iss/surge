@@ -13,6 +13,7 @@
  * that do NOT require auth). No admin shaping touches these caches.
  */
 import type { Form, FormQuestion, FormResults, FormSubmission, QuestionResult, } from '@sitesurge/types';
+import { formatAnswerValue, } from '@sitesurge/types';
 import { ValidationError, } from '../core/errors';
 import * as repo from '../repositories/forms.repo';
 import { performBulkAction, } from '../utils/bulkActions';
@@ -301,9 +302,7 @@ export async function exportSubmissionsCsv(
         const answers = (submission.answers || []) as Array<{ questionId: string; value: unknown; }>;
         const questionValues = questions.map((q,) => {
             const answer = answers.find((a,) => a.questionId === q.id);
-            if (!answer) return '';
-            if (Array.isArray(answer.value,)) return answer.value.join('; ',);
-            return String(answer.value ?? '',);
+            return answer ? formatAnswerValue(answer.value, '; ',) : '';
         },);
         return [
             submission.id,
@@ -346,8 +345,46 @@ export async function create(data: Record<string, unknown>, ctx: AuditContext,):
     return form;
 }
 
+/**
+ * Reconcile a form's questions against the editor's submitted list: update
+ * existing rows (matched by id), create new ones (no id), and delete any that
+ * were removed. Order is taken from array position. Returns the fresh list.
+ */
+async function syncQuestions(
+    formId: string,
+    incoming: Array<Record<string, unknown>>,
+): Promise<FormQuestion[]> {
+    const existing = await repo.findQuestionsByFormId(formId,);
+    const existingIds = new Set(existing.map((q,) => q.id),);
+    const kept = new Set<string>();
+
+    for (let i = 0; i < incoming.length; i++) {
+        const raw = incoming[i];
+        const qid = raw.id as string | undefined;
+        const data = { ...raw, order: (raw.order as number | undefined) ?? i, };
+        if (qid && existingIds.has(qid,)) {
+            await repo.updateQuestion(formId, qid, data,);
+            kept.add(qid,);
+        } else {
+            const created = await repo.createQuestion(formId, data,);
+            kept.add(created.id,);
+        }
+    }
+    for (const q of existing) {
+        if (!kept.has(q.id,)) await repo.deleteQuestion(formId, q.id,);
+    }
+    return repo.findQuestionsByFormId(formId,);
+}
+
 export async function update(id: string, patch: Record<string, unknown>, ctx: AuditContext,): Promise<Form> {
-    const form = await repo.updateForm(id, patch,);
+    // Questions are a separate table — pull them out of the form column patch
+    // and reconcile them explicitly (previously they were silently dropped on
+    // update, so question edits to an existing form never persisted).
+    const { questions, ...formPatch } = patch;
+    const form = await repo.updateForm(id, formPatch,);
+    if (Array.isArray(questions,)) {
+        form.questions = await syncQuestions(id, questions as Array<Record<string, unknown>>,);
+    }
     await cache.invalidateFormCache(id,);
     await logAudit({
         userId: ctx.userId,
