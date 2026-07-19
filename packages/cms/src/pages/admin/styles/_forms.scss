@@ -264,3 +264,77 @@
     }
   }
 }
+
+
+// ─── On-submit action (subscribe / email settings) ───
+.form-subaction {
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  border: 1px solid $border-color;
+  border-left: 3px solid var(--site-primary, #{$primary-color});
+  border-radius: $border-radius-md;
+  background: var(--admin-bg-subtle, #{$background-dark});
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.form-vars {
+  border-top: 1px dashed $border-color;
+  padding-top: $spacing-sm;
+
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: var(--admin-text, #{$text-color});
+  }
+
+  &__chev {
+    font-size: 10px;
+    color: $text-light;
+  }
+
+  &__body {
+    margin-top: $spacing-sm;
+  }
+
+  &__list {
+    list-style: none;
+    margin: $spacing-xs 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 4px $spacing-md;
+
+    li {
+      display: flex;
+      align-items: baseline;
+      gap: $spacing-sm;
+      min-width: 0;
+    }
+
+    code {
+      font-family: var(--admin-font-mono, monospace);
+      font-size: $font-size-xs;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+  }
+
+  &__label {
+    color: $text-light;
+    font-size: $font-size-xs;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

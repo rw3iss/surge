@@ -31,6 +31,13 @@ const questionSchema = z.object({
     },).optional(),
 },) satisfies z.ZodType<FormQuestionInput>;
 
+const actionConfigSchema = z.object({
+    mailingListId: z.string().optional(),
+    emailTo: z.string().optional(),
+    emailSubject: z.string().optional(),
+    emailBody: z.string().optional(),
+},);
+
 const formSchema = z.object({
     title: z.string().min(1,).max(255,),
     slug: z.string().min(1,).max(255,).regex(/^[a-z0-9-]+$/,),
@@ -40,6 +47,9 @@ const formSchema = z.object({
     allowMultipleSubmissions: z.boolean().optional(),
     requiresAuth: z.boolean().optional(),
     successMessage: z.string().optional(),
+    action: z.enum(['submit', 'subscribe', 'email',],).optional(),
+    actionConfig: actionConfigSchema.optional(),
+    maxSubmissions: z.number().int().min(0,).nullish(),
     questions: z.array(questionSchema,).optional(),
 },) satisfies z.ZodType<FormCreateBody>;
 
@@ -48,6 +58,7 @@ const submissionSchema = z.object({
         questionId: z.string().uuid(),
         value: z.union([z.string(), z.array(z.string(),), z.number(), z.boolean(),],),
     },),),
+    nonce: z.string().max(64,).optional(),
 },) satisfies z.ZodType<FormSubmitBody>;
 
 const listQuery = z.object({
@@ -139,14 +150,19 @@ export const formsRoutes = [
                 slug: params.slug,
                 answers: body.answers,
                 userId: userId || null,
+                userEmail: (user as { email?: string; } | undefined)?.email,
                 hasUser: Boolean(user,),
                 ipAddress,
                 userAgent: req.headers['user-agent'],
+                nonce: body.nonce,
             },);
 
             if ('error' in result) {
                 if (result.error === 'not_found') throw new NotFoundError('Form',);
                 if (result.error === 'unauthorized') throw new UnauthorizedError('Authentication required',);
+                if (result.error === 'closed') {
+                    throw new AppError(403, 'FORM_CLOSED', 'This form is no longer accepting submissions',);
+                }
                 throw new AppError(409, 'CONFLICT', 'You have already submitted this form',);
             }
             return reply({ message: result.message, }, { status: 201, },);

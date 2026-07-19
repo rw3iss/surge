@@ -82,8 +82,9 @@ export async function findFormById(id: string,): Promise<Form> {
 export async function createForm(data: Record<string, unknown>, userId: string,): Promise<Form> {
     const result = await query(
         `INSERT INTO forms (title, slug, description, status, show_results,
-                        allow_multiple_submissions, requires_auth, success_message, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        allow_multiple_submissions, requires_auth, success_message,
+                        action, action_config, max_submissions, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
         [
             data.title,
@@ -94,6 +95,9 @@ export async function createForm(data: Record<string, unknown>, userId: string,)
             data.allowMultipleSubmissions ?? false,
             data.requiresAuth ?? false,
             data.successMessage,
+            data.action || 'submit',
+            JSON.stringify(data.actionConfig ?? {},),
+            (data.maxSubmissions as number | null | undefined) ?? null,
             // created_by is a UUID FK; synthetic actors (api-key:<name>,
             // system) become NULL.
             uuidOrNull(userId,),
@@ -121,6 +125,8 @@ export async function updateForm(id: string, data: Record<string, unknown>,): Pr
         allowMultipleSubmissions: 'allow_multiple_submissions',
         requiresAuth: 'requires_auth',
         successMessage: 'success_message',
+        action: 'action',
+        maxSubmissions: 'max_submissions',
     };
 
     for (const [key, dbCol,] of Object.entries(fields,)) {
@@ -128,6 +134,12 @@ export async function updateForm(id: string, data: Record<string, unknown>,): Pr
             values.push(data[key],);
             updates.push(`${dbCol} = $${values.length}`,);
         }
+    }
+
+    // action_config is JSONB — serialize explicitly.
+    if (data.actionConfig !== undefined) {
+        values.push(JSON.stringify(data.actionConfig,),);
+        updates.push(`action_config = $${values.length}`,);
     }
 
     if (data.status === 'closed') {
@@ -302,17 +314,27 @@ export async function checkDuplicateSubmission(
     return existing.rows.length > 0;
 }
 
+/**
+ * Insert a submission. Returns `true` when a row was inserted, `false` when the
+ * (form_id, nonce) already existed — the `ON CONFLICT … DO NOTHING` makes a
+ * repeated submit from the same form render idempotent (accidental double-click
+ * / resubmit). A null nonce never conflicts (partial index excludes it).
+ */
 export async function createSubmission(
     formId: string,
     userId: string | null,
     ipAddress: string,
     userAgent: string | undefined,
     answers: unknown,
-): Promise<void> {
-    await query(
-        `INSERT INTO form_submissions (form_id, user_id, ip_address, user_agent, answers)
-     VALUES ($1, $2, $3, $4, $5)`,
+    nonce: string | null = null,
+): Promise<boolean> {
+    const result = await query(
+        `INSERT INTO form_submissions (form_id, user_id, ip_address, user_agent, answers, nonce)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (form_id, nonce) WHERE nonce IS NOT NULL DO NOTHING
+     RETURNING id`,
         // user_id is a UUID FK; an api-key/synthetic submitter becomes NULL.
-        [formId, uuidOrNull(userId,), ipAddress, userAgent, JSON.stringify(answers,),],
+        [formId, uuidOrNull(userId,), ipAddress, userAgent, JSON.stringify(answers,), nonce,],
     );
+    return result.rows.length > 0;
 }

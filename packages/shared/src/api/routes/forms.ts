@@ -5,6 +5,8 @@
 
 import type {
     Form,
+    FormActionConfig,
+    FormActionType,
     FormAnswer,
     FormQuestion,
     FormResults,
@@ -74,6 +76,8 @@ export type FormResultsResponse = FormResults;
 /** Body for POST /forms/slug/:slug/submit. */
 export interface FormSubmitBody {
     answers: FormAnswer[];
+    /** Per-render idempotency token — dedups accidental double-submits. */
+    nonce?: string;
 }
 
 /**
@@ -142,6 +146,9 @@ export interface FormCreateBody {
     allowMultipleSubmissions?: boolean;
     requiresAuth?: boolean;
     successMessage?: string;
+    action?: FormActionType;
+    actionConfig?: FormActionConfig;
+    maxSubmissions?: number | null;
     questions?: FormQuestionInput[];
 }
 

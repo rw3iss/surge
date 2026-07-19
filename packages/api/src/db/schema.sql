@@ -370,6 +370,10 @@ CREATE TABLE forms (
     allow_multiple_submissions BOOLEAN NOT NULL DEFAULT false,
     requires_auth BOOLEAN NOT NULL DEFAULT false,
     success_message TEXT,
+    -- On-submit action + settings (migration 060): submit | subscribe | email.
+    action VARCHAR(16) NOT NULL DEFAULT 'submit',
+    action_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+    max_submissions INTEGER,
     submission_count INTEGER NOT NULL DEFAULT 0,
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -404,8 +408,12 @@ CREATE TABLE form_submissions (
     ip_address INET,
     user_agent TEXT,
     answers JSONB NOT NULL,
+    -- Per-render idempotency token (migration 060).
+    nonce VARCHAR(64),
     submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX IF NOT EXISTS form_submissions_form_nonce_uniq
+    ON form_submissions (form_id, nonce) WHERE nonce IS NOT NULL;
 
 CREATE INDEX idx_form_submissions_form_id ON form_submissions(form_id);
 CREATE INDEX idx_form_submissions_user_id ON form_submissions(user_id);

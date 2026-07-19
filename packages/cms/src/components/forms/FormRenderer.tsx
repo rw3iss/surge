@@ -23,7 +23,19 @@ interface FormRendererProps {
  * submitting, showing success, and displaying results if enabled.
  * Can be embedded on any page or inside blocks.
  */
+/** Stable per-render idempotency token so a double-click / accidental resubmit
+ *  is deduped server-side (see form_submissions.nonce). */
+function makeNonce(): string {
+    try {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+    } catch { /* fall through */ }
+    return `n-${Date.now()}-${String(Math.trunc(performance.now(),),)}`;
+}
+
 const FormRenderer: Component<FormRendererProps> = (props,) => {
+    const submissionNonce = makeNonce();
     const [answers, setAnswers,] = createSignal<Record<string, unknown>>({},);
     const [submitted, setSubmitted,] = createSignal(false,);
     const [submitting, setSubmitting,] = createSignal(false,);
@@ -45,7 +57,7 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                 questionId,
                 value,
             }),) as FormAnswer[];
-            await cms.forms.submit(props.form.slug, { answers: formAnswers, },);
+            await cms.forms.submit(props.form.slug, { answers: formAnswers, nonce: submissionNonce, },);
             setSubmitted(true,);
             if (props.form.showResults) loadResults();
         } catch (e) {

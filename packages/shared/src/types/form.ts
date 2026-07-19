@@ -33,6 +33,22 @@ export interface QuestionValidation {
     patternMessage?: string;
 }
 
+/** What happens when a form is submitted. Exactly one per form. */
+export type FormActionType = 'submit' | 'subscribe' | 'email';
+
+/** Action-specific settings, stored as JSON on the form. Only the keys relevant
+ *  to the selected `action` are used. */
+export interface FormActionConfig {
+    /** `subscribe`: mailing list to add the submitter to. */
+    mailingListId?: string;
+    /** `email`: recipient address. May contain `{{ … }}` (e.g. `{{email}}`). */
+    emailTo?: string;
+    /** `email`: subject line. Templated. */
+    emailSubject?: string;
+    /** `email`: HTML body (rich text). Templated; submitted values are escaped. */
+    emailBody?: string;
+}
+
 export interface Form {
     id: string;
     title: string;
@@ -43,6 +59,12 @@ export interface Form {
     allowMultipleSubmissions: boolean;
     requiresAuth: boolean;
     successMessage?: string;
+    /** On-submit action (default `submit` = save only). */
+    action: FormActionType;
+    /** Settings for the selected action. */
+    actionConfig?: FormActionConfig;
+    /** Hard cap on total submissions; null/undefined = unlimited. */
+    maxSubmissions?: number | null;
     questions: FormQuestion[];
     submissionCount: number;
     createdBy: string;

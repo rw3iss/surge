@@ -19,6 +19,7 @@ import { performBulkAction, } from '../utils/bulkActions';
 import type { BulkActionResult, } from '../utils/bulkActions';
 import { logAudit, } from './audit';
 import { cache, } from './cache';
+import { dispatchFormAction, } from './formActions';
 import type { AuditContext, ListResult, PaginationOpts, } from './types';
 
 export type { FormFilters, } from '../repositories/forms.repo';
@@ -187,20 +188,30 @@ export interface SubmitInput {
     slug: string;
     answers: Array<{ questionId: string; value: unknown; }>;
     userId: string | null;
+    userEmail?: string;
     hasUser: boolean;
     ipAddress: string;
     userAgent?: string;
+    /** Per-render idempotency token (accidental double-submit guard). */
+    nonce?: string;
 }
 
 export type SubmitResult =
     | { ok: true; message: string; }
-    | { error: 'not_found' | 'unauthorized' | 'duplicate'; };
+    | { error: 'not_found' | 'unauthorized' | 'duplicate' | 'closed'; };
 
 export async function submit(input: SubmitInput,): Promise<SubmitResult> {
     const form = await repo.findFormBySlugPublished(input.slug,);
     if (!form) return { error: 'not_found', };
 
     if (form.requiresAuth && !input.hasUser) return { error: 'unauthorized', };
+
+    // Hard cap on total submissions (nonce dedup below covers the accidental
+    // double-submit case; this is the operator-set limit).
+    const maxSub = form.maxSubmissions;
+    if (typeof maxSub === 'number' && maxSub > 0 && form.submissionCount >= maxSub) {
+        return { error: 'closed', };
+    }
 
     if (!form.allowMultipleSubmissions) {
         const isDuplicate = await repo.checkDuplicateSubmission(
@@ -221,8 +232,28 @@ export async function submit(input: SubmitInput,): Promise<SubmitResult> {
         }
     }
 
-    await repo.createSubmission(form.id, input.userId, input.ipAddress, input.userAgent, input.answers,);
+    const inserted = await repo.createSubmission(
+        form.id,
+        input.userId,
+        input.ipAddress,
+        input.userAgent,
+        input.answers,
+        input.nonce ?? null,
+    );
+    // Idempotent re-submit of the same render (nonce already used): acknowledge
+    // without saving again or re-firing the action.
+    if (!inserted) {
+        return { ok: true, message: form.successMessage || 'Form submitted successfully', };
+    }
+
     await cache.invalidateFormCache(form.id,);
+
+    // Run the form's configured action (subscribe / email). Best-effort — the
+    // submission is already saved and a failure here never fails the response.
+    await dispatchFormAction(form, questions, input.answers, {
+        userId: input.userId ?? undefined,
+        userEmail: input.userEmail,
+    },);
 
     return { ok: true, message: form.successMessage || 'Form submitted successfully', };
 }

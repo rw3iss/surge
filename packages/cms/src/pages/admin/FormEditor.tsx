@@ -1,9 +1,12 @@
 import { Title, } from '@solidjs/meta';
 import { A, useNavigate, useParams, } from '@solidjs/router';
-import { Component, createResource, createSignal, For, Show, } from 'solid-js';
+import { Component, createMemo, createResource, createSignal, For, Show, } from 'solid-js';
+import { deriveFieldKeys, type FormActionType, } from '@sitesurge/types';
 import AutoSaveIndicator from '../../components/admin/common/AutoSaveIndicator';
 import EditorSaveBar from '../../components/admin/common/EditorSaveBar';
+import RichTextEditor from '../../components/admin/editors/RichTextEditor';
 import Toggle from '../../components/admin/common/Toggle';
+import Tooltip from '../../components/admin/common/Tooltip';
 import { useAutoSave, } from '../../hooks/useAutoSave';
 import { useEditorState, } from '../../hooks/useEditorState';
 import { useKeyboardShortcuts, } from '../../hooks/useKeyboardShortcuts';
@@ -11,9 +14,11 @@ import { useUnsavedChanges, } from '../../hooks/useUnsavedChanges';
 import { invalidateFormsCache, } from '../../services/adminData';
 import { cms, } from '../../services/cmsClient';
 
+type QuestionKind = 'radio' | 'checkbox' | 'text' | 'textarea' | 'select' | 'number' | 'email' | 'date';
+
 interface FormQuestion {
     id?: string;
-    type: 'radio' | 'checkbox' | 'text' | 'textarea' | 'select';
+    type: QuestionKind;
     question: string;
     description?: string;
     options: string[];
@@ -36,9 +41,48 @@ const FormEditor: Component = () => {
     const [showResults, setShowResults,] = createSignal(false,);
     const [allowMultiple, setAllowMultiple,] = createSignal(false,);
     const [successMessage, setSuccessMessage,] = createSignal('',);
+    const [maxSubmissions, setMaxSubmissions,] = createSignal('',);
+
+    // On-submit action
+    const [action, setAction,] = createSignal<FormActionType>('submit',);
+    const [mailingListId, setMailingListId,] = createSignal('',);
+    const [emailTo, setEmailTo,] = createSignal('',);
+    const [emailSubject, setEmailSubject,] = createSignal('',);
+    const [emailBody, setEmailBody,] = createSignal('',);
+    const [showVars, setShowVars,] = createSignal(false,);
 
     // Questions
     const [questions, setQuestions,] = createSignal<FormQuestion[]>([],);
+
+    // Mailing lists for the subscribe-action dropdown (loaded when needed).
+    const [mailingLists,] = createResource(
+        () => action() === 'subscribe' ? 'load' : null,
+        async () => {
+            try {
+                const res = await cms.mailingLists.list() as unknown as
+                    { data?: Array<{ id: string; name: string; }>; } | Array<{ id: string; name: string; }>;
+                return Array.isArray(res,) ? res : (res.data ?? []);
+            } catch {
+                return [];
+            }
+        },
+    );
+
+    /** Variable tokens available in the email template, derived from the current
+     *  questions (matches the backend's deriveFieldKeys). */
+    const emailVars = createMemo(() => {
+        const keys = deriveFieldKeys(
+            questions().filter((q,) => q.id).map((q,) => ({ id: q.id!, question: q.question, })),
+        );
+        const perField = questions()
+            .filter((q,) => q.id)
+            .map((q,) => ({ token: keys[q.id!], label: q.question || '(untitled)', }));
+        return [
+            ...perField,
+            { token: 'form_title', label: 'This form\'s title', },
+            { token: 'submitted_at', label: 'Submission date/time', },
+        ];
+    },);
 
     // Load existing form
     const [form,] = createResource(
@@ -58,6 +102,13 @@ const FormEditor: Component = () => {
                 setShowResults(data.showResults || false,);
                 setAllowMultiple(data.allowMultipleSubmissions || false,);
                 setSuccessMessage(data.successMessage || '',);
+                setMaxSubmissions(data.maxSubmissions != null ? String(data.maxSubmissions,) : '',);
+                setAction((data.action as FormActionType) || 'submit',);
+                const ac = data.actionConfig || {};
+                setMailingListId(ac.mailingListId || '',);
+                setEmailTo(ac.emailTo || '',);
+                setEmailSubject(ac.emailSubject || '',);
+                setEmailBody(ac.emailBody || '',);
 
                 // Load questions
                 if (data.questions && Array.isArray(data.questions,)) {
@@ -160,6 +211,12 @@ const FormEditor: Component = () => {
             showResults: showResults(),
             allowMultiple: allowMultiple(),
             successMessage: successMessage(),
+            maxSubmissions: maxSubmissions(),
+            action: action(),
+            mailingListId: mailingListId(),
+            emailTo: emailTo(),
+            emailSubject: emailSubject(),
+            emailBody: emailBody(),
             questions: questions(),
         }),
     },);
@@ -188,6 +245,7 @@ const FormEditor: Component = () => {
         beginSave();
 
         try {
+            const parsedMax = parseInt(maxSubmissions(), 10,);
             const payload = {
                 title: title(),
                 slug: slug(),
@@ -196,6 +254,14 @@ const FormEditor: Component = () => {
                 showResults: showResults(),
                 allowMultipleSubmissions: allowMultiple(),
                 successMessage: successMessage(),
+                maxSubmissions: Number.isFinite(parsedMax,) && parsedMax > 0 ? parsedMax : null,
+                action: action(),
+                actionConfig: {
+                    mailingListId: mailingListId() || undefined,
+                    emailTo: emailTo() || undefined,
+                    emailSubject: emailSubject() || undefined,
+                    emailBody: emailBody() || undefined,
+                },
                 questions: questions().map((q, index,) => ({
                     id: q.id,
                     type: q.type,
@@ -245,6 +311,9 @@ const FormEditor: Component = () => {
     const questionTypeLabels: Record<string, string> = {
         text: 'Single Line Text',
         textarea: 'Long Text (Paragraph)',
+        email: 'Email',
+        number: 'Number',
+        date: 'Date',
         radio: 'Multiple Choice (Single Answer)',
         checkbox: 'Checkboxes (Multiple Answers)',
         select: 'Dropdown',
@@ -368,6 +437,151 @@ const FormEditor: Component = () => {
                                 label="Allow multiple submissions per user"
                             />
                         </div>
+
+                        <div class="form-group">
+                            <label for="maxSubmissions">
+                                Max submissions
+                                <Tooltip
+                                    header="Max submissions"
+                                    content="Stop accepting submissions after this many. Leave blank for unlimited. (An accidental double-submit from the same page load is always de-duplicated automatically.)"
+                                />
+                            </label>
+                            <input
+                                type="number"
+                                id="maxSubmissions"
+                                min="0"
+                                value={maxSubmissions()}
+                                onInput={(e,) => { setMaxSubmissions(e.currentTarget.value,); markDirty(); }}
+                                placeholder="Unlimited"
+                                style={{ 'max-width': '200px', }}
+                            />
+                        </div>
+                    </section>
+
+                    {/* On-submit action */}
+                    <section class="form-section">
+                        <h2>On Submit</h2>
+                        <div class="form-group">
+                            <label for="action">
+                                Action
+                                <Tooltip
+                                    header="On-submit action"
+                                    content="What happens when someone submits this form. Every submission is always saved so you can view responses; Subscribe and Email run in addition to saving."
+                                />
+                            </label>
+                            <select
+                                id="action"
+                                value={action()}
+                                onChange={(e,) => { setAction(e.currentTarget.value as FormActionType,); markDirty(); }}
+                                style={{ 'max-width': '320px', }}
+                            >
+                                <option value="submit">Save submission (default)</option>
+                                <option value="subscribe">Subscribe to a mailing list</option>
+                                <option value="email">Send an email</option>
+                            </select>
+                        </div>
+
+                        {/* Subscribe settings */}
+                        <Show when={action() === 'subscribe'}>
+                            <div class="form-subaction">
+                                <div class="form-group">
+                                    <label for="mailingList">Mailing list</label>
+                                    <select
+                                        id="mailingList"
+                                        value={mailingListId()}
+                                        onChange={(e,) => { setMailingListId(e.currentTarget.value,); markDirty(); }}
+                                        style={{ 'max-width': '320px', }}
+                                    >
+                                        <option value="">— Select a list —</option>
+                                        <For each={mailingLists() || []}>
+                                            {(l,) => <option value={l.id}>{l.name}</option>}
+                                        </For>
+                                    </select>
+                                    <Show when={(mailingLists() || []).length === 0}>
+                                        <small class="form-help">
+                                            No mailing lists found. Create one under{' '}
+                                            <A href="/admin/mailing-lists">Mailing Lists</A> (requires the Mailing
+                                            Lists feature).
+                                        </small>
+                                    </Show>
+                                    <small class="form-help">
+                                        The submitter is added to this list using their <strong>Email</strong> field
+                                        (add an Email question below). The list's double opt-in setting is respected.
+                                    </small>
+                                </div>
+                            </div>
+                        </Show>
+
+                        {/* Email settings */}
+                        <Show when={action() === 'email'}>
+                            <div class="form-subaction">
+                                <div class="form-group">
+                                    <label for="emailTo">Send to</label>
+                                    <input
+                                        type="text"
+                                        id="emailTo"
+                                        value={emailTo()}
+                                        onInput={(e,) => { setEmailTo(e.currentTarget.value,); markDirty(); }}
+                                        placeholder="admin@example.com  (or a variable like {{email}})"
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="emailSubject">Subject</label>
+                                    <input
+                                        type="text"
+                                        id="emailSubject"
+                                        value={emailSubject()}
+                                        onInput={(e,) => { setEmailSubject(e.currentTarget.value,); markDirty(); }}
+                                        placeholder="New submission for {{form_title}}"
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label>Email body</label>
+                                    <RichTextEditor
+                                        value={emailBody()}
+                                        onChange={(html,) => { setEmailBody(html,); markDirty(); }}
+                                        placeholder="Compose the email. Insert form values with {{ variables }} — see the reference below."
+                                    />
+                                </div>
+
+                                {/* Variables help */}
+                                <div class="form-vars">
+                                    <button
+                                        type="button"
+                                        class="form-vars__toggle"
+                                        onClick={() => setShowVars(!showVars(),)}
+                                        aria-expanded={showVars()}
+                                    >
+                                        <span class="form-vars__chev">{showVars() ? '▾' : '▸'}</span>
+                                        Available variables
+                                    </button>
+                                    <Show when={showVars()}>
+                                        <div class="form-vars__body">
+                                            <p class="form-help">
+                                                Use these in the Send&nbsp;to, Subject, and Body. They're replaced with
+                                                the submitted values when the form is sent.
+                                            </p>
+                                            <ul class="form-vars__list">
+                                                <For each={emailVars()}>
+                                                    {(v,) => (
+                                                        <li>
+                                                            <code>{`{{${v.token}}}`}</code>
+                                                            <span class="form-vars__label">{v.label}</span>
+                                                        </li>
+                                                    )}
+                                                </For>
+                                            </ul>
+                                            <Show when={emailVars().length <= 2}>
+                                                <small class="form-help">
+                                                    Add questions below to get more variables (save the form to
+                                                    finalize their names).
+                                                </small>
+                                            </Show>
+                                        </div>
+                                    </Show>
+                                </div>
+                            </div>
+                        </Show>
                     </section>
 
                     {/* Questions Section */}
@@ -453,6 +667,9 @@ const FormEditor: Component = () => {
                                                     >
                                                         <option value="text">{questionTypeLabels.text}</option>
                                                         <option value="textarea">{questionTypeLabels.textarea}</option>
+                                                        <option value="email">{questionTypeLabels.email}</option>
+                                                        <option value="number">{questionTypeLabels.number}</option>
+                                                        <option value="date">{questionTypeLabels.date}</option>
                                                         <option value="radio">{questionTypeLabels.radio}</option>
                                                         <option value="checkbox">{questionTypeLabels.checkbox}</option>
                                                         <option value="select">{questionTypeLabels.select}</option>
