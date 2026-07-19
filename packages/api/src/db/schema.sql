@@ -18,6 +18,11 @@ CREATE TABLE users (
     password_hash VARCHAR(255), -- NULL for Patreon-only users
     display_name VARCHAR(255) NOT NULL,
     avatar_url TEXT,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    bio VARCHAR(250),
+    location_city VARCHAR(100),
+    location_state VARCHAR(100),
     role user_role NOT NULL DEFAULT 'member',
     auth_provider auth_provider NOT NULL,
     patreon_id VARCHAR(255) UNIQUE,

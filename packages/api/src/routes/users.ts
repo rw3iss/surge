@@ -28,7 +28,9 @@ const avatarStorage = multer.diskStorage({
     },
 },);
 
-const avatarUpload = multer({
+// Exported so the self-service profile route (auth /me/avatar) reuses the
+// same staging config instead of duplicating the multer setup.
+export const avatarUpload = multer({
     storage: avatarStorage,
     limits: { fileSize: users.AVATAR_MAX_SIZE, },
     fileFilter: (_req, file, cb,) => {

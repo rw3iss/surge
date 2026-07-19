@@ -41,6 +41,17 @@ const Login: Component = () => {
      * by default AND there's another login method visible above it. */
     const showDisclosure = () => !showFormByDefault();
 
+    /** Post-login destination from `?redirect=` or `?return=` (either works).
+     *  A bare name (`profile`) is normalized to an absolute path (`/profile`);
+     *  protocol-relative / external values are rejected (returns ''). */
+    const returnTarget = (): string => {
+        const raw = (typeof searchParams.redirect === 'string' && searchParams.redirect)
+            || (typeof searchParams.return === 'string' && searchParams.return)
+            || '';
+        if (!raw || raw.startsWith('//',)) return '';
+        return raw.startsWith('/',) ? raw : `/${raw}`;
+    };
+
     const handleEmailLogin = async (e: Event,) => {
         e.preventDefault();
         setError('',);
@@ -63,15 +74,11 @@ const Login: Component = () => {
                 }
             }
 
-            // After login: an explicit ?return=<path> wins. Otherwise,
-            // admins land in the admin area (where they're presumably
-            // headed) and regular users go to the homepage.
-            const explicitReturn = searchParams.return;
+            // After login: an explicit ?redirect / ?return wins. Otherwise
+            // admins land in the admin area and regular users go home.
             const role = auth.user?.role;
             const isAdmin = isAdminRole(role,);
-            const target = (typeof explicitReturn === 'string' && explicitReturn)
-                ? explicitReturn
-                : isAdmin ? '/admin' : '/';
+            const target = returnTarget() || (isAdmin ? '/admin' : '/');
             navigate(target,);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Login failed',);
@@ -81,8 +88,9 @@ const Login: Component = () => {
     };
 
     const handlePatreonLogin = () => {
-        if (searchParams.return) {
-            document.cookie = `returnUrl=${searchParams.return};path=/;max-age=600`;
+        const target = returnTarget();
+        if (target) {
+            document.cookie = `returnUrl=${target};path=/;max-age=600`;
         }
         auth.loginWithPatreon();
     };

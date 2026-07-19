@@ -459,12 +459,29 @@ function AccountMenu(props: { onLogout: () => void; },) {
                             Admin
                         </A>
                     </Show>
-                    <div class="header__account-item header__account-user">
-                        <Show when={auth.user?.avatarUrl}>
-                            <img src={auth.user?.avatarUrl} alt={auth.user?.displayName} class="header__user-avatar" />
-                        </Show>
-                        <span class="header__user-name">{auth.user?.displayName}</span>
-                    </div>
+                    <Show
+                        when={isFeatureEnabled('users',)}
+                        fallback={
+                            <div class="header__account-item header__account-user">
+                                <Show when={auth.user?.avatarUrl}>
+                                    <img src={auth.user?.avatarUrl} alt={auth.user?.displayName} class="header__user-avatar" />
+                                </Show>
+                                <span class="header__user-name">{auth.user?.displayName}</span>
+                            </div>
+                        }
+                    >
+                        <A
+                            href="/profile"
+                            class="header__account-item header__account-user"
+                            role="menuitem"
+                            onClick={() => setOpen(false,)}
+                        >
+                            <Show when={auth.user?.avatarUrl}>
+                                <img src={auth.user?.avatarUrl} alt={auth.user?.displayName} class="header__user-avatar" />
+                            </Show>
+                            <span class="header__user-name">{auth.user?.displayName}</span>
+                        </A>
+                    </Show>
                     <button
                         type="button"
                         class="header__account-item header__account-logout"

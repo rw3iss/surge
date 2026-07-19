@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-19T16:07:00.500Z",
+  "generatedAt": "2026-07-19T17:18:45.685Z",
   "totalModules": 31,
-  "totalRoutes": 255,
+  "totalRoutes": 257,
   "modules": [
     {
       "module": "api-keys",
@@ -109,6 +109,20 @@
           "absolutePath": "/api/v1/auth/me",
           "auth": "user",
           "summary": "Return the currently-authenticated user."
+        },
+        {
+          "method": "PUT",
+          "path": "/me",
+          "absolutePath": "/api/v1/auth/me",
+          "auth": "user",
+          "summary": "Update the current user's own profile (name, bio, city/state). Gated by `users`."
+        },
+        {
+          "method": "POST",
+          "path": "/me/avatar",
+          "absolutePath": "/api/v1/auth/me/avatar",
+          "auth": "user",
+          "summary": "Upload the current user's own avatar (resized to 256×256 webp). Gated by `users`."
         },
         {
           "method": "POST",

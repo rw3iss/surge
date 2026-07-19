@@ -7,6 +7,13 @@ export interface User {
     email: string;
     displayName: string;
     avatarUrl?: string;
+    /** Profile fields (self-service profile page). */
+    firstName?: string;
+    lastName?: string;
+    /** Short profile blurb, ≤250 chars. */
+    bio?: string;
+    locationCity?: string;
+    locationState?: string;
     role: UserRole;
     authProvider: AuthProvider;
     patreonId?: string;

@@ -2,6 +2,7 @@ import type {
     AuthResponse, LoginCredentials, AuthPatreonResponse,
     AuthLogoutAllResponse, AuthMeResponse, AuthPatreonSyncResponse, AuthAutologinResponse,
     AuthRegisterBody, AuthRegisterResponse,
+    AuthUpdateProfileBody, AuthUpdateProfileResponse, AuthAvatarResponse,
 } from '@sitesurge/types';
 import type { CmsClientCore, } from '../core/client';
 import type { AuthRuntime, } from '../core/auth/authManager';
@@ -62,6 +63,18 @@ export class AuthModule extends ModuleBase implements AuthRuntime {
     /** GET /auth/me — session probe; never cached (always fresh). */
     me(): Promise<AuthMeResponse> {
         return this.get<AuthMeResponse>('/auth/me', { options: { cache: false, }, },);
+    }
+
+    /** PUT /auth/me — update the caller's OWN profile (name, bio, city/state). */
+    updateProfile(body: AuthUpdateProfileBody,): Promise<AuthUpdateProfileResponse> {
+        return this.mutate<AuthUpdateProfileResponse>('PUT', '/auth/me', { body, },);
+    }
+
+    /** POST /auth/me/avatar — upload the caller's OWN avatar (multipart "avatar"). */
+    uploadAvatar(file: Blob,): Promise<AuthAvatarResponse> {
+        const form = new FormData();
+        form.append('avatar', file,);
+        return super.uploadForm<AuthAvatarResponse>('/auth/me/avatar', form,);
     }
 
     /** GET /auth/patreon — Patreon OAuth authorization URL + CSRF state. */

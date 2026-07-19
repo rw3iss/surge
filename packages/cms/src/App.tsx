@@ -28,6 +28,7 @@ const ShopCartPage = lazy(() => import('./pages/shop/ShopCart'));
 const ShopCheckoutPage = lazy(() => import('./pages/shop/ShopCheckout'));
 const ShopOrderConfirmationPage = lazy(() => import('./pages/shop/ShopOrderConfirmation'));
 const SearchPage = lazy(() => import('./pages/Search'));
+const ProfilePage = lazy(() => import('./pages/Profile'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 const SetupPage = lazy(() => import('./pages/setup/Setup'));
 
@@ -104,6 +105,10 @@ const App: Component = () => {
 										<Route path="/contact" component={ContactPage} />
 										<Route path="/forms/:slug" component={FormPage} />
 										<Route path="/search" component={SearchPage} />
+										{/* Self-service user profile. The page self-guards:
+											redirects to /login when signed out, and to home
+											when the `users` feature is off. */}
+										<Route path="/profile" component={ProfilePage} />
 										{/* Dynamic page route - must be last among
 											single-segment paths. */}
 										<Route path="/:slug" component={DynamicPage} />

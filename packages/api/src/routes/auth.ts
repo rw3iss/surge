@@ -19,6 +19,7 @@ import type {
     AuthLoginBody,
     AuthRefreshBody,
     AuthRegisterBody,
+    AuthUpdateProfileBody,
 } from '@sitesurge/types';
 import { config, } from '../config';
 import { defineRoute, } from '../api/defineRoute';
@@ -38,6 +39,8 @@ import {
     syncPatreonMembership,
 } from '../services/auth';
 import { isFeatureEnabledServer, } from '../services/settings';
+import * as usersService from '../services/users';
+import { avatarUpload, } from './users';
 import { logger, } from '../utils/logger';
 
 // ─── Schemas ──────────────────────────────────────────────────────
@@ -56,6 +59,14 @@ const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8,),
 },) satisfies z.ZodType<AuthRegisterBody>;
+
+const updateProfileSchema = z.object({
+    firstName: z.string().max(100,).nullish(),
+    lastName: z.string().max(100,).nullish(),
+    bio: z.string().max(250,).nullish(),
+    locationCity: z.string().max(100,).nullish(),
+    locationState: z.string().max(100,).nullish(),
+},) satisfies z.ZodType<AuthUpdateProfileBody>;
 
 // `refreshToken` is optional: when omitted the handler falls back to the
 // `refreshToken` cookie. Mirrors the DTO so the cookie-fallback path is
@@ -319,6 +330,36 @@ export const authRoutes = [
         method: 'get', path: '/me', auth: 'user',
         summary: 'Return the currently-authenticated user.',
         handler: ({ user, },) => ({ user, }),
+    },),
+
+    defineRoute({
+        method: 'put', path: '/me', auth: 'user',
+        summary: 'Update the current user\'s own profile (name, bio, city/state). Gated by `users`.',
+        input: { body: updateProfileSchema, },
+        handler: async ({ user, body, audit, },) => {
+            if (!user) throw new UnauthorizedError('Not authenticated',);
+            if (!(await isFeatureEnabledServer('users',))) {
+                throw new ForbiddenError('User profiles are not enabled.',);
+            }
+            const updated = await usersService.update(user.id, body, audit(),);
+            return { user: updated, };
+        },
+    },),
+
+    defineRoute({
+        method: 'post', path: '/me/avatar', auth: 'user',
+        summary: 'Upload the current user\'s own avatar (resized to 256×256 webp). Gated by `users`.',
+        pre: [avatarUpload.single('avatar',),],
+        handler: async ({ user, req, audit, },) => {
+            if (!user) throw new UnauthorizedError('Not authenticated',);
+            if (!(await isFeatureEnabledServer('users',))) {
+                throw new ForbiddenError('User profiles are not enabled.',);
+            }
+            const file = req.file;
+            if (!file) throw new AppError(400, 'BAD_REQUEST', 'No file uploaded',);
+            const updated = await usersService.setAvatar(user.id, file.path, audit(),);
+            return { user: updated, };
+        },
     },),
 
     defineRoute({

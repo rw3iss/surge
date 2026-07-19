@@ -119,6 +119,30 @@ export interface AuthMeResponse {
     user: User;
 }
 
+// ─── PUT /auth/me ─────────────────────────────────────────────────
+
+/** Body for PUT /auth/me — the caller edits their OWN profile. Only these
+ *  fields are user-editable (never role / isActive / email). */
+export interface AuthUpdateProfileBody {
+    firstName?: string | null;
+    lastName?: string | null;
+    bio?: string | null;
+    locationCity?: string | null;
+    locationState?: string | null;
+}
+
+/** PUT /auth/me — the updated user, wrapped. */
+export interface AuthUpdateProfileResponse {
+    user: User;
+}
+
+// ─── POST /auth/me/avatar ─────────────────────────────────────────
+
+/** POST /auth/me/avatar — multipart (field "avatar"); the updated user. */
+export interface AuthAvatarResponse {
+    user: User;
+}
+
 // ─── POST /auth/patreon/sync ──────────────────────────────────────
 
 /**
