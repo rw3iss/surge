@@ -21,6 +21,7 @@ export const SYNTAX_EXAMPLES: SyntaxExample[] = [
     { title: 'Page entity', code: '{{ post.title }}', desc: 'On a post page, `post` is the current post; on a campaign page, `campaign` is the current campaign.' },
     { title: 'Entity by id — property', code: "{{ campaign('the-id').title }}", desc: 'Fetch an entity by id (or slug) and read a property.' },
     { title: 'Entity by id — whole', code: "{{ form('the-id') }}", desc: 'No property → renders the whole entity (the form / a post or campaign card).' },
+    { title: 'Render options (keyword args)', code: "{{ form('newsletter', title=false, columns=2) }}", desc: 'Whole-entity calls take optional keyword args (any order) that tweak the output. Forms: `title` (false / "" to hide, or a string to override) and `columns` (1–8; fields flow across columns, wrapping, single column on mobile).' },
     { title: 'Utility function', code: '{{ formatCurrency(campaign.goalAmountCents) }}', desc: 'Call a convenience function on a value.' },
 ];
 
@@ -43,7 +44,7 @@ export const FUNCTIONS: { group: string; items: FunctionDoc[] }[] = [
         items: [
             { sig: "post(idOrSlug)", desc: 'A post by id or slug.' },
             { sig: "campaign(idOrSlug)", desc: 'A campaign by id or slug.' },
-            { sig: "form(idOrSlug)", desc: 'A form by id or slug (whole = interactive form).' },
+            { sig: "form(idOrSlug, title?, columns?)", desc: 'A form by id or slug (whole = interactive form). Keyword args: title=false/"" hides the title (or a string overrides it); columns=N lays fields out in N columns.' },
             { sig: "page(slug)", desc: 'A CMS page by slug.' },
             { sig: "media(id)", desc: 'A media asset by id (admin only).' },
             { sig: "user()", desc: 'The current signed-in user.' },

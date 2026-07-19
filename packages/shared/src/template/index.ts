@@ -48,11 +48,11 @@ function getAst(src: string): Node[] {
 export async function renderTemplateToString(
     src: string | null | undefined,
     runtime: TemplateRuntime,
-    onEntity: (kind: string, data: Record<string, unknown> | null) => string = () => '',
+    onEntity: (kind: string, data: Record<string, unknown> | null, options?: Record<string, unknown>) => string = () => '',
 ): Promise<string> {
     if (!src || !hasTemplateSyntax(src)) return src ?? '';
     const nodes = await renderTemplate(src, runtime);
-    return nodes.map((n) => (n.type === 'html' ? n.html : onEntity(n.kind, n.data))).join('');
+    return nodes.map((n) => (n.type === 'html' ? n.html : onEntity(n.kind, n.data, n.options))).join('');
 }
 
 export async function renderTemplate(src: string, runtime: TemplateRuntime): Promise<OutputNode[]> {

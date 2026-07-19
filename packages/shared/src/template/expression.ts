@@ -19,7 +19,9 @@ type Tok =
     | { t: 'op'; v: string }
     | { t: 'eof' };
 
-const OPS = ['==', '!=', '>=', '<=', '&&', '||', '>', '<', '!', '(', ')', ',', '.'];
+// `=` (single) is lexed for keyword args (`title=false`); two-char `==` is
+// matched first so equality still works.
+const OPS = ['==', '!=', '>=', '<=', '&&', '||', '>', '<', '!', '(', ')', ',', '.', '='];
 
 function lex(src: string): Tok[] {
     const out: Tok[] = [];
@@ -137,13 +139,20 @@ class Parser {
                 // function call
                 this.next();
                 const args: Expr[] = [];
+                const named: Record<string, Expr> = {};
                 if (!this.isOp(')')) {
-                    args.push(this.parseOr());
-                    while (this.eatOp(',')) args.push(this.parseOr());
+                    this.parseArg(args, named);
+                    while (this.eatOp(',')) this.parseArg(args, named);
                 }
                 if (!this.eatOp(')')) throw new TemplateParseError("Expected ')' after arguments");
                 const props = this.parsePropChain();
-                return { kind: 'call', name, args, props };
+                return {
+                    kind: 'call',
+                    name,
+                    args,
+                    props,
+                    ...(Object.keys(named).length > 0 ? { named } : {}),
+                };
             }
             // dotted path
             const parts = [name, ...this.parsePropChain()];
@@ -151,6 +160,21 @@ class Parser {
         }
         throw new TemplateParseError('Unexpected token in expression');
     }
+    /** Parse one call argument: `IDENT = expr` (keyword, any order) → `named`,
+     *  otherwise a positional expression → `args`. */
+    private parseArg(args: Expr[], named: Record<string, Expr>): void {
+        const t = this.peek();
+        const t1 = this.toks[this.pos + 1];
+        if (t.t === 'ident' && t1 && t1.t === 'op' && t1.v === '=') {
+            const key = t.v;
+            this.next(); // ident
+            this.next(); // '='
+            named[key] = this.parseOr();
+        } else {
+            args.push(this.parseOr());
+        }
+    }
+
     private parsePropChain(): string[] {
         const props: string[] = [];
         while (this.eatOp('.')) {

@@ -9,11 +9,21 @@ import FormRenderer from '../forms/FormRenderer';
  * Forms reuse the real `FormRenderer` (interactive); posts/campaigns/media render
  * a self-contained card/media element. A null entity (not found) renders nothing.
  */
-const TemplateEntity: Component<{ kind: string; data: Record<string, unknown> | null; }> = (props,) => (
+const TemplateEntity: Component<{
+    kind: string;
+    data: Record<string, unknown> | null;
+    /** Keyword-arg render options, e.g. `{{form(id, title=false, columns=2)}}`. */
+    options?: Record<string, unknown>;
+}> = (props,) => (
     <Show when={props.data} fallback={null}>
         <Switch fallback={null}>
             <Match when={props.kind === 'form'}>
-                <FormRenderer form={props.data as unknown as Form} inline={true} />
+                <FormRenderer
+                    form={props.data as unknown as Form}
+                    inline={true}
+                    title={props.options?.title as boolean | string | undefined}
+                    columns={props.options?.columns as number | undefined}
+                />
             </Match>
             <Match when={props.kind === 'campaign'}>
                 {(() => {

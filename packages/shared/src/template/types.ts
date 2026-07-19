@@ -18,8 +18,11 @@ export interface LiteralExpr { kind: 'lit'; value: string | number | boolean | n
 /** Dotted variable path, e.g. `post.title` → parts `['post','title']`. */
 export interface PathExpr { kind: 'path'; parts: string[]; }
 /** Function call with optional trailing property access, e.g. `post(id).title`
- *  → name `post`, args `[id]`, props `['title']`. Empty `props` → whole entity. */
-export interface CallExpr { kind: 'call'; name: string; args: Expr[]; props: string[]; }
+ *  → name `post`, args `[id]`, props `['title']`. Empty `props` → whole entity.
+ *  `named` holds keyword args (`{{form(id, title=false, columns=2)}}`) — parsed
+ *  in any order; the evaluator attaches them as `options` on an EntityRef
+ *  result so the renderer can tweak the output. */
+export interface CallExpr { kind: 'call'; name: string; args: Expr[]; props: string[]; named?: Record<string, Expr>; }
 export interface UnaryExpr { kind: 'unary'; op: '!'; operand: Expr; }
 export interface BinaryExpr { kind: 'binary'; op: BinaryOp; left: Expr; right: Expr; }
 export type BinaryOp = '==' | '!=' | '>' | '<' | '>=' | '<=' | '&&' | '||';
@@ -48,6 +51,8 @@ export interface EntityRef {
     kind: string;
     id?: string;
     data: Record<string, unknown> | null;
+    /** Keyword-arg render options from the call, e.g. `{ title: false, columns: 2 }`. */
+    options?: Record<string, unknown>;
 }
 
 export function isEntityRef(v: unknown): v is EntityRef {
@@ -63,7 +68,7 @@ export function entityRef(kind: string, data: Record<string, unknown> | null, id
  *  segments (rendered as components by `<TemplatedContent>`). */
 export type OutputNode =
     | { type: 'html'; html: string }
-    | { type: 'entity'; kind: string; id?: string; data: Record<string, unknown> | null };
+    | { type: 'entity'; kind: string; id?: string; data: Record<string, unknown> | null; options?: Record<string, unknown> };
 
 // ── Runtime (injected into evaluate) ────────────────────────────────────────────
 export interface TemplateRuntime {

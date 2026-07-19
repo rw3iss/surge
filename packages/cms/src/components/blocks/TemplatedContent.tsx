@@ -16,7 +16,7 @@ interface TemplatedContentProps {
     class?: string;
 }
 
-interface EntitySeg { index: number; kind: string; data: Record<string, unknown> | null; }
+interface EntitySeg { index: number; kind: string; data: Record<string, unknown> | null; options?: Record<string, unknown>; }
 interface Resolved { html: string; entities: EntitySeg[]; }
 
 /** Strip `{{ … }}` tags — used for the loading fallback so raw braces never
@@ -61,7 +61,7 @@ const TemplatedContent: Component<TemplatedContentProps> = (props,) => {
                     out += n.html;
                 } else {
                     const index = entities.length;
-                    entities.push({ index, kind: n.kind, data: n.data, },);
+                    entities.push({ index, kind: n.kind, data: n.data, options: n.options, },);
                     out += `<div style="display:contents" data-tpl-entity="${index}"></div>`;
                 }
             }
@@ -89,7 +89,7 @@ const TemplatedContent: Component<TemplatedContentProps> = (props,) => {
                                 return (
                                     <Show when={target}>
                                         <Portal mount={target!}>
-                                            <TemplateEntity kind={e.kind} data={e.data} />
+                                            <TemplateEntity kind={e.kind} data={e.data} options={e.options} />
                                         </Portal>
                                     </Show>
                                 );

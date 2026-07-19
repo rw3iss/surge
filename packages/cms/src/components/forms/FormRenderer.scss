@@ -30,6 +30,25 @@
         gap: $spacing-lg;
     }
 
+    // Multi-column layout (`{{form(id, columns=N)}}`): each field is a grid
+    // cell flowing across N columns then wrapping; the error banner + submit
+    // span the full width. Collapses to a single column on mobile.
+    &__form--cols {
+        display: grid;
+        grid-template-columns: repeat(var(--form-cols, 1), minmax(0, 1fr));
+        gap: $spacing-lg;
+        align-items: start;
+
+        .form-renderer__error,
+        .form-renderer__submit {
+            grid-column: 1 / -1;
+        }
+
+        @include mobile-only {
+            grid-template-columns: 1fr;
+        }
+    }
+
     &__field {
         display: flex;
         flex-direction: column;

@@ -70,6 +70,22 @@ async function evalExpr(expr: Expr, scope: Scope, rt: TemplateRuntime): Promise<
                 return v;
             }));
             let val = await rt.resolve(expr.name, args);
+            // Keyword args (`{{form(id, title=false, columns=2)}}`) attach as
+            // render `options` on an EntityRef result, so the renderer can tweak
+            // the output. Any order; ignored when the result isn't an entity.
+            if (expr.named && isEntityRef(val)) {
+                const options: Record<string, unknown> = { ...(val.options ?? {}) };
+                for (const key of Object.keys(expr.named)) {
+                    const ex = expr.named[key];
+                    let v = await evalExpr(ex, scope, rt);
+                    // Forgiving (like positional args): a bare identifier that
+                    // isn't a variable becomes its literal name, so `title=Hello`
+                    // works unquoted alongside `title='Hello'`.
+                    if (v === undefined && ex.kind === 'path') v = ex.parts.join('.');
+                    options[key] = v;
+                }
+                val = { ...val, options };
+            }
             for (const p of expr.props) val = getProp(val, p);
             return val;
         }
@@ -118,9 +134,14 @@ class Emitter {
     private buf = '';
     readonly out: OutputNode[] = [];
     text(s: string): void { this.buf += s; }
-    entity(kind: string, id: string | undefined, data: Record<string, unknown> | null): void {
+    entity(
+        kind: string,
+        id: string | undefined,
+        data: Record<string, unknown> | null,
+        options?: Record<string, unknown>,
+    ): void {
         this.flush();
-        this.out.push({ type: 'entity', kind, id, data });
+        this.out.push({ type: 'entity', kind, id, data, options });
     }
     flush(): void {
         if (this.buf) { this.out.push({ type: 'html', html: this.buf }); this.buf = ''; }
@@ -139,7 +160,7 @@ async function evalNodes(nodes: Node[], scope: Scope, rt: TemplateRuntime, em: E
                 continue; // ignore unresolved syntax
             }
             if (isEntityRef(value)) {
-                em.entity(value.kind, value.id, value.data);
+                em.entity(value.kind, value.id, value.data, value.options);
             } else {
                 if (value === undefined) rt.warn?.(`template: {{${node.raw}}} is undefined (ignored)`);
                 em.text(stringify(value));

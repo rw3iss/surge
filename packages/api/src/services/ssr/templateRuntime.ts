@@ -78,9 +78,19 @@ async function fetchCollection(name: string, limit: number): Promise<{ kind: str
     }
 }
 
+/** Resolve the effective title for an entity given its `title` render option:
+ *  `false`/`''` → hidden; a non-empty string → override; otherwise the entity's
+ *  own title. Returns null when the title should not render. */
+function optionTitle(own: string, options?: Record<string, unknown>): string | null {
+    const t = options?.title;
+    if (t === false || t === '') return null;
+    if (typeof t === 'string') return t;
+    return own || null;
+}
+
 /** Serialize a whole entity to indexable SSR HTML (SEO cares about words + links,
  *  not interactivity — forms/etc. are rendered client-side on mount). */
-function entityToHtml(kind: string, data: Rec | null): string {
+function entityToHtml(kind: string, data: Rec | null, options?: Record<string, unknown>): string {
     if (!data) return '';
     const g = (k: string): string => escapeHtml(String(data[k] ?? ''));
     switch (kind) {
@@ -90,9 +100,12 @@ function entityToHtml(kind: string, data: Rec | null): string {
         case 'campaign':
             return `<a class="ssr-entity ssr-entity--campaign" href="/campaigns/${g('slug')}"><h3>${g('title')}</h3>`
                 + (data.shortDescription ? `<p>${g('shortDescription')}</p>` : '') + '</a>';
-        case 'form':
-            return `<div class="ssr-entity ssr-entity--form"><h3>${g('title')}</h3>`
+        case 'form': {
+            const title = optionTitle(String(data.title ?? ''), options,);
+            return '<div class="ssr-entity ssr-entity--form">'
+                + (title ? `<h3>${escapeHtml(title,)}</h3>` : '')
                 + (data.description ? `<p>${g('description')}</p>` : '') + '</div>';
+        }
         case 'page':
             return `<a class="ssr-entity ssr-entity--page" href="/${g('slug')}">${g('title')}</a>`;
         case 'media': {
@@ -170,7 +183,7 @@ export async function resolveContentForSsr(
     if (!content || !hasTemplateSyntax(content)) return content ?? '';
     try {
         const rt = buildSsrRuntime(entities);
-        return await renderTemplateToString(content, rt, (kind, data) => entityToHtml(kind, data));
+        return await renderTemplateToString(content, rt, (kind, data, options) => entityToHtml(kind, data, options));
     } catch (e) {
         logger.warn('SSR template resolution failed', { error: (e as Error).message });
         return content;

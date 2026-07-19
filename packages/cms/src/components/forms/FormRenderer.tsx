@@ -16,6 +16,12 @@ interface FormRendererProps {
     form: Form;
     /** If true, shows inline (no page wrapper padding) */
     inline?: boolean;
+    /** Title control (from `{{form(id, title=…)}}`): `false`/`''` hides the
+     *  title; a non-empty string overrides it; otherwise the form's own title. */
+    title?: boolean | string;
+    /** Lay the fields out in this many columns (wrapping after), 1–8.
+     *  Collapses to a single column on mobile. Default 1. */
+    columns?: number;
 }
 
 /**
@@ -36,6 +42,16 @@ function makeNonce(): string {
 
 const FormRenderer: Component<FormRendererProps> = (props,) => {
     const submissionNonce = makeNonce();
+
+    /** Effective title text, or null when it should be hidden. */
+    const titleText = (): string | null => {
+        const t = props.title;
+        if (t === false || t === '') return null;
+        if (typeof t === 'string') return t;
+        return props.form.title || null;
+    };
+    /** Column count for the fields grid (1–8). */
+    const cols = (): number => Math.max(1, Math.min(8, Math.trunc(Number(props.columns,) || 1,),),);
     const [answers, setAnswers,] = createSignal<Record<string, unknown>>({},);
     const [submitted, setSubmitted,] = createSignal(false,);
     const [submitting, setSubmitting,] = createSignal(false,);
@@ -130,8 +146,8 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
 
     return (
         <div class={`form-renderer ${props.inline ? 'form-renderer--inline' : ''}`}>
-            <Show when={props.form.title}>
-                <h2 class="form-renderer__title">{props.form.title}</h2>
+            <Show when={titleText()}>
+                <h2 class="form-renderer__title">{titleText()}</h2>
             </Show>
             <Show when={props.form.description}>
                 <p class="form-renderer__subtitle">{props.form.description}</p>
@@ -140,7 +156,13 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
             <Show
                 when={submitted()}
                 fallback={
-                    <form onSubmit={handleSubmit} class="form-renderer__form" noValidate>
+                    <form
+                        onSubmit={handleSubmit}
+                        class="form-renderer__form"
+                        classList={{ 'form-renderer__form--cols': cols() > 1, }}
+                        style={cols() > 1 ? { '--form-cols': String(cols(),), } : undefined}
+                        noValidate
+                    >
                         <For each={props.form.questions}>
                             {(q: FormQuestion,) => (
                                 <div
