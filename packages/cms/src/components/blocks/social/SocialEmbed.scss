@@ -195,6 +195,9 @@
       padding: var(--site-block-padding, 0);
       max-width: 100%;
       width: 100%;
+      // Horizontal Alignment (--block-h-align) drives distribution when the
+      // cards fit; defaults to flex-start (packed, scrolls when they overflow).
+      justify-content: var(--block-h-align, flex-start);
 
       > * {
         flex: 0 0 var(--social-item-width, 280px);
@@ -217,6 +220,9 @@
         height: 100%;
         display: flex;
         flex-direction: column;
+        // Kill the base card's auto margins — in a flex row they'd absorb the
+        // free space (spreading every card) and override justify-content.
+        margin-inline: 0;
       }
 
       .social-embed__content {
