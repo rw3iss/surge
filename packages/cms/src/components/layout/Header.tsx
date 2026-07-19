@@ -488,11 +488,30 @@ function AccountMenu(props: { onLogout: () => void; },) {
                         role="menuitem"
                         onClick={() => { setOpen(false,); props.onLogout(); }}
                     >
-                        Logout
+                        <span class="header__logout-icon" aria-hidden="true"><LogoutGlyph /></span>
+                        <span>Logout</span>
                     </button>
                 </div>
             </Show>
         </div>
+    );
+}
+
+/** The door-exit logout glyph, shared by the account menu + mobile flyout. */
+function LogoutGlyph() {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+        >
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
     );
 }
 
@@ -662,12 +681,16 @@ export const Header: Component<HeaderProps> = (props,) => {
         return s;
     };
 
-    // Background/color for mobile flyout matches the header's configured background
+    // The expanded mobile flyout gets a STATIC opaque background — the homepage
+    // header can be transparent (float mode), which left the panel see-through.
+    // Use the header's alt background (then regular, then the site bg) so it's
+    // always solid, and the alt text color to stay legible over it.
     const flyoutStyle = () => {
         const s: Record<string, string> = {};
-        const bg = colorCssValue(resolvedBg(), '',);
-        if (bg) s['background'] = bg;
-        const tc = colorCssValue(resolvedText(), '',);
+        s['background'] = colorCssValue(props.headerSettings?.backgroundColorAlt, '',)
+            || colorCssValue(resolvedBg(), '',)
+            || 'var(--site-bg, #ffffff)';
+        const tc = colorCssValue(props.headerSettings?.textColorAlt || resolvedText(), '',);
         if (tc) s['color'] = tc;
         const ff = fontStack(props.headerSettings?.defaultFont,);
         if (ff) s['font-family'] = ff;
@@ -935,35 +958,38 @@ export const Header: Component<HeaderProps> = (props,) => {
                                     </Show>
                                 }
                             >
-                                <div class="header__user">
-                                    <Show when={auth.user?.avatarUrl}>
-                                        <img
-                                            src={auth.user?.avatarUrl}
-                                            alt={auth.user?.displayName}
-                                            class="header__user-avatar"
-                                        />
-                                    </Show>
-                                    <span class="header__user-name" style={{ display: 'block', }}>
-                                        {auth.user?.displayName}
-                                    </span>
-                                    <button
-                                        class="header__logout-btn"
-                                        onClick={() => { auth.logout(); closeMobileMenu(); }}
-                                        title="Logout"
-                                        aria-label="Logout"
+                                <div class="header__mobile-account">
+                                    {/* Row 1: user identity → profile (mirrors the desktop gear menu). */}
+                                    <Show
+                                        when={isFeatureEnabled('users',)}
+                                        fallback={
+                                            <div class="header__account-item header__account-user">
+                                                <Show when={auth.user?.avatarUrl}>
+                                                    <img src={auth.user?.avatarUrl} alt={auth.user?.displayName} class="header__user-avatar" />
+                                                </Show>
+                                                <span class="header__user-name">{auth.user?.displayName}</span>
+                                            </div>
+                                        }
                                     >
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
+                                        <A
+                                            href="/profile"
+                                            class="header__account-item header__account-user"
+                                            onClick={closeMobileMenu}
                                         >
-                                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                                            <polyline points="16 17 21 12 16 7" />
-                                            <line x1="21" y1="12" x2="9" y2="12" />
-                                        </svg>
+                                            <Show when={auth.user?.avatarUrl}>
+                                                <img src={auth.user?.avatarUrl} alt={auth.user?.displayName} class="header__user-avatar" />
+                                            </Show>
+                                            <span class="header__user-name">{auth.user?.displayName}</span>
+                                        </A>
+                                    </Show>
+                                    {/* Row 2: logout (icon + text). */}
+                                    <button
+                                        type="button"
+                                        class="header__account-item header__account-logout"
+                                        onClick={() => { auth.logout(); closeMobileMenu(); }}
+                                    >
+                                        <span class="header__logout-icon" aria-hidden="true"><LogoutGlyph /></span>
+                                        <span>Logout</span>
                                     </button>
                                 </div>
                             </Show>

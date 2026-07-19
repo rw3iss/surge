@@ -336,6 +336,45 @@
     background: rgba($error-color, 0.06);
   }
 
+  // Logout glyph in the account menu / mobile flyout. Sized to the same width
+  // as the user avatar above it so the "Logout" text lines up under the name.
+  &__logout-icon {
+    width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // ─── Mobile flyout account (two rows: user → profile, then logout) ──
+  &__mobile-account {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    width: 100%;
+
+    .header__account-item {
+      width: 100%;
+      color: inherit;
+
+      // The flyout has a solid (usually dark) alt background, so a light
+      // translucent hover reads on either tone.
+      &:hover { background: rgba(255, 255, 255, 0.1); }
+    }
+
+    .header__account-logout:hover {
+      color: $error-color;
+      background: rgba($error-color, 0.12);
+    }
+
+    .header__user-name { display: block; }
+  }
+
   // Hamburger button — mobile only
   &__mobile-toggle {
     display: flex;
@@ -575,24 +614,26 @@
       flex-shrink: 0;
     }
 
+    // Sits exactly where the closed header's hamburger was: same footprint
+    // (46×46), same corner hug (-8px), borderless, inheriting the header text
+    // color — so the icon doesn't jump when the menu opens/closes.
     &-close {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
+      width: 46px;
+      height: 46px;
+      margin-right: -8px;
+      padding: 0;
       background: none;
-      border: 1px solid $border-color;
-      border-radius: $border-radius-md;
+      border: none;
       cursor: pointer;
-      font-size: 16px;
-      color: $text-color;
+      font-size: 22px;
+      color: inherit;
       line-height: 1;
-      transition: background $transition-fast;
+      transition: opacity $transition-fast;
 
-      &:hover {
-        background: $background-dark;
-      }
+      &:hover { opacity: 0.7; }
     }
 
     &-nav {
