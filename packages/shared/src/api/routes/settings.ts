@@ -250,6 +250,23 @@ export interface SettingsRawKeyDeleteResponse {
     message: string;
 }
 
+// ─── GET /settings/server-logs ────────────────────────────────────────
+
+/** Query for GET /settings/server-logs. */
+export interface SettingsServerLogsQuery {
+    /** Max lines to return (tail). Default 2000, capped server-side. */
+    lines?: number;
+}
+
+/** GET /settings/server-logs (admin) — tail of the combined server log. */
+export interface SettingsServerLogsResponse {
+    content: string;
+    file: string;
+    bytes: number;
+    truncated: boolean;
+    available: boolean;
+}
+
 // Re-export the computed feature projection for consumers wiring the
 // public settings shape (it already lives on SiteSettings.features).
 export type { SiteFeatures, };

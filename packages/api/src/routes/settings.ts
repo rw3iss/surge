@@ -1,6 +1,7 @@
 import { z, } from 'zod';
 import type { SettingsUpdateBody, } from '@sitesurge/types';
 import { defineRoute, } from '../api/defineRoute';
+import * as serverLogs from '../services/serverLogs';
 import * as settings from '../services/settings';
 import * as swatches from '../services/swatches';
 
@@ -174,6 +175,13 @@ export const settingsRoutes = [
             const result = await settings.uninstallFeature(params.key as never, audit(),);
             return { message: `Removed ${params.key}`, ...result, };
         },
+    },),
+
+    defineRoute({
+        method: 'get', path: '/server-logs', auth: 'admin',
+        summary: 'Tail of the server combined log (admin diagnostics panel).',
+        input: { query: z.object({ lines: z.coerce.number().int().min(1,).max(10000,).optional(), },), },
+        handler: ({ query, },) => serverLogs.getServerLogs((query as { lines?: number; }).lines,),
     },),
 
     defineRoute({

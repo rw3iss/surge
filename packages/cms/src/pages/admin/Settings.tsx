@@ -8,6 +8,7 @@ import ColorWheel from '../../components/admin/appearance/ColorWheel';
 import FontManagerPanel from '../../components/admin/appearance/FontManagerPanel';
 import FontSelect from '../../components/admin/common/FontSelect';
 import JobManagementPanel from '../../components/admin/panels/JobManagementPanel';
+import ServerLogsPanel from '../../components/admin/panels/ServerLogsPanel';
 import SitemapPanel from '../../components/admin/panels/SitemapPanel';
 import Tooltip from '../../components/admin/common/Tooltip';
 import { cms, } from '../../services/cmsClient';
@@ -1839,6 +1840,12 @@ const AdminSettings: Component = () => {
                         Background jobs registered with the server's cron runner.
                     </p>
                     <JobManagementPanel />
+
+                    <h2 class="settings-subheading" style={{ 'margin-top': '2rem', }}>Server Logs</h2>
+                    <p class="form-help" style={{ 'margin-bottom': '1rem', }}>
+                        Tail of the server's combined log. Expand to load; use Refresh to update.
+                    </p>
+                    <ServerLogsPanel />
                 </Show>
             </div>
         </div>

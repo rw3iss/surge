@@ -10,6 +10,7 @@ import type {
     SettingsAppearanceResponse, SettingsAppearanceBody,
     SettingsSiteColorsResponse, SettingsSiteColorsBody, SettingsSiteColorsReplaceResponse,
     SettingsSwatchUsagesResponse, SettingsFeatureUninstallResponse,
+    SettingsServerLogsResponse,
 } from '@sitesurge/types';
 import { ModuleBase, } from './base';
 import { CmsError, FeatureCascadeError, isFeatureCascadeResult, } from '../core/errors';
@@ -181,6 +182,13 @@ export class SettingsModule extends ModuleBase {
     swatchUsages(id: string,): Promise<SettingsSwatchUsagesResponse> {
         return this.get<SettingsSwatchUsagesResponse>('/settings/site-colors/usages/:id', {
             params: { id, },
+        },);
+    }
+
+    /** GET /settings/server-logs (admin) — tail of the combined server log. */
+    getServerLogs(lines?: number,): Promise<SettingsServerLogsResponse> {
+        return this.get<SettingsServerLogsResponse>('/settings/server-logs', {
+            query: lines != null ? { lines, } : undefined,
         },);
     }
 

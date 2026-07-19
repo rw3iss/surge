@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-17T22:21:15.122Z",
+  "generatedAt": "2026-07-19T16:07:00.500Z",
   "totalModules": 31,
-  "totalRoutes": 254,
+  "totalRoutes": 255,
   "modules": [
     {
       "module": "api-keys",
@@ -1418,6 +1418,13 @@
           "absolutePath": "/api/v1/settings/features/:key/uninstall",
           "auth": "admin",
           "summary": "Permanently remove a feature: drop its tables + data. Irreversible."
+        },
+        {
+          "method": "GET",
+          "path": "/server-logs",
+          "absolutePath": "/api/v1/settings/server-logs",
+          "auth": "admin",
+          "summary": "Tail of the server combined log (admin diagnostics panel)."
         },
         {
           "method": "PUT",
