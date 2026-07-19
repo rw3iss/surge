@@ -779,7 +779,13 @@ const SocialBlock: Component<{ block: Block; }> = (props,) => {
                         ...(itemWidth() ? { '--social-item-width': itemWidth(), } : {}),
                         ...(itemHeight() ? { '--social-item-height': itemHeight(), } : {}),
                         ...(itemWidth() && layout() !== 'row'
-                            ? { 'grid-template-columns': `repeat(auto-fill, min(${itemWidth()}, 100%))`, }
+                            // auto-fit collapses empty trailing tracks so the
+                            // filled ones can be centered (auto-fill would pad
+                            // the row and left-pack the cards).
+                            ? {
+                                'grid-template-columns': `repeat(auto-fit, min(${itemWidth()}, 100%))`,
+                                'justify-content': 'center',
+                            }
                             : {}),
                     }}
                 >
