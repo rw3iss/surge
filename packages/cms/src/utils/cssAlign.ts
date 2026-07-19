@@ -22,6 +22,14 @@ export function toFlexAlign(value: string | undefined | null, fallback = 'center
             return 'center';
         case 'stretch':
             return 'stretch';
+        // Distribution values are valid for justify-content — pass through
+        // verbatim so a group's `space-*` main-axis choice isn't dropped.
+        case 'space-between':
+            return 'space-between';
+        case 'space-around':
+            return 'space-around';
+        case 'space-evenly':
+            return 'space-evenly';
         case 'justify':
             // Text can justify; as a flex value there's no equivalent, so pin
             // content to the start (matches prior carousel behavior).

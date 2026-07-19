@@ -48,6 +48,9 @@ export function groupContainerStyle(
             '--group-cols': String(cols,),
             gap,
             'align-items': toFlexAlign(data.align as string, 'stretch',),
+            // Main-axis distribution still applies to the grid tracks (visible
+            // when items don't fill the row); default stretches to fill.
+            'justify-content': toFlexAlign(data.justify as string, 'stretch',),
             'justify-items': 'stretch',
             ...(options.minHeight ? { 'min-height': options.minHeight, } : {}),
         };
