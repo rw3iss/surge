@@ -339,6 +339,27 @@
   }
 }
 
+// Fixed per-post width (Item width): flexbox (not grid) so the cards keep a
+// fixed width and justify-content (--block-h-align) reliably distributes the
+// leftover horizontal space — start / center / end / space-between / around /
+// evenly all work, at any window width or card count. One column on mobile.
+.social-block__grid--fixed-width:not(.social-block__grid--row) {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: stretch;
+  justify-content: var(--block-h-align, center);
+
+  > .social-embed {
+    flex: 0 0 var(--social-item-width, 300px);
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  @include mobile-only {
+    > .social-embed { flex-basis: 100%; }
+  }
+}
+
 // Fixed per-post height (Item height): each card is exactly --social-item-height
 // and the media flexes to fill the space above the caption.
 .social-block__grid--fixed-height:not(.social-block__grid--row) {

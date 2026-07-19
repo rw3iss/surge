@@ -774,7 +774,9 @@ const SocialBlock: Component<{ block: Block; }> = (props,) => {
                 <div
                     class={`${FEED_LAYOUT_CLASS[layout()] || FEED_LAYOUT_CLASS.grid}${
                         !snapScroll() ? ' social-block__grid--no-snap' : ''
-                    }${itemHeight() ? ' social-block__grid--fixed-height' : ''}`}
+                    }${itemHeight() ? ' social-block__grid--fixed-height' : ''}${
+                        itemWidth() && layout() !== 'row' ? ' social-block__grid--fixed-width' : ''
+                    }`}
                     style={{
                         ...(blockStyle()?.padding ? { padding: blockStyle()!.padding, } : {}),
                         ...(blockStyle()?.gap ? { gap: blockStyle()!.gap, } : {}),
@@ -785,13 +787,6 @@ const SocialBlock: Component<{ block: Block; }> = (props,) => {
                         // (auto-fill keeps columns even); itemHeight fixes card height.
                         ...(itemWidth() ? { '--social-item-width': itemWidth(), } : {}),
                         ...(itemHeight() ? { '--social-item-height': itemHeight(), } : {}),
-                        ...(itemWidth() && layout() !== 'row'
-                            // auto-fit collapses empty trailing tracks so the
-                            // filled ones can be aligned (auto-fill would pad the
-                            // row and left-pack the cards). The actual alignment
-                            // comes from --block-h-align (default center) in SCSS.
-                            ? { 'grid-template-columns': `repeat(auto-fit, min(${itemWidth()}, 100%))`, }
-                            : {}),
                     }}
                 >
                     <Show
