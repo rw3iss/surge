@@ -22,6 +22,8 @@ interface FormRendererProps {
     /** Lay the fields out in this many columns (wrapping after), 1–8.
      *  Collapses to a single column on mobile. Default 1. */
     columns?: number;
+    /** Override the gap between form fields (any CSS length, e.g. `10px`). */
+    gap?: string;
 }
 
 /**
@@ -160,7 +162,10 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                         onSubmit={handleSubmit}
                         class="form-renderer__form"
                         classList={{ 'form-renderer__form--cols': cols() > 1, }}
-                        style={cols() > 1 ? { '--form-cols': String(cols(),), } : undefined}
+                        style={{
+                            ...(cols() > 1 ? { '--form-cols': String(cols(),), } : {}),
+                            ...(props.gap ? { gap: props.gap, } : {}),
+                        }}
                         noValidate
                     >
                         <For each={props.form.questions}>

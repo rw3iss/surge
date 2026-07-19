@@ -44,7 +44,13 @@ function lex(src: string): Tok[] {
         if (c >= '0' && c <= '9') {
             let n = '';
             while (i < src.length && /[0-9.]/.test(src[i])) { n += src[i]; i++; }
-            out.push({ t: 'num', v: parseFloat(n) });
+            // A trailing unit (px, rem, em, %, vw, …) makes this a CSS dimension,
+            // so `10px` / `50%` lex as a single string token instead of a number
+            // followed by a stray identifier. A bare number stays numeric.
+            let unit = '';
+            while (i < src.length && /[a-zA-Z%]/.test(src[i])) { unit += src[i]; i++; }
+            if (unit) out.push({ t: 'str', v: n + unit, },);
+            else out.push({ t: 'num', v: parseFloat(n,), },);
             continue;
         }
         // multi-char then single-char operators

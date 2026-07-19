@@ -23,6 +23,7 @@ const TemplateEntity: Component<{
                     inline={true}
                     title={props.options?.title as boolean | string | undefined}
                     columns={props.options?.columns as number | undefined}
+                    gap={props.options?.gap as string | undefined}
                 />
             </Match>
             <Match when={props.kind === 'campaign'}>
