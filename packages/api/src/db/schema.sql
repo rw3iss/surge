@@ -396,6 +396,10 @@ CREATE TABLE form_questions (
     "order" INTEGER NOT NULL DEFAULT 0,
     validation JSONB,
     width VARCHAR(8) NOT NULL DEFAULT 'full',
+    placeholder VARCHAR(255),
+    "rows" INTEGER,
+    allow_resize BOOLEAN NOT NULL DEFAULT true,
+    max_height VARCHAR(20),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

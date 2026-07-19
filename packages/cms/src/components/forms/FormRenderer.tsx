@@ -192,7 +192,7 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 maxLength={q.validation?.maxLength}
                                                 pattern={q.validation?.pattern}
                                                 title={q.validation?.patternMessage}
-                                                placeholder="Your answer"
+                                                placeholder={q.placeholder || ''}
                                                 onInput={(e,) => updateAnswer(q.id, e.currentTarget.value,)}
                                             />
                                         </Match>
@@ -200,11 +200,15 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                         <Match when={q.type === 'textarea'}>
                                             <textarea
                                                 class="form-renderer__textarea"
-                                                rows={4}
+                                                rows={q.rows ?? 4}
                                                 required={q.isRequired}
                                                 minLength={q.validation?.minLength}
                                                 maxLength={q.validation?.maxLength}
-                                                placeholder="Your answer"
+                                                placeholder={q.placeholder || ''}
+                                                style={{
+                                                    resize: (q.allowResize ?? true) ? 'vertical' : 'none',
+                                                    ...(q.maxHeight ? { 'max-height': q.maxHeight, } : {}),
+                                                }}
                                                 onInput={(e,) => updateAnswer(q.id, e.currentTarget.value,)}
                                             />
                                         </Match>
@@ -217,7 +221,7 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 inputmode="numeric"
                                                 min={q.validation?.min}
                                                 max={q.validation?.max}
-                                                placeholder="0"
+                                                placeholder={q.placeholder || ''}
                                                 onInput={(e,) => updateAnswer(q.id, Number(e.currentTarget.value,),)}
                                             />
                                         </Match>
@@ -230,7 +234,7 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 inputmode="email"
                                                 autocomplete="email"
                                                 maxLength={q.validation?.maxLength}
-                                                placeholder="you@example.com"
+                                                placeholder={q.placeholder || ''}
                                                 onInput={(e,) => updateAnswer(q.id, e.currentTarget.value,)}
                                             />
                                         </Match>

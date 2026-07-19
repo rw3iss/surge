@@ -25,7 +25,15 @@ interface FormQuestion {
     isRequired: boolean;
     order: number;
     width?: 'full' | 'half';
+    placeholder?: string;
+    rows?: number;
+    allowResize?: boolean;
+    maxHeight?: string;
 }
+
+/** Free-text inputs that support a placeholder (and, for textarea, sizing). */
+const isTextInputType = (t: string,): boolean =>
+    t === 'text' || t === 'textarea' || t === 'email' || t === 'number';
 
 const FormEditor: Component = () => {
     const params = useParams<{ id: string, }>();
@@ -126,6 +134,10 @@ const FormEditor: Component = () => {
                         isRequired: q.isRequired || false,
                         order: q.order ?? index,
                         width: q.width || 'full',
+                        placeholder: q.placeholder || '',
+                        rows: q.rows ?? 4,
+                        allowResize: q.allowResize ?? true,
+                        maxHeight: q.maxHeight || '',
                     })),);
                 }
 
@@ -161,6 +173,10 @@ const FormEditor: Component = () => {
             isRequired: false,
             order: questions().length,
             width: 'full',
+            placeholder: '',
+            rows: 4,
+            allowResize: true,
+            maxHeight: '',
         };
         setQuestions([...questions(), newQuestion,],);
         markDirty();
@@ -282,6 +298,10 @@ const FormEditor: Component = () => {
                     isRequired: q.isRequired,
                     order: index,
                     width: q.width || 'full',
+                    placeholder: isTextInputType(q.type,) ? (q.placeholder || undefined) : undefined,
+                    rows: q.type === 'textarea' ? (q.rows ?? 4) : undefined,
+                    allowResize: q.type === 'textarea' ? (q.allowResize ?? true) : undefined,
+                    maxHeight: q.type === 'textarea' && q.allowResize ? (q.maxHeight || undefined) : undefined,
                 })),
             };
 
@@ -701,6 +721,65 @@ const FormEditor: Component = () => {
                                                     </select>
                                                 </div>
                                             </div>
+
+                                            <Show when={isTextInputType(question.type,)}>
+                                                <div class="form-group">
+                                                    <label>Placeholder Text (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={question.placeholder || ''}
+                                                        onChange={(e,) =>
+                                                            updateQuestion(index(), {
+                                                                placeholder: (e.target as HTMLInputElement).value,
+                                                            },)}
+                                                        placeholder="Shown inside the empty field…"
+                                                    />
+                                                </div>
+                                            </Show>
+
+                                            <Show when={question.type === 'textarea'}>
+                                                <div class="form-row">
+                                                    <div class="form-group">
+                                                        <label>Number of Rows</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={question.rows ?? 4}
+                                                            onChange={(e,) =>
+                                                                updateQuestion(index(), {
+                                                                    rows: Math.max(
+                                                                        1,
+                                                                        parseInt((e.target as HTMLInputElement).value, 10,) || 4,
+                                                                    ),
+                                                                },)}
+                                                        />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Resize</label>
+                                                        <Toggle
+                                                            checked={question.allowResize ?? true}
+                                                            onChange={(next,) =>
+                                                                updateQuestion(index(), { allowResize: next, },)}
+                                                            label="Allow Resize"
+                                                            size="sm"
+                                                        />
+                                                    </div>
+                                                    <Show when={question.allowResize ?? true}>
+                                                        <div class="form-group">
+                                                            <label>Max Height</label>
+                                                            <input
+                                                                type="text"
+                                                                value={question.maxHeight || ''}
+                                                                onChange={(e,) =>
+                                                                    updateQuestion(index(), {
+                                                                        maxHeight: (e.target as HTMLInputElement).value,
+                                                                    },)}
+                                                                placeholder="e.g. 400px"
+                                                            />
+                                                        </div>
+                                                    </Show>
+                                                </div>
+                                            </Show>
 
                                             <div class="form-group">
                                                 <label>Help Text (Optional)</label>

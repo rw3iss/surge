@@ -26,6 +26,14 @@ export interface FormQuestion {
     validation?: QuestionValidation;
     /** Rendered width (`full` default). */
     width?: QuestionWidth;
+    /** Placeholder for text-type inputs (text/textarea/email/number). */
+    placeholder?: string;
+    /** Textarea visible rows (default 4). */
+    rows?: number;
+    /** Textarea user-resizable (default true). */
+    allowResize?: boolean;
+    /** Textarea max resize height (any CSS length; empty = unbounded). */
+    maxHeight?: string;
     createdAt: Date;
     updatedAt: Date;
 }

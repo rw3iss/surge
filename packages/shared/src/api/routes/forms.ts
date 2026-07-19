@@ -32,6 +32,10 @@ export interface FormQuestionInput {
     order?: number;
     validation?: QuestionValidation;
     width?: QuestionWidth;
+    placeholder?: string;
+    rows?: number;
+    allowResize?: boolean;
+    maxHeight?: string;
 }
 
 // ─── GET /forms ───────────────────────────────────────────────────

@@ -24,6 +24,10 @@ const questionSchema = z.object({
     isRequired: z.boolean().optional(),
     order: z.number().int().optional(),
     width: z.enum(['full', 'half',],).optional(),
+    placeholder: z.string().max(255,).optional(),
+    rows: z.number().int().min(1,).max(50,).optional(),
+    allowResize: z.boolean().optional(),
+    maxHeight: z.string().max(20,).optional(),
     validation: z.object({
         minLength: z.number().optional(),
         maxLength: z.number().optional(),

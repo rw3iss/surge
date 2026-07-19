@@ -187,8 +187,9 @@ export async function createQuestion(formId: string, data: Record<string, unknow
 
     const result = await query(
         `INSERT INTO form_questions (form_id, type, question, description, options,
-                                 is_required, "order", validation, width)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                                 is_required, "order", validation, width,
+                                 placeholder, "rows", allow_resize, max_height)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
         [
             formId,
@@ -200,6 +201,10 @@ export async function createQuestion(formId: string, data: Record<string, unknow
             data.order ?? maxOrder.rows[0].next_order,
             data.validation ? JSON.stringify(data.validation,) : null,
             data.width ?? 'full',
+            (data.placeholder as string | undefined) || null,
+            (data.rows as number | undefined) ?? null,
+            data.allowResize ?? true,
+            (data.maxHeight as string | undefined) || null,
         ],
     );
 
@@ -222,6 +227,10 @@ export async function updateQuestion(
         isRequired: 'is_required',
         order: '"order"',
         width: 'width',
+        placeholder: 'placeholder',
+        rows: '"rows"',
+        allowResize: 'allow_resize',
+        maxHeight: 'max_height',
     };
 
     for (const [key, dbCol,] of Object.entries(fieldMap,)) {
@@ -292,25 +301,34 @@ export async function syncQuestions(
             const options = (raw.options as string[] | undefined) ?? null;
             const validation = raw.validation ? JSON.stringify(raw.validation,) : null;
             const width = (raw.width as string | undefined) ?? 'full';
+            const placeholder = (raw.placeholder as string | undefined) || null;
+            const rows = (raw.rows as number | undefined) ?? null;
+            const allowResize = (raw.allowResize as boolean | undefined) ?? true;
+            const maxHeight = (raw.maxHeight as string | undefined) || null;
 
             if (qid && existingIds.has(qid,)) {
                 await client.query(
                     `UPDATE form_questions
                      SET type = $1, question = $2, description = $3, options = $4,
-                         is_required = $5, "order" = $6, validation = $7, width = $8, updated_at = NOW()
-                     WHERE id = $9 AND form_id = $10`,
+                         is_required = $5, "order" = $6, validation = $7, width = $8,
+                         placeholder = $9, "rows" = $10, allow_resize = $11, max_height = $12,
+                         updated_at = NOW()
+                     WHERE id = $13 AND form_id = $14`,
                     [raw.type, raw.question, raw.description ?? null, options,
-                        raw.isRequired ?? false, order, validation, width, qid, formId,],
+                        raw.isRequired ?? false, order, validation, width,
+                        placeholder, rows, allowResize, maxHeight, qid, formId,],
                 );
                 kept.push(qid,);
             } else {
                 const ins = await client.query<{ id: string; }>(
                     `INSERT INTO form_questions (form_id, type, question, description, options,
-                                                 is_required, "order", validation, width)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                                                 is_required, "order", validation, width,
+                                                 placeholder, "rows", allow_resize, max_height)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                      RETURNING id`,
                     [formId, raw.type, raw.question, raw.description ?? null, options,
-                        raw.isRequired ?? false, order, validation, width,],
+                        raw.isRequired ?? false, order, validation, width,
+                        placeholder, rows, allowResize, maxHeight,],
                 );
                 kept.push(ins.rows[0].id,);
             }

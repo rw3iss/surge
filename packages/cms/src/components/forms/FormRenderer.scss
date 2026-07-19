@@ -34,9 +34,11 @@
         gap: $spacing-lg;
     }
 
-    // Multi-column layout (`{{form(id, columns=N)}}`): each field is a grid
-    // cell flowing across N columns then wrapping; the error banner + submit
-    // span the full width. Collapses to a single column on mobile.
+    // Multi-column layout (`{{form(id, columns=N)}}`): fields flow across an
+    // N-column grid. Per-field width still composes — a `full` field (the
+    // default) spans ALL columns (its own row), a `half` field takes a single
+    // cell (so halves pack side by side). Error banner + submit span full width.
+    // Collapses to a single column on mobile.
     &__form--cols {
         display: grid;
         grid-template-columns: repeat(var(--form-cols, 1), minmax(0, 1fr));
@@ -44,12 +46,24 @@
         align-items: start;
 
         .form-renderer__error,
-        .form-renderer__submit {
+        .form-renderer__submit-row {
             grid-column: 1 / -1;
+        }
+
+        // Default (full) → span every column; only `--half` takes one cell.
+        .form-renderer__field {
+            grid-column: 1 / -1;
+        }
+        .form-renderer__field--half {
+            grid-column: auto;
         }
 
         @include mobile-only {
             grid-template-columns: 1fr;
+
+            .form-renderer__field--half {
+                grid-column: 1 / -1;
+            }
         }
     }
 
