@@ -26,9 +26,16 @@ variables help list) so the tokens always match.
 
 - A question titled **"Email Address"** → `{{email_address}}`.
 - Duplicate-derived keys get numeric suffixes (`{{name}}`, `{{name_2}}`).
-- Extra tokens: `{{form_title}}`, `{{submitted_at}}`.
+- Extra tokens: `{{form_title}}`, `{{submitted_at}}` (a real date).
 - In the **Body**, submitted values are HTML-escaped (the body is HTML, values
   are untrusted). The **To**/**Subject** use raw values (plain text).
+
+Values can also be run through the shared **value functions** (the same set
+available in content blocks): `upper`, `lower`, `trim`, `truncate`, `formatDate`,
+`formatCurrency`, `formatNumber`, `default`, `now`, `year` — e.g.
+`{{upper(email)}}`, `{{formatDate(submitted_at)}}`, `{{default(name, 'there')}}`.
+Defined once in `@sitesurge/types` (`resolveValueFunction`) and shared by the
+content SSR, client, and form-email runtimes.
 
 ## subscribe
 

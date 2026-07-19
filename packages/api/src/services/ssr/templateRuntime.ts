@@ -11,14 +11,12 @@
  */
 import {
     entityRef,
-    formatCurrency,
-    formatDate,
-    formatNumber,
     hasTemplateSyntax,
     type OutputNode,
     renderTemplate,
+    resolveValueFunction,
     type TemplateRuntime,
-    truncate as truncateStr,
+    UNRESOLVED,
 } from '@sitesurge/types';
 import { logger } from '../../utils/logger';
 import * as campaignsSvc from '../campaigns';
@@ -127,6 +125,10 @@ function buildSsrRuntime(entities: Record<string, Rec | null>): TemplateRuntime 
     const s = (v: unknown): string => (v == null ? '' : String(v));
 
     const resolve = async (name: string, args: unknown[]): Promise<unknown> => {
+        // Shared value/utility functions (upper, formatDate, default, now, …).
+        const vf = resolveValueFunction(name, args);
+        if (vf !== UNRESOLVED) return vf;
+
         switch (name) {
             case 'post':
             case 'campaign':
@@ -150,15 +152,6 @@ function buildSsrRuntime(entities: Record<string, Rec | null>): TemplateRuntime 
             case 'postCount': return (await memo('postCount', () => fetchCollection('posts', 1))).total;
             case 'campaignCount': return (await memo('campaignCount', () => fetchCollection('campaigns', 200))).total;
             case 'formCount': return (await memo('formCount', () => fetchCollection('forms', 200))).total;
-            case 'now': return new Date();
-            case 'year': return new Date().getFullYear();
-            case 'upper': return s(args[0]).toUpperCase();
-            case 'lower': return s(args[0]).toLowerCase();
-            case 'truncate': return truncateStr(s(args[0]), typeof args[1] === 'number' ? (args[1] as number) : 100);
-            case 'formatCurrency': return formatCurrency(Number(args[0]) || 0, args[1] ? s(args[1]) : undefined);
-            case 'formatDate': return args[0] ? formatDate(args[0] as string | Date) : '';
-            case 'formatNumber': return formatNumber(Number(args[0]) || 0);
-            case 'default': return args[0] == null || args[0] === '' ? args[1] : args[0];
             default: return undefined;
         }
     };

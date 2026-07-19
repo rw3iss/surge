@@ -577,6 +577,12 @@ const FormEditor: Component = () => {
                                                     finalize their names).
                                                 </small>
                                             </Show>
+                                            <p class="form-help" style={{ 'margin-top': '8px', }}>
+                                                You can also run values through functions, e.g.{' '}
+                                                <code>{'{{upper(email)}}'}</code>,{' '}
+                                                <code>{'{{formatDate(submitted_at)}}'}</code>, or{' '}
+                                                <code>{'{{default(name, \'there\')}}'}</code>.
+                                            </p>
                                         </div>
                                     </Show>
                                 </div>

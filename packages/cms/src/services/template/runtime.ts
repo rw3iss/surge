@@ -7,7 +7,7 @@
  * entity resolves to an EntityRef with `data: null`, so downstream property
  * access is simply ignored (with a console warning).
  */
-import { formatCurrency, formatDate, formatNumber, truncate as truncateStr, } from '@sitesurge/types';
+import { resolveValueFunction, UNRESOLVED, } from '@sitesurge/types';
 import { cms, } from '../cmsClient';
 import { entityRef, type TemplateRuntime, } from './index';
 
@@ -99,6 +99,10 @@ export function buildRuntime(opts: RuntimeOptions = {}): TemplateRuntime {
     const s = (v: unknown): string => (v == null ? '' : String(v));
 
     const resolve = async (name: string, args: unknown[]): Promise<unknown> => {
+        // Shared value/utility functions (upper, formatDate, default, now, …).
+        const vf = resolveValueFunction(name, args);
+        if (vf !== UNRESOLVED) return vf;
+
         switch (name) {
             // ── single entities ──
             case 'post':
@@ -128,17 +132,6 @@ export function buildRuntime(opts: RuntimeOptions = {}): TemplateRuntime {
             case 'postCount': return (await memo('postCount', () => fetchList('posts', 1))).total;
             case 'campaignCount': return (await memo('campaignCount', () => fetchList('campaigns', 200))).total;
             case 'formCount': return (await memo('formCount', () => fetchList('forms', 200))).total;
-            case 'now': return new Date();
-            case 'year': return new Date().getFullYear();
-
-            // ── string / value utilities ──
-            case 'upper': return s(args[0]).toUpperCase();
-            case 'lower': return s(args[0]).toLowerCase();
-            case 'truncate': return truncateStr(s(args[0]), typeof args[1] === 'number' ? (args[1] as number) : 100);
-            case 'formatCurrency': return formatCurrency(Number(args[0]) || 0, args[1] ? s(args[1]) : undefined);
-            case 'formatDate': return args[0] ? formatDate(args[0] as string | Date) : '';
-            case 'formatNumber': return formatNumber(Number(args[0]) || 0);
-            case 'default': return args[0] == null || args[0] === '' ? args[1] : args[0];
 
             default:
                 return undefined;

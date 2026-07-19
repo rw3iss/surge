@@ -15,7 +15,7 @@
  * in the editor match what resolves here.
  */
 import type { Form, FormActionConfig, FormQuestion, TemplateRuntime, } from '@sitesurge/types';
-import { deriveFieldKeys, hasTemplateSyntax, renderTemplate, } from '@sitesurge/types';
+import { deriveFieldKeys, hasTemplateSyntax, renderTemplate, resolveValueFunction, UNRESOLVED, } from '@sitesurge/types';
 import * as mailingListsRepo from '../repositories/mailingLists.repo';
 import { sendEmail, } from './email';
 import * as mailingLists from './mailingLists';
@@ -61,7 +61,9 @@ function buildContext(
         ctx[keys[q.id]] = enc(formatValue(ans?.value,),);
     }
     ctx.form_title = enc(form.title,);
-    ctx.submitted_at = new Date().toLocaleString();
+    // A real Date so `{{submitted_at}}` prints a locale date and
+    // `{{formatDate(submitted_at)}}` can reformat it.
+    ctx.submitted_at = new Date();
     return ctx;
 }
 
@@ -113,7 +115,12 @@ async function renderTpl(tpl: string, context: Record<string, unknown>,): Promis
     if (!tpl || !hasTemplateSyntax(tpl,)) return tpl ?? '';
     const runtime: TemplateRuntime = {
         context,
-        resolve: () => undefined,
+        // Form templates get the shared value functions (upper, formatDate,
+        // default, …) — no entities, so anything else resolves to nothing.
+        resolve: (name, args,) => {
+            const v = resolveValueFunction(name, args,);
+            return v === UNRESOLVED ? undefined : v;
+        },
         warn: (m,) => logger.debug?.(m,),
     };
     try {

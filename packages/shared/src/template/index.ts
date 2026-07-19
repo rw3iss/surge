@@ -22,6 +22,9 @@ export { hasTemplateSyntax } from './tokenizer';
 /** Parse a template into its AST (rarely needed directly; `renderTemplate`
  *  parses + evaluates). Exported for tooling/tests. */
 export { parse as parseTemplate } from './parser';
+/** Shared value/utility functions (upper, formatDate, default, …) that every
+ *  runtime delegates to. */
+export { resolveValueFunction, UNRESOLVED, VALUE_FUNCTION_NAMES } from './valueFunctions';
 
 const astCache = new Map<string, Node[]>();
 

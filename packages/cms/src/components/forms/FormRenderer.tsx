@@ -110,6 +110,10 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 type="text"
                                                 class="form-renderer__input"
                                                 required={q.isRequired}
+                                                minLength={q.validation?.minLength}
+                                                maxLength={q.validation?.maxLength}
+                                                pattern={q.validation?.pattern}
+                                                title={q.validation?.patternMessage}
                                                 placeholder="Your answer"
                                                 onInput={(e,) => updateAnswer(q.id, e.currentTarget.value,)}
                                             />
@@ -120,6 +124,8 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 class="form-renderer__textarea"
                                                 rows={4}
                                                 required={q.isRequired}
+                                                minLength={q.validation?.minLength}
+                                                maxLength={q.validation?.maxLength}
                                                 placeholder="Your answer"
                                                 onInput={(e,) => updateAnswer(q.id, e.currentTarget.value,)}
                                             />
@@ -130,6 +136,9 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 type="number"
                                                 class="form-renderer__input form-renderer__input--number"
                                                 required={q.isRequired}
+                                                inputmode="numeric"
+                                                min={q.validation?.min}
+                                                max={q.validation?.max}
                                                 placeholder="0"
                                                 onInput={(e,) => updateAnswer(q.id, Number(e.currentTarget.value,),)}
                                             />
@@ -140,6 +149,9 @@ const FormRenderer: Component<FormRendererProps> = (props,) => {
                                                 type="email"
                                                 class="form-renderer__input"
                                                 required={q.isRequired}
+                                                inputmode="email"
+                                                autocomplete="email"
+                                                maxLength={q.validation?.maxLength}
                                                 placeholder="you@example.com"
                                                 onInput={(e,) => updateAnswer(q.id, e.currentTarget.value,)}
                                             />
