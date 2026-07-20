@@ -36,6 +36,7 @@ const upsertSchema = z.object({
     autoPublish: z.boolean().optional(),
     autoPublishCount: z.number().nullable().optional(),
     credentials: z.record(z.string(), z.unknown(),).optional(),
+    settings: z.record(z.string(), z.unknown(),).optional(),
 },) satisfies z.ZodType<ConnectionUpsertBody>;
 
 // ─── Routes ───────────────────────────────────────────────────────
@@ -69,12 +70,13 @@ export const connectionsRoutes = [
 
     defineRoute({
         method: 'get', path: '/:provider/oauth/callback', auth: 'public', raw: true,
-        summary: 'OAuth provider callback. Persists tokens, then redirects to admin settings.',
+        summary: 'OAuth provider callback. Persists tokens, then redirects to the Social hub.',
         input: { params: providerParams, },
         handler: async ({ req, res, },) => {
             const provider = req.params.provider as string;
             const { code, state, error: oauthError, error_description, } = req.query;
-            const frontendUrl = `${config.frontendUrl}/admin/settings`;
+            // Connections live under Social → Configuration now.
+            const frontendUrl = `${config.frontendUrl}/admin/social/configuration`;
 
             try {
                 const result = await connections.completeOAuth(

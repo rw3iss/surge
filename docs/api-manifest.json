@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T05:19:25.030Z",
+  "generatedAt": "2026-07-20T05:22:07.620Z",
   "totalModules": 31,
   "totalRoutes": 260,
   "modules": [
@@ -280,7 +280,7 @@
           "path": "/:provider/oauth/callback",
           "absolutePath": "/api/v1/connections/:provider/oauth/callback",
           "auth": "public",
-          "summary": "OAuth provider callback. Persists tokens, then redirects to admin settings."
+          "summary": "OAuth provider callback. Persists tokens, then redirects to the Social hub."
         },
         {
           "method": "PUT",

@@ -81,6 +81,8 @@ export interface ConnectionUpsertBody {
     autoPublish?: boolean;
     autoPublishCount?: number | null;
     credentials?: Record<string, unknown>;
+    /** Provider-specific settings blob (e.g. X `{ twitterMode }`). Merged. */
+    settings?: Record<string, unknown>;
 }
 
 /** POST /connections — confirmation message. */

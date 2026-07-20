@@ -29,6 +29,8 @@ export interface UpsertConnectionInput {
     autoPublish?: boolean;
     autoPublishCount?: number | null;
     credentials?: Record<string, unknown>;
+    /** Provider-specific settings blob (e.g. X `{ twitterMode }`). Merged. */
+    settings?: Record<string, unknown>;
 }
 
 /** Mask sensitive credential fields, keeping non-secret metadata + boolean
@@ -106,13 +108,16 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
     const connectedBy = uuidOrNull(userId,);
 
     const existing = await query(
-        `SELECT id, credentials FROM social_connections WHERE provider = $1`,
+        `SELECT id, credentials, settings FROM social_connections WHERE provider = $1`,
         [data.provider,],
     );
 
-    // Merge new credentials with existing (don't overwrite tokens when saving app creds)
+    // Merge new credentials/settings with existing (don't overwrite tokens when
+    // saving app creds, or clobber other settings keys when saving one).
     const existingCreds = existing.rows[0]?.credentials || {};
     const mergedCreds = { ...existingCreds, ...data.credentials, };
+    const existingSettings = existing.rows[0]?.settings || {};
+    const mergedSettings = { ...existingSettings, ...data.settings, };
 
     if (existing.rows.length > 0) {
         await query(
@@ -121,7 +126,8 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
                  auto_publish = COALESCE($3, auto_publish),
                  auto_publish_count = $4,
                  credentials = $5::jsonb,
-                 connected_by = $6,
+                 settings = $6::jsonb,
+                 connected_by = $7,
                  updated_at = NOW()
              WHERE provider = $1`,
             [
@@ -130,19 +136,21 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
                 data.autoPublish,
                 data.autoPublishCount ?? null,
                 JSON.stringify(mergedCreds,),
+                JSON.stringify(mergedSettings,),
                 connectedBy,
             ],
         );
     } else {
         await query(
-            `INSERT INTO social_connections (provider, is_enabled, auto_publish, auto_publish_count, credentials, connected_by)
-             VALUES ($1, $2, $3, $4, $5::jsonb, $6)`,
+            `INSERT INTO social_connections (provider, is_enabled, auto_publish, auto_publish_count, credentials, settings, connected_by)
+             VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)`,
             [
                 data.provider,
                 data.enabled ?? true,
                 data.autoPublish ?? false,
                 data.autoPublishCount ?? null,
                 JSON.stringify(mergedCreds,),
+                JSON.stringify(mergedSettings,),
                 connectedBy,
             ],
         );
