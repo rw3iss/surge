@@ -171,13 +171,13 @@
   }
 }
 
-// Connection editor boolean switches: tight stack, separated from the fields
-// above. Switch-first ordering comes from the global .toggle-control default.
+// Connection editor boolean switches: tight stack. The editor's flex `gap`
+// already separates it from the fields above/actions below, so no extra
+// margins here. Switch-first ordering comes from the global .toggle-control.
 .connection-card__switches {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: $spacing-md;
 
   .form-group { margin-bottom: 0; }
 }

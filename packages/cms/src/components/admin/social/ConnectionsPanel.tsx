@@ -501,7 +501,7 @@ const ConnectionsPanel: Component = () => {
                                         </div>
                                     </Show>
                                     </div>
-                                    <div class="form-actions u-flex-row" style={{ 'margin-top': '1rem', }}>
+                                    <div class="form-actions u-flex-row">
                                         <button class="btn btn--primary btn--small" onClick={handleSaveConnection}>
                                             Save
                                         </button>

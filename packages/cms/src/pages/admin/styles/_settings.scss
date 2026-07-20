@@ -298,6 +298,13 @@
 
     // The editor's gap owns the rhythm; drop the fields' own bottom margins.
     .admin-form-field { margin-bottom: 0; }
+
+    // The editor's flex gap already spaces the Save row; strip the global
+    // .form-actions top margin so it doesn't stack into a large gap.
+    .form-actions {
+      margin-top: 0;
+      padding-top: $spacing-md;
+    }
   }
 }
 

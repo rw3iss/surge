@@ -113,6 +113,18 @@ export async function get(provider: string,): Promise<ConnectionRow | null> {
     } as ConnectionRow;
 }
 
+/** Minimum credentials that make a manual (non-OAuth) connection "connected".
+ *  OAuth providers (instagram) are marked connected by the OAuth callback
+ *  instead, not here. */
+function hasUsableCredentials(provider: string, creds: Record<string, unknown>,): boolean {
+    if (provider === 'twitter') {
+        // X posting needs the full OAuth 1.0a user-context set.
+        return Boolean(creds.apiKey && creds.apiSecret && creds.accessToken && creds.accessSecret,);
+    }
+    // facebook / tiktok / patreon / youtube: an access token is enough.
+    return Boolean(creds.accessToken,);
+}
+
 /** Create or update a connection's app credentials + publish settings.
  *  Merges new credentials over existing so saving app creds doesn't wipe
  *  issued tokens. */
@@ -123,7 +135,7 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
     const connectedBy = uuidOrNull(userId,);
 
     const existing = await query(
-        `SELECT id, credentials, settings FROM social_connections WHERE provider = $1`,
+        `SELECT id, credentials, settings, is_connected FROM social_connections WHERE provider = $1`,
         [data.provider,],
     );
 
@@ -134,6 +146,12 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
     const existingSettings = existing.rows[0]?.settings || {};
     const mergedSettings = { ...existingSettings, ...data.settings, };
 
+    // OAuth providers' connected state is owned by the OAuth callback; for
+    // manual providers, having the required credentials means connected.
+    const isConnected = isOAuthProvider(data.provider,)
+        ? Boolean(existing.rows[0]?.is_connected,)
+        : hasUsableCredentials(data.provider, mergedCreds,);
+
     if (existing.rows.length > 0) {
         await query(
             `UPDATE social_connections
@@ -142,7 +160,8 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
                  auto_publish_count = $4,
                  credentials = $5::jsonb,
                  settings = $6::jsonb,
-                 connected_by = $7,
+                 is_connected = $7,
+                 connected_by = $8,
                  updated_at = NOW()
              WHERE provider = $1`,
             [
@@ -152,13 +171,14 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
                 data.autoPublishCount ?? null,
                 JSON.stringify(mergedCreds,),
                 JSON.stringify(mergedSettings,),
+                isConnected,
                 connectedBy,
             ],
         );
     } else {
         await query(
-            `INSERT INTO social_connections (provider, is_enabled, auto_publish, auto_publish_count, credentials, settings, connected_by)
-             VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)`,
+            `INSERT INTO social_connections (provider, is_enabled, auto_publish, auto_publish_count, credentials, settings, is_connected, connected_by)
+             VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)`,
             [
                 data.provider,
                 data.enabled ?? true,
@@ -166,6 +186,7 @@ export async function upsert(data: UpsertConnectionInput, userId: string,): Prom
                 data.autoPublishCount ?? null,
                 JSON.stringify(mergedCreds,),
                 JSON.stringify(mergedSettings,),
+                isConnected,
                 connectedBy,
             ],
         );
