@@ -241,6 +241,11 @@ export interface ShopSettings {
     shipping?: {
         flatCents?: number;
         freeThresholdCents?: number;
+        /** When true, the first shippable item uses `flatCents` and each
+         *  additional item uses `additionalItemCents`. */
+        useAdditionalItemRate?: boolean;
+        /** Flat rate applied to each item after the first (cents). */
+        additionalItemCents?: number;
         rates?: ShopShippingRate[];
     };
 }
@@ -270,9 +275,11 @@ export interface ShopPublicSettings {
      *  Stripe Elements with it. Empty/undefined when Stripe isn't configured. */
     stripePublishableKey?: string;
     /** Public shipping config for storefront display (flat rate + free-ship
-     *  threshold). Cents. */
+     *  threshold + optional additional-item rate). Cents. */
     shipping?: {
         flatCents?: number;
         freeThresholdCents?: number;
+        useAdditionalItemRate?: boolean;
+        additionalItemCents?: number;
     };
 }

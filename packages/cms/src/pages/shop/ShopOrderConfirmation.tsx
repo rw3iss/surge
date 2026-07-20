@@ -4,7 +4,7 @@ import { Component, createResource, For, Show, } from 'solid-js';
 import SeoHead from '../../components/common/seo/SeoHead';
 import { cms, } from '../../services/cmsClient';
 import ShopStoreGuard from './ShopStoreGuard';
-import { money, } from './shopFormat';
+import { money, shipBreakdown, } from './shopFormat';
 import './shop.scss';
 
 const ShopOrderConfirmationInner: Component = () => {
@@ -20,6 +20,14 @@ const ShopOrderConfirmationInner: Component = () => {
             }
         },
     );
+
+    const [shopCfg] = createResource(async () => {
+        try { return await cms.shop.settings.getPublic(); } catch { return null; }
+    },);
+    const shipBd = (o: ShopOrderDetail,) => {
+        const units = o.items.filter((i,) => !i.isDigital).reduce((s, i,) => s + i.quantity, 0,);
+        return shipBreakdown(o.shippingCents, units, shopCfg()?.settings?.shipping,);
+    };
 
     const download = async (token: string,) => {
         try {
@@ -88,6 +96,20 @@ const ShopOrderConfirmationInner: Component = () => {
                                     <span>Shipping</span>
                                     <span>{money(o().shippingCents, o().currency,)}</span>
                                 </div>
+                                <Show when={shipBd(o(),)}>
+                                    {(bd,) => (
+                                        <>
+                                            <div class="shop-order__total-row shop-order__total-sub">
+                                                <span>First item shipping</span>
+                                                <span>1 × {money(bd().firstItemCents, o().currency,)} = {money(bd().firstItemCents, o().currency,)}</span>
+                                            </div>
+                                            <div class="shop-order__total-row shop-order__total-sub">
+                                                <span>Additional items shipping</span>
+                                                <span>{bd().additionalUnits} × {money(bd().additionalItemCents, o().currency,)} = {money(bd().additionalItemCents * bd().additionalUnits, o().currency,)}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                </Show>
                                 <div class="shop-order__total-row">
                                     <span>Tax</span>
                                     <span>{money(o().taxCents, o().currency,)}</span>

@@ -107,6 +107,8 @@ export async function getPublic(): Promise<{ settings: ShopPublicSettings; appea
             shipping: {
                 flatCents: settings.shipping?.flatCents,
                 freeThresholdCents: settings.shipping?.freeThresholdCents,
+                useAdditionalItemRate: settings.shipping?.useAdditionalItemRate,
+                additionalItemCents: settings.shipping?.additionalItemCents,
             },
         },
         appearance,

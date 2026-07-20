@@ -13,6 +13,7 @@ import { cms, } from '../../../services/cmsClient';
 import { getStatusBadgeClass, } from '../../../utils/badges';
 import ShopGuard from './ShopGuard';
 import { formatCents, formatDate, } from './shopUtils';
+import { shipBreakdown, } from '../../shop/shopFormat';
 
 const ORDER_STATUSES: ShopOrderStatus[] = [
     'pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded',
@@ -46,6 +47,14 @@ const ShopOrderDetailInner: Component = () => {
             try { return await cms.shop.orders.get(id,); } catch { return null; }
         },
     );
+
+    const [shopCfg] = createResource(async () => {
+        try { return await cms.shop.settings.getPublic(); } catch { return null; }
+    },);
+    const shipBd = (o: OrderDetail,) => {
+        const units = o.items.filter((i,) => !i.isDigital).reduce((s, i,) => s + i.quantity, 0,);
+        return shipBreakdown(o.shippingCents, units, shopCfg()?.settings?.shipping,);
+    };
 
     const [status, setStatus,] = createSignal<ShopOrderStatus>('pending',);
     const [fulfillment, setFulfillment,] = createSignal<ShopFulfillmentStatus>('unfulfilled',);
@@ -169,6 +178,14 @@ const ShopOrderDetailInner: Component = () => {
                                     <div class="shop-order__totals">
                                         <div><span>Subtotal</span><span>{formatCents(o().subtotalCents, o().currency,)}</span></div>
                                         <div><span>Shipping</span><span>{formatCents(o().shippingCents, o().currency,)}</span></div>
+                                        <Show when={shipBd(o(),)}>
+                                            {(bd,) => (
+                                                <>
+                                                    <div class="shop-order__totals-sub"><span>First item shipping</span><span>1 × {formatCents(bd().firstItemCents, o().currency,)}</span></div>
+                                                    <div class="shop-order__totals-sub"><span>Additional items</span><span>{bd().additionalUnits} × {formatCents(bd().additionalItemCents, o().currency,)} = {formatCents(bd().additionalItemCents * bd().additionalUnits, o().currency,)}</span></div>
+                                                </>
+                                            )}
+                                        </Show>
                                         <div><span>Tax</span><span>{formatCents(o().taxCents, o().currency,)}</span></div>
                                         <Show when={o().discountCents > 0}>
                                             <div><span>Discount</span><span>-{formatCents(o().discountCents, o().currency,)}</span></div>

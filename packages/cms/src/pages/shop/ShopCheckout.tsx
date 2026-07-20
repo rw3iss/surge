@@ -7,7 +7,7 @@ import { cms, } from '../../services/cmsClient';
 import { useAuth, } from '../../stores/auth';
 import { cartItems, cartSubtotal, clearCart, } from '../../stores/shopCart';
 import ShopStoreGuard from './ShopStoreGuard';
-import { money, } from './shopFormat';
+import { money, shipBreakdown, } from './shopFormat';
 import { For, } from 'solid-js';
 import { isShopifyActive, shopifySource, } from '../../services/shopifySource';
 import './shop.scss';
@@ -41,10 +41,19 @@ const ShopCheckoutInner: Component = () => {
     const [phone, setPhone,] = createSignal('',);
 
     const [totals, setTotals,] = createSignal<ShopCheckoutTotals | null>(null,);
+    const [shipping, setShipping,] = createSignal<{ useAdditionalItemRate?: boolean; additionalItemCents?: number; } | undefined>(undefined,);
     const [previewing, setPreviewing,] = createSignal(false,);
     const [cardReady, setCardReady,] = createSignal(false,);
     const [placing, setPlacing,] = createSignal(false,);
     const [error, setError,] = createSignal('',);
+
+    // Total shippable units in the cart (used to break shipping into first /
+    // additional lines for display).
+    const shippableUnits = () => cartItems().reduce((sum, l,) => sum + l.qty, 0,);
+    const shipBd = () => {
+        const t = totals();
+        return t ? shipBreakdown(t.shippingCents, shippableUnits(), shipping(),) : null;
+    };
 
     const lines = () => cartItems().map((l,) => ({ variantId: l.variantId, qty: l.qty, }));
 
@@ -90,6 +99,7 @@ const ShopCheckoutInner: Component = () => {
         try {
             const cfg = await cms.shop.settings.getPublic();
             if (cfg?.settings?.stripePublishableKey) key = cfg.settings.stripePublishableKey;
+            setShipping(cfg?.settings?.shipping,);
         } catch {
             /* fall back to the VITE var */
         }
@@ -315,6 +325,20 @@ const ShopCheckoutInner: Component = () => {
                                             <span>Shipping</span>
                                             <span>{money(t().shippingCents, t().currency,)}</span>
                                         </div>
+                                        <Show when={shipBd()}>
+                                            {(bd,) => (
+                                                <>
+                                                    <div class="shop-checkout__total-row shop-checkout__total-sub">
+                                                        <span>First item shipping</span>
+                                                        <span>1 × {money(bd().firstItemCents, t().currency,)} = {money(bd().firstItemCents, t().currency,)}</span>
+                                                    </div>
+                                                    <div class="shop-checkout__total-row shop-checkout__total-sub">
+                                                        <span>Additional items shipping</span>
+                                                        <span>{bd().additionalUnits} × {money(bd().additionalItemCents, t().currency,)} = {money(bd().additionalItemCents * bd().additionalUnits, t().currency,)}</span>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </Show>
                                         <div class="shop-checkout__total-row">
                                             <span>Tax</span>
                                             <span>{money(t().taxCents, t().currency,)}</span>

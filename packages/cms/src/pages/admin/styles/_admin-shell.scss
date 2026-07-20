@@ -125,6 +125,10 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     white-space: nowrap;
     overflow: hidden;
+    // Center the brand mark both axes within the logo area.
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     a {
       color: var(--admin-sidebar-text, white);
@@ -135,6 +139,9 @@
       font-weight: 700;
       letter-spacing: -0.025em;
       text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 

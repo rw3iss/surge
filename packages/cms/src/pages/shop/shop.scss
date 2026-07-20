@@ -817,3 +817,17 @@
         }
     }
 }
+
+// Shipping breakdown sub-rows (first item / additional items) under the
+// Shipping total, on checkout + order confirmation.
+.shop-checkout__total-sub,
+.shop-order__total-sub {
+    display: flex;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding: 1px 0 1px $spacing-md;
+    font-size: $font-size-xs;
+    color: var(--site-text-muted, #6b7280);
+
+    span:last-child { white-space: nowrap; }
+}

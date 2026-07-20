@@ -206,6 +206,8 @@ const shopSettingsPatch = z.object({
     shipping: z.object({
         flatCents: z.number().int().min(0,).optional(),
         freeThresholdCents: z.number().int().min(0,).optional(),
+        useAdditionalItemRate: z.boolean().optional(),
+        additionalItemCents: z.number().int().min(0,).optional(),
         rates: z.array(z.object({
             name: z.string(),
             priceCents: z.number().int().min(0,),

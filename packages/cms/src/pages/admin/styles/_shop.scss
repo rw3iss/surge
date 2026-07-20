@@ -233,6 +233,16 @@
             max-width: 100%;
         }
     }
+
+    // Full-width (block) text fields — e.g. Business name / address — read wider:
+    // a 400px minimum (capped to the container so it never overflows on mobile).
+    .admin-form-field:not(.admin-form-field--inline) {
+        input[type="text"],
+        textarea {
+            min-width: min(400px, 100%);
+            width: 100%;
+        }
+    }
 }
 
 // Stripe connection status panel (Payments tab).
@@ -507,6 +517,15 @@
             justify-content: space-between;
             padding: $spacing-xs 0;
         }
+    }
+
+    &__totals-sub {
+        display: flex;
+        justify-content: space-between;
+        gap: $spacing-md;
+        padding: 1px 0 1px $spacing-md;
+        font-size: $font-size-xs;
+        color: $text-light;
     }
 
     &__totals-grand {

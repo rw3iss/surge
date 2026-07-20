@@ -3,7 +3,8 @@ import { Component, createSignal, For, Show, } from 'solid-js';
 import { createSafeResource, } from '../../../hooks/createSafeResource';
 import { createStore, } from 'solid-js/store';
 import type { ShopAppearance, ShopSettings as ShopSettingsModel, } from '@sitesurge/types';
-import { FormCheck, FormField, } from '../../../components/admin/forms';
+import { FormField, } from '../../../components/admin/forms';
+import Toggle from '../../../components/admin/common/Toggle';
 import { useToast, } from '../../../components/common/toast';
 import { cms, } from '../../../services/cmsClient';
 import ShopGuard from './ShopGuard';
@@ -41,6 +42,8 @@ const ShopSettingsInner: Component = () => {
     // shipping money fields held as dollar strings for editing
     const [flat, setFlat,] = createSignal('',);
     const [freeThreshold, setFreeThreshold,] = createSignal('',);
+    const [useAdditionalRate, setUseAdditionalRate,] = createSignal(false,);
+    const [additionalRate, setAdditionalRate,] = createSignal('',);
 
     const [loaded,] = createSafeResource(async () => {
         const res = await cms.shop.settings.getAdmin();
@@ -48,6 +51,8 @@ const ShopSettingsInner: Component = () => {
         setAppearance(res.appearance,);
         setFlat(centsToDollars(res.settings.shipping?.flatCents,),);
         setFreeThreshold(centsToDollars(res.settings.shipping?.freeThresholdCents,),);
+        setUseAdditionalRate(res.settings.shipping?.useAdditionalItemRate ?? false,);
+        setAdditionalRate(centsToDollars(res.settings.shipping?.additionalItemCents,),);
         return res;
     }, null,);
 
@@ -74,6 +79,10 @@ const ShopSettingsInner: Component = () => {
             const shipping = {
                 flatCents: flat() ? dollarsToCents(flat(),) : undefined,
                 freeThresholdCents: freeThreshold() ? dollarsToCents(freeThreshold(),) : undefined,
+                useAdditionalItemRate: useAdditionalRate(),
+                additionalItemCents: (useAdditionalRate() && additionalRate())
+                    ? dollarsToCents(additionalRate(),)
+                    : undefined,
                 rates: settings.shipping?.rates,
             };
             await cms.shop.settings.update({
@@ -132,8 +141,12 @@ const ShopSettingsInner: Component = () => {
                         <FormField label="Currency" inline hint="ISO 4217 code, e.g. USD">
                             <input type="text" value={settings.currency} onInput={(e,) => setSettings('currency', e.currentTarget.value.toUpperCase(),)} />
                         </FormField>
-                        <FormCheck label="Store enabled" checked={settings.storeEnabled} onChange={(v,) => setSettings('storeEnabled', v,)} />
-                        <FormCheck label="Apply tax" checked={settings.taxEnabled} onChange={(v,) => setSettings('taxEnabled', v,)} />
+                        <div class="form-group">
+                            <Toggle label="Store enabled" checked={settings.storeEnabled} onChange={(v,) => setSettings('storeEnabled', v,)} />
+                        </div>
+                        <div class="form-group">
+                            <Toggle label="Apply tax" checked={settings.taxEnabled} onChange={(v,) => setSettings('taxEnabled', v,)} />
+                        </div>
                     </Show>
 
                     <Show when={tab() === 'payments'}>
@@ -223,17 +236,35 @@ const ShopSettingsInner: Component = () => {
                             }}
                         </Show>
 
-                        <FormCheck
-                            label="Use Stripe Tax"
-                            checked={settings.stripeTaxEnabled || false}
-                            onChange={(v,) => setSettings('stripeTaxEnabled', v,)}
-                        />
+                        <div class="form-group">
+                            <Toggle
+                                label="Use Stripe Tax"
+                                checked={settings.stripeTaxEnabled || false}
+                                onChange={(v,) => setSettings('stripeTaxEnabled', v,)}
+                            />
+                        </div>
                     </Show>
 
                     <Show when={tab() === 'shipping'}>
-                        <FormField label="Flat shipping rate" hint="Applied per order. Leave blank for free shipping.">
+                        <FormField label="Flat shipping rate" hint="Applied to the first item (or per order when the additional-item rate is off). Leave blank for free shipping.">
                             <input type="text" inputmode="decimal" placeholder="0.00" value={flat()} onInput={(e,) => setFlat(e.currentTarget.value,)} />
                         </FormField>
+                        <div class="form-group">
+                            <Toggle
+                                checked={useAdditionalRate()}
+                                onChange={setUseAdditionalRate}
+                                label="Use different rate for each additional item"
+                            />
+                            <span class="form-help">
+                                Charge the flat rate above for the first item, and a separate rate for
+                                every additional item in the cart.
+                            </span>
+                        </div>
+                        <Show when={useAdditionalRate()}>
+                            <FormField label="Additional item rate" hint="Applied to each item after the first.">
+                                <input type="text" inputmode="decimal" placeholder="0.00" value={additionalRate()} onInput={(e,) => setAdditionalRate(e.currentTarget.value,)} />
+                            </FormField>
+                        </Show>
                         <FormField label="Free shipping threshold" hint="Orders at/above this subtotal ship free.">
                             <input type="text" inputmode="decimal" placeholder="0.00" value={freeThreshold()} onInput={(e,) => setFreeThreshold(e.currentTarget.value,)} />
                         </FormField>
@@ -262,7 +293,9 @@ const ShopSettingsInner: Component = () => {
                                 <option value="code">Code (USD)</option>
                             </select>
                         </FormField>
-                        <FormCheck label="Show product ratings" checked={appearance.showRatings} onChange={(v,) => setAppearance('showRatings', v,)} />
+                        <div class="form-group">
+                            <Toggle label="Show product ratings" checked={appearance.showRatings} onChange={(v,) => setAppearance('showRatings', v,)} />
+                        </div>
                     </Show>
                 </div>
             </Show>

@@ -167,17 +167,25 @@ function computeShipping(lines: ResolvedLine[], subtotalCents: number, settings:
     }
 
     const shopFlat = shipping.flatCents ?? 0;
-    let total = 0;
+
+    // Effective per-unit cost for every shippable unit (flat fee only;
+    // 'calculated' is dynamic → stubbed to 0 until a rate provider is wired).
+    const perUnitCosts: number[] = [];
     for (const l of lines) {
-        if (!l.requiresShipping) continue;
-        // 'calculated' shipping is dynamic (rate provider) — stubbed to 0 for
-        // now; added once a shipping-quote provider is integrated.
-        if (l.shippingType === 'calculated') continue;
-        // Flat fee, per unit: shop default rate or the per-variant override.
+        if (!l.requiresShipping || l.shippingType === 'calculated') continue;
         const perUnit = l.useDefaultShipping ? shopFlat : l.variantShippingCents;
-        total += perUnit * l.qty;
+        for (let i = 0; i < l.qty; i++) perUnitCosts.push(perUnit,);
     }
-    return total;
+    if (perUnitCosts.length === 0) return 0;
+
+    // Additional-item tier: the first shippable unit charges its own rate, and
+    // every unit after the first charges the shop's additional-item rate.
+    if (shipping.useAdditionalItemRate && shipping.additionalItemCents !== undefined) {
+        return perUnitCosts[0] + (shipping.additionalItemCents ?? 0) * (perUnitCosts.length - 1);
+    }
+
+    // Default: sum of each unit's own cost.
+    return perUnitCosts.reduce((sum, c,) => sum + c, 0,);
 }
 
 /**
