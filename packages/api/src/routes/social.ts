@@ -50,7 +50,8 @@ const postPatchBody = z.object({
 
 const publishBody = z.object({
     providers: z.array(z.string(),).min(1,),
-    text: z.string().min(1,).max(4000,),
+    text: z.string().max(4000,),
+    mediaUrls: z.array(z.string(),).max(4,).optional(),
 },) satisfies z.ZodType<SocialPublishBody>;
 
 // platform is a free string at the schema level; the handler narrows it
@@ -161,7 +162,7 @@ export const socialRoutes = [
         input: { body: publishBody, },
         handler: async ({ body, userId, },) => {
             const providers = body.providers.map((p,) => assertPlatform(p,),);
-            const results = await social.publish(providers, body.text, userId,);
+            const results = await social.publish(providers, body.text, body.mediaUrls ?? [], userId,);
             return { results, };
         },
     },),

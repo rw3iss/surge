@@ -14,10 +14,13 @@ import { logger, } from '../../utils/logger';
 import { upsertSocialPost, } from '../social';
 import { fetchTweetById, } from './twitterHydrate';
 import { buildAuthHeader, type TwitterUserCreds, } from './twitterOAuth';
+import { fetchMediaBytes, mediaCategory, uploadMedia, } from './twitterMedia';
 
 export interface PublishInput {
     providers: SocialPlatform[];
     text: string;
+    /** Media asset URLs (from the CMS media library) to attach. X-only today. */
+    mediaUrls?: string[];
 }
 
 export interface PublishResult {
@@ -42,7 +45,31 @@ async function getTwitterCreds(): Promise<TwitterUserCreds | null> {
     };
 }
 
-async function publishToTwitter(text: string, userId?: string | null,): Promise<PublishResult> {
+/**
+ * Upload the requested media to X and return their media ids, enforcing X's
+ * per-tweet rules: up to 4 photos, OR exactly 1 video, OR 1 GIF.
+ */
+async function uploadTweetMedia(mediaUrls: string[], creds: TwitterUserCreds,): Promise<string[]> {
+    if (mediaUrls.length > 4) throw new Error('X allows at most 4 media per post.',);
+
+    const assets = await Promise.all(mediaUrls.map((u,) => fetchMediaBytes(u,)),);
+    const hasVideoOrGif = assets.some((a,) => mediaCategory(a.mime,) !== 'tweet_image',);
+    if (hasVideoOrGif && assets.length > 1) {
+        throw new Error('A video or GIF must be the only media on the post.',);
+    }
+
+    const ids: string[] = [];
+    for (const a of assets) {
+        ids.push(await uploadMedia(a.bytes, a.mime, creds,),);
+    }
+    return ids;
+}
+
+async function publishToTwitter(text: string, mediaUrls: string[], userId?: string | null,): Promise<PublishResult> {
+    if (!text.trim() && mediaUrls.length === 0) {
+        return { provider: 'twitter', ok: false, error: 'Write something or attach media.', };
+    }
+
     const creds = await getTwitterCreds();
     if (!creds) {
         return {
@@ -54,12 +81,19 @@ async function publishToTwitter(text: string, userId?: string | null,): Promise<
 
     const url = 'https://api.twitter.com/2/tweets';
     try {
+        let mediaIds: string[] = [];
+        if (mediaUrls.length > 0) {
+            mediaIds = await uploadTweetMedia(mediaUrls, creds,);
+        }
+
         // JSON body → no body params participate in the OAuth signature.
         const authHeader = buildAuthHeader('POST', url, {}, creds,);
+        const payload: Record<string, unknown> = { text, };
+        if (mediaIds.length > 0) payload.media = { media_ids: mediaIds, };
         const res = await fetch(url, {
             method: 'POST',
             headers: { Authorization: authHeader, 'Content-Type': 'application/json', },
-            body: JSON.stringify({ text, },),
+            body: JSON.stringify(payload,),
         },);
 
         if (!res.ok) {
@@ -101,7 +135,7 @@ export async function publishPost(
     const results: PublishResult[] = [];
     for (const provider of input.providers) {
         if (provider === 'twitter') {
-            results.push(await publishToTwitter(input.text, ctx?.userId,),);
+            results.push(await publishToTwitter(input.text, input.mediaUrls ?? [], ctx?.userId,),);
         } else {
             results.push({
                 provider,

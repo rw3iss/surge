@@ -66,6 +66,24 @@ and provide a **Basic-tier bearer token**. Then:
   pull ≤10 per run, keeping usage under the Basic-tier ~10k posts/month cap.
 - Sync hourly rather than aggressively.
 
+### Media (photos + video)
+
+The Compose tab can attach media from the media library. On publish, the server
+fetches each asset's bytes and uploads them to X (user-context OAuth 1.0a, same
+credentials as text posting), then attaches the returned `media_id`s to the
+tweet:
+
+- **Photos** (≤5 MB, non-GIF) — one-shot upload.
+- **Video / GIF / large images** — chunked `INIT`/`APPEND`/`FINALIZE`, then the
+  server polls `STATUS` until processing completes (videos are async).
+
+X's per-post rules are enforced: **up to 4 photos, OR exactly one video/GIF**.
+Media upload targets the v1.1 `upload.twitter.com` host (the canonical
+OAuth-1.0a media flow); if X retires it, switch `UPLOAD_URL` in
+`services/social/twitterMedia.ts` to `/2/media/upload`. Media upload is part of
+the write surface and generally works on the free tier — confirm with a live
+test post, since X's access gates shift.
+
 ## Other providers
 
 Instagram / Facebook / YouTube use their existing OAuth/API connections and the

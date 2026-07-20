@@ -248,13 +248,14 @@ export async function patchPost(
     return found;
 }
 
-/** Compose & cross-post text to one or more providers (POSSE). */
+/** Compose & cross-post text (+ optional media) to one or more providers. */
 export async function publish(
     providers: SocialPlatform[],
     text: string,
+    mediaUrls: string[],
     userId?: string | null,
 ): Promise<PublishResult[]> {
-    return publishPost({ providers, text, }, { userId, },);
+    return publishPost({ providers, text, mediaUrls, }, { userId, },);
 }
 
 /** Resolve a stored post to a renderable card or oEmbed HTML. */

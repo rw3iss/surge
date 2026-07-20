@@ -1,6 +1,7 @@
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
 import type { SocialPublishResult, } from '@sitesurge/types';
 import { cms, } from '../../../services/cmsClient';
+import MediaSelectModal, { type MediaItem, } from '../../../components/admin/media/MediaSelectModal';
 
 /** Providers that currently support composing/publishing from the CMS. */
 const PUBLISHABLE = new Set(['twitter',],);
@@ -14,9 +15,23 @@ const MAX_LEN = 280;
 const SocialComposePanel: Component = () => {
     const [text, setText,] = createSignal('',);
     const [selected, setSelected,] = createSignal<Record<string, boolean>>({ twitter: true, },);
+    const [media, setMedia,] = createSignal<MediaItem[]>([],);
+    const [showMediaModal, setShowMediaModal,] = createSignal(false,);
     const [busy, setBusy,] = createSignal(false,);
     const [results, setResults,] = createSignal<SocialPublishResult[] | null>(null,);
     const [error, setError,] = createSignal('',);
+
+    const isVideo = (m: MediaItem,): boolean => m.mimeType.startsWith('video/',) || m.mimeType === 'image/gif';
+    const addMedia = (item: MediaItem,): void => {
+        setShowMediaModal(false,);
+        const list = media();
+        if (list.some((m,) => m.id === item.id)) return;
+        // X rule: a video/GIF is exclusive; photos allow up to 4.
+        if (isVideo(item,) || list.some(isVideo,)) { setMedia([item,],); return; }
+        if (list.length >= 4) return;
+        setMedia([...list, item,],);
+    };
+    const removeMedia = (id: string,): void => { setMedia(media().filter((m,) => m.id !== id),); };
 
     const [connections,] = createResource(async () => {
         try {
@@ -41,13 +56,17 @@ const SocialComposePanel: Component = () => {
         setError('',);
         setResults(null,);
         const providers = chosen();
-        if (!text().trim()) { setError('Write something to post.',); return; }
+        if (!text().trim() && media().length === 0) { setError('Write something or attach media.',); return; }
         if (providers.length === 0) { setError('Select at least one connected provider.',); return; }
         setBusy(true,);
         try {
-            const res = await cms.social.publish({ providers, text: text().trim(), },);
+            const res = await cms.social.publish({
+                providers,
+                text: text().trim(),
+                mediaUrls: media().map((m,) => m.url),
+            },);
             setResults(res.results,);
-            if (res.results.every((r,) => r.ok)) setText('',);
+            if (res.results.every((r,) => r.ok)) { setText('',); setMedia([],); }
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Publish failed.',);
         } finally {
@@ -72,6 +91,36 @@ const SocialComposePanel: Component = () => {
                         {text().length}{selected().twitter ? ` / ${MAX_LEN}` : ''}
                     </span>
                 </div>
+            </div>
+
+            <div class="social-compose__media">
+                <For each={media()}>
+                    {(m,) => (
+                        <div class="social-compose__media-item">
+                            <Show
+                                when={m.mimeType.startsWith('video/',)}
+                                fallback={<img src={m.thumbnailUrl || m.url} alt={m.originalName} />}
+                            >
+                                <video src={m.url} muted preload="metadata" />
+                            </Show>
+                            <button
+                                type="button"
+                                class="social-compose__media-remove"
+                                title="Remove"
+                                onClick={() => removeMedia(m.id,)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                    )}
+                </For>
+                <button
+                    type="button"
+                    class="social-compose__media-add btn btn--small btn--secondary"
+                    onClick={() => setShowMediaModal(true,)}
+                >
+                    + Add media
+                </button>
             </div>
 
             <div class="social-compose__providers">
@@ -136,8 +185,13 @@ const SocialComposePanel: Component = () => {
 
             <p class="form-help">
                 Posts you publish here are captured back into the feed automatically. X uses the free
-                write tier — no paid API needed. Media attachments are coming soon.
+                write tier — no paid API needed. Attach up to 4 photos, or one video/GIF; videos may
+                take a few seconds to process on publish.
             </p>
+
+            <Show when={showMediaModal()}>
+                <MediaSelectModal onSelect={addMedia} onClose={() => setShowMediaModal(false,)} />
+            </Show>
         </section>
     );
 };

@@ -88,6 +88,8 @@ export interface SocialPostDeleteResponse {
 export interface SocialPublishBody {
     providers: string[];
     text: string;
+    /** Media asset URLs (from the media library) to attach. X-only today. */
+    mediaUrls?: string[];
 }
 
 /** Per-provider publish outcome. */
