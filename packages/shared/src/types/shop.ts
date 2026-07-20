@@ -97,6 +97,8 @@ export interface ShopCollection {
     isPublished: boolean;
     createdAt: string;
     updatedAt: string;
+    /** Number of products in the collection (populated by list queries). */
+    productCount?: number;
 }
 
 export type ShopReviewStatus = 'pending' | 'approved' | 'rejected';

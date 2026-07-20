@@ -77,9 +77,14 @@ export async function findProductsInCategory(categoryId: string,): Promise<ShopP
 // ─── Collections ──────────────────────────────────────────────────
 
 export async function findAllCollections(publishedOnly: boolean,): Promise<ShopCollection[]> {
-    const whereClause = publishedOnly ? 'WHERE is_published = true' : '';
+    const whereClause = publishedOnly ? 'WHERE c.is_published = true' : '';
+    // Live product_count per collection — a cheap correlated subquery keeps it
+    // always-correct (no denormalized column / trigger to maintain).
     const result = await query(
-        `SELECT * FROM shop_collections ${whereClause} ORDER BY position ASC, title ASC`,
+        `SELECT c.*,
+                (SELECT COUNT(*) FROM shop_collection_products cp WHERE cp.collection_id = c.id)::int AS product_count
+         FROM shop_collections c ${whereClause}
+         ORDER BY c.position ASC, c.title ASC`,
     );
     return mapRows<ShopCollection>(result.rows,);
 }

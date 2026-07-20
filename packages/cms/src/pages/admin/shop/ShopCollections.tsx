@@ -134,6 +134,7 @@ const ShopCollectionsInner: Component = () => {
                             <tr>
                                 <th>Title</th>
                                 <th>Slug</th>
+                                <th>Products</th>
                                 <th>Published</th>
                                 <th>Actions</th>
                             </tr>
@@ -144,6 +145,7 @@ const ShopCollectionsInner: Component = () => {
                                     <tr>
                                         <td>{c.title}</td>
                                         <td class="form-help-muted">{c.slug}</td>
+                                        <td>{c.productCount ?? 0}</td>
                                         <td>
                                             <span class={`badge ${c.isPublished ? 'badge--success' : 'badge--muted'}`}>
                                                 {c.isPublished ? 'Published' : 'Hidden'}
