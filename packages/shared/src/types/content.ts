@@ -214,6 +214,8 @@ export interface AppearanceSettings {
     backgroundColor?: string;
     textColor?: string;
     primaryColor?: string;
+    /** Text color for buttons (on the primary background). Defaults to white. */
+    buttonTextColor?: string;
     linkColor?: string;
     headingColor?: string;
     borderColor?: string;

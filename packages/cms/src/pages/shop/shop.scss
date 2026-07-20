@@ -9,45 +9,8 @@
     margin: 0 auto;
     color: var(--site-text, #{$text-color});
 
-    // Public storefront buttons. `.btn` is only defined in the ADMIN stylesheet,
-    // so on the public site these rendered as bare browser buttons (the "Add to
-    // Cart" had no background). Define them here using the site's brand token.
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: $spacing-xs;
-        padding: $spacing-sm $spacing-lg;
-        border: 1px solid transparent;
-        border-radius: var(--site-radius, 6px);
-        font: inherit;
-        font-weight: 600;
-        line-height: 1.2;
-        cursor: pointer;
-        text-decoration: none;
-        transition: background-color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
-
-        &:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        &--primary {
-            background: var(--site-primary, #{$primary-color});
-            border-color: var(--site-primary, #{$primary-color});
-            color: #fff;
-
-            &:hover:not(:disabled) { filter: brightness(0.94); }
-        }
-
-        &--secondary {
-            background: var(--site-bg-subtle, #{$background-dark});
-            border-color: var(--site-border, #{$border-color});
-            color: var(--site-text, #{$text-color});
-
-            &:hover:not(:disabled) { border-color: var(--site-primary, #{$primary-color}); }
-        }
-    }
+    // Buttons are styled site-wide in global.scss (`.layout .btn`) using the
+    // brand + Button Text appearance colors — shop pages inherit that.
 
     &__header {
         margin-bottom: $spacing-xl;

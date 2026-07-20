@@ -49,6 +49,7 @@ export function appearanceCssVars(
 
     // Tokens always flowed through (color & typography variables).
     setColor('--site-primary', a.primaryColor,);
+    setColor('--site-button-text', a.buttonTextColor,);
     setColor('--site-link', a.linkColor,);
     setColor('--site-heading', a.headingColor,);
     setColor('--site-border', a.borderColor,);

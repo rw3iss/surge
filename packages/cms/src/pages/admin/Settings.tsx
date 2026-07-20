@@ -458,6 +458,7 @@ function AppearancePanel() {
     const [backgroundColor, setBackgroundColor,] = createSignal('#ffffff',);
     const [textColor, setTextColor,] = createSignal('#1a1a1a',);
     const [primaryColor, setPrimaryColor,] = createSignal('#3498cf',);
+    const [buttonTextColor, setButtonTextColor,] = createSignal('#ffffff',);
     const [linkColor, setLinkColor,] = createSignal('#3498cf',);
     const [headingColor, setHeadingColor,] = createSignal('#1a1a1a',);
     const [borderColor, setBorderColor,] = createSignal('#e5e7eb',);
@@ -489,6 +490,7 @@ function AppearancePanel() {
                 if (d.backgroundColor) setBackgroundColor(d.backgroundColor,);
                 if (d.textColor) setTextColor(d.textColor,);
                 if (d.primaryColor) setPrimaryColor(d.primaryColor,);
+                if (d.buttonTextColor) setButtonTextColor(d.buttonTextColor,);
                 if (d.linkColor) setLinkColor(d.linkColor,);
                 if (d.headingColor) setHeadingColor(d.headingColor,);
                 if (d.borderColor) setBorderColor(d.borderColor,);
@@ -521,6 +523,7 @@ function AppearancePanel() {
                 backgroundColor: backgroundColor(),
                 textColor: textColor(),
                 primaryColor: primaryColor(),
+                buttonTextColor: buttonTextColor(),
                 linkColor: linkColor(),
                 headingColor: headingColor(),
                 borderColor: borderColor(),
@@ -602,9 +605,17 @@ function AppearancePanel() {
                     <ThemeField
                         label="Primary / Brand"
                         sublabel="Brand accent color"
-                        tooltip="The main brand/accent color used for primary buttons, focus rings, and progress indicators."
+                        tooltip="The main brand/accent color used as the background of primary buttons, plus focus rings and progress indicators."
                     >
                         <ColorPicker value={primaryColor()} onChange={(hex,) => { setPrimaryColor(hex,); markDirty(); }} clearable onClear={() => { setPrimaryColor('',); markDirty(); }} />
+                    </ThemeField>
+
+                    <ThemeField
+                        label="Button Text"
+                        sublabel="Text color on buttons"
+                        tooltip="The text/label color for buttons across the site. Sits on top of the Primary / Brand background. Defaults to white when unset."
+                    >
+                        <ColorPicker value={buttonTextColor()} onChange={(hex,) => { setButtonTextColor(hex,); markDirty(); }} clearable onClear={() => { setButtonTextColor('',); markDirty(); }} />
                     </ThemeField>
 
                     <ThemeField

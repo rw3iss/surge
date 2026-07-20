@@ -554,3 +554,62 @@ html:not([data-active-outlines='show']) {
   font-size: $font-size-xs;
   line-height: $line-height-tight;
 }
+
+// ─── Public site buttons ───────────────────────────────────────────────
+// `.btn` is defined in the ADMIN stylesheet only; the public site (.layout)
+// had no button styling, so `.btn--primary` rendered bare. Define the public
+// standard here, scoped to `.layout` so it never collides with admin chrome.
+// Primary buttons use the site brand color as the background and the
+// configurable Button Text color (Settings → Appearance → Colors) as the text.
+.layout {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-lg;
+    border: 1px solid transparent;
+    border-radius: var(--site-radius, 6px);
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease, filter 0.12s ease;
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    &--primary {
+      background: var(--site-primary, #{$primary-color});
+      border-color: var(--site-primary, #{$primary-color});
+      color: var(--site-button-text, #fff);
+
+      &:hover:not(:disabled) { filter: brightness(0.94); }
+    }
+
+    &--secondary {
+      background: var(--site-bg-subtle, #{$background-dark});
+      border-color: var(--site-border, #{$border-color});
+      color: var(--site-text, #{$text-color});
+
+      &:hover:not(:disabled) { border-color: var(--site-primary, #{$primary-color}); }
+    }
+
+    &--outline {
+      background: transparent;
+      border-color: var(--site-primary, #{$primary-color});
+      color: var(--site-primary, #{$primary-color});
+
+      &:hover:not(:disabled) { background: var(--site-primary, #{$primary-color}); color: var(--site-button-text, #fff); }
+    }
+
+    &--danger {
+      background: $error-color;
+      border-color: $error-color;
+      color: #fff;
+    }
+  }
+}
