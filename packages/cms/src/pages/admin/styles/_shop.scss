@@ -17,6 +17,15 @@
 
     &__icon { font-size: 1.4rem; line-height: 1; }
     &__body { flex: 1; font-size: $font-size-sm; }
+
+    // Warning variant: plugin enabled but not configured (built-in shop serving).
+    &--warning {
+        background: $warning-bg;
+        border-color: $warning-border;
+        color: $warning-fg;
+
+        a { color: inherit; text-decoration: underline; }
+    }
 }
 
 // Shop admin section — dashboard cards, product editor (options/variants/

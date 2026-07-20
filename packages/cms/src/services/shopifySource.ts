@@ -10,11 +10,23 @@ import type { ShopCollection, ShopProduct, ShopProductDetail, } from '@sitesurge
 import { cms, } from './cmsClient';
 import { isPluginEnabled, pluginConfig, } from '../stores/plugins';
 
-/** True when the Shopify plugin is enabled (and thus overriding the shop). */
-export const isShopifyActive = (): boolean => isPluginEnabled('shopify',);
-
 /** The connected shop domain (public config), for "Open in Shopify" links. */
 const shopifyDomain = (): string => String(pluginConfig('shopify',).shopDomain || '',);
+
+/** The plugin is installed + enabled (its override intent is on). */
+export const isShopifyEnabled = (): boolean => isPluginEnabled('shopify',);
+
+/** Enabled AND configured (a shop domain is set). We only OVERRIDE the built-in
+ *  shop when configured — an enabled-but-unconfigured plugin would otherwise
+ *  blank the storefront (every Shopify call errors), so we fall back to the
+ *  internal shop and surface an admin warning instead. */
+export const isShopifyConfigured = (): boolean => Boolean(shopifyDomain(),);
+
+/** True when Shopify should OVERRIDE the built-in shop. Requires configuration. */
+export const isShopifyActive = (): boolean => isShopifyEnabled() && isShopifyConfigured();
+
+/** Enabled but missing its shop-domain config — used to warn admins. */
+export const isShopifyMisconfigured = (): boolean => isShopifyEnabled() && !isShopifyConfigured();
 
 /** Base URL of the connected Shopify admin (empty when not configured). */
 export const shopifyAdminUrl = (): string => {
