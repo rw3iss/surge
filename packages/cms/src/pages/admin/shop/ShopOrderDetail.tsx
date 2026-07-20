@@ -128,7 +128,7 @@ const ShopOrderDetailInner: Component = () => {
                                     <A href="/admin/shop/orders" class="table-link">&larr; Orders</A>
                                     <h1>Order {o().orderNumber}</h1>
                                 </div>
-                                <span class={`badge ${getStatusBadgeClass(o().status,)}`}>{o().status}</span>
+                                <span class={`badge shop-order__status-badge ${getStatusBadgeClass(o().status,)}`}>{o().status}</span>
                             </div>
 
                             <div class="shop-order__grid">
@@ -196,7 +196,7 @@ const ShopOrderDetailInner: Component = () => {
                                         <p class="form-help-muted">Placed {formatDate(o().createdAt,)}</p>
                                     </div>
 
-                                    <div class="shop-order__panel">
+                                    <div class="shop-order__panel shop-order__manage">
                                         <h3>Manage</h3>
                                         <FormField label="Status" inline>
                                             <select value={status()} onChange={(e,) => setStatus(e.currentTarget.value as ShopOrderStatus,)}>
@@ -208,10 +208,10 @@ const ShopOrderDetailInner: Component = () => {
                                                 <For each={FULFILLMENT_STATUSES}>{(s,) => <option value={s}>{s}</option>}</For>
                                             </select>
                                         </FormField>
-                                        <FormField label="Tracking number">
+                                        <FormField label="Tracking number" class="form-field--block">
                                             <input type="text" value={tracking()} onInput={(e,) => setTracking(e.currentTarget.value,)} />
                                         </FormField>
-                                        <FormField label="Notes">
+                                        <FormField label="Notes" class="form-field--block">
                                             <textarea rows={3} value={notes()} onInput={(e,) => setNotes(e.currentTarget.value,)} />
                                         </FormField>
                                         <button class="btn btn--primary" onClick={saveChanges} disabled={busy()}>

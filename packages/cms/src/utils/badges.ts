@@ -18,6 +18,13 @@ export const STATUS_BADGE_MAP: Record<string, string> = {
     replied: 'badge--success',
     spam: 'badge--error',
     closed_campaign: 'badge--info',
+    // Shop order statuses.
+    pending: 'badge--warning',
+    paid: 'badge--success',
+    processing: 'badge--info',
+    shipped: 'badge--info',
+    delivered: 'badge--success',
+    refunded: 'badge--error',
 };
 
 export function getStatusBadgeClass(status: string | undefined,): string {

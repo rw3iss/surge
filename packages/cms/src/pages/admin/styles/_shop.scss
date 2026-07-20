@@ -518,7 +518,26 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: $spacing-md;
-        margin-top: $spacing-lg;
+        // Extra separation from the totals block above.
+        margin-top: calc(#{$spacing-lg} + 20px);
+    }
+
+    // Order status chip in the header — a slightly larger badge (colors come
+    // from the badge--* variant via getStatusBadgeClass).
+    &__status-badge {
+        padding: 4px 12px;
+        font-size: $font-size-sm;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+
+    // Manage panel: give the inline Status / Fulfillment selects a touch more
+    // width so their labels aren't cramped.
+    &__manage {
+        .admin-form-field--inline select {
+            min-width: 150px;
+            padding-right: $spacing-lg;
+        }
     }
 
     &__side {
