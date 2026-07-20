@@ -82,6 +82,27 @@ export interface SocialPostDeleteResponse {
     message: string;
 }
 
+// ─── POST /social/publish ─────────────────────────────────────────
+
+/** Body for POST /social/publish — compose once, cross-post to providers. */
+export interface SocialPublishBody {
+    providers: string[];
+    text: string;
+}
+
+/** Per-provider publish outcome. */
+export interface SocialPublishResult {
+    provider: string;
+    ok: boolean;
+    id?: string;
+    error?: string;
+}
+
+/** POST /social/publish — per-provider results (partial success is normal). */
+export interface SocialPublishResponse {
+    results: SocialPublishResult[];
+}
+
 // ─── POST /social/posts/manual ────────────────────────────────────
 
 /** Body for POST /social/posts/manual — capture a post by pasting its URL. */

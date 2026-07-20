@@ -5,6 +5,7 @@ import type {
     SocialPostDeleteResponse, SocialPlatformPostsQuery, SocialPlatformPostsResponse,
     SocialManualPostBody, SocialManualPostResponse, SocialPostPatchBody,
     SocialPostPatchResponse, SocialEmbedResponse,
+    SocialPublishBody, SocialPublishResponse,
 } from '@sitesurge/types';
 import type { Paginated, } from '@sitesurge/types';
 import { ModuleBase, } from './base';
@@ -66,5 +67,10 @@ export class SocialModule extends ModuleBase {
     /** GET /social/posts/:id/embed — resolve a stored post to card / oEmbed. */
     getEmbed(id: string,): Promise<SocialEmbedResponse> {
         return this.get<SocialEmbedResponse>('/social/posts/:id/embed', { params: { id, }, },);
+    }
+
+    /** POST /social/publish — compose once, cross-post to providers. */
+    publish(body: SocialPublishBody,): Promise<SocialPublishResponse> {
+        return this.mutate<SocialPublishResponse>('POST', '/social/publish', { body, invalidates: ['social',], },);
     }
 }

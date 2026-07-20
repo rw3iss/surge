@@ -121,6 +121,7 @@ export const ROUTE_COVERAGE: string[] = [
     'POST /api/v1/social/posts/manual',
     'PATCH /api/v1/social/posts/:id',
     'GET /api/v1/social/posts/:id/embed',
+    'POST /api/v1/social/publish',
 
     // ── search ──
     'GET /api/v1/search',

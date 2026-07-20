@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-20T05:22:07.620Z",
+  "generatedAt": "2026-07-20T05:28:22.019Z",
   "totalModules": 31,
-  "totalRoutes": 260,
+  "totalRoutes": 261,
   "modules": [
     {
       "module": "api-keys",
@@ -1841,6 +1841,13 @@
           "absolutePath": "/api/v1/social/posts/:id",
           "auth": "admin",
           "summary": "Delete a stored social post by id."
+        },
+        {
+          "method": "POST",
+          "path": "/publish",
+          "absolutePath": "/api/v1/social/publish",
+          "auth": "admin",
+          "summary": "Compose once and publish to one or more connected providers."
         },
         {
           "method": "POST",

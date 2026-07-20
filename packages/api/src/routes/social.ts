@@ -7,6 +7,7 @@ import type {
     SocialPlatformPostsQuery,
     SocialPostPatchBody,
     SocialPostsQuery,
+    SocialPublishBody,
 } from '@sitesurge/types';
 import { z, } from 'zod';
 import { defineRoute, reply, } from '../api/defineRoute';
@@ -46,6 +47,11 @@ const postPatchBody = z.object({
     isHidden: z.boolean().optional(),
     sortOrder: z.number().int().optional(),
 },) satisfies z.ZodType<SocialPostPatchBody>;
+
+const publishBody = z.object({
+    providers: z.array(z.string(),).min(1,),
+    text: z.string().min(1,).max(4000,),
+},) satisfies z.ZodType<SocialPublishBody>;
 
 // platform is a free string at the schema level; the handler narrows it
 // to SocialPlatform (invalid values are ignored / treated as "all").
@@ -145,6 +151,18 @@ export const socialRoutes = [
             const deleted = await social.deletePost(params.id,);
             if (!deleted) throw new NotFoundError('Social post',);
             return { message: 'Post deleted', };
+        },
+    },),
+
+    // Compose & cross-post to one or more providers (admin). POSSE.
+    defineRoute({
+        method: 'post', path: '/publish', auth: 'admin',
+        summary: 'Compose once and publish to one or more connected providers.',
+        input: { body: publishBody, },
+        handler: async ({ body, userId, },) => {
+            const providers = body.providers.map((p,) => assertPlatform(p,),);
+            const results = await social.publish(providers, body.text, userId,);
+            return { results, };
         },
     },),
 

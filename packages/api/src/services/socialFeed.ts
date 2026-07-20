@@ -30,6 +30,7 @@ import {
     syncSocialPosts,
 } from './social';
 import { resolveEmbed, type ResolvedEmbed, } from './social/embed';
+import { publishPost, type PublishResult, } from './social/publish';
 
 export const VALID_PLATFORMS: SocialPlatform[] = [
     'patreon', 'youtube', 'instagram', 'facebook', 'twitter', 'tiktok',
@@ -245,6 +246,15 @@ export async function patchPost(
         await cache.invalidateSocialCache();
     }
     return found;
+}
+
+/** Compose & cross-post text to one or more providers (POSSE). */
+export async function publish(
+    providers: SocialPlatform[],
+    text: string,
+    userId?: string | null,
+): Promise<PublishResult[]> {
+    return publishPost({ providers, text, }, { userId, },);
 }
 
 /** Resolve a stored post to a renderable card or oEmbed HTML. */
