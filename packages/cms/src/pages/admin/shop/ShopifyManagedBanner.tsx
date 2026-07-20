@@ -1,5 +1,6 @@
-import { Component, Show, } from 'solid-js';
+import { Component, onMount, Show, } from 'solid-js';
 import { isShopifyActive, isShopifyMisconfigured, shopifyAdminUrl, } from '../../../services/shopifySource';
+import { loadEnabledPlugins, } from '../../../stores/plugins';
 
 /**
  * Banner shown across the admin Shop pages. Two states:
@@ -9,8 +10,15 @@ import { isShopifyActive, isShopifyMisconfigured, shopifyAdminUrl, } from '../..
  *    (or should be disabled). Prevents the silent "blank shop" confusion.
  * Renders nothing when Shopify is off. Safe to drop in unconditionally.
  */
-const ShopifyManagedBanner: Component<{ note?: string; }> = (props,) => (
-    <>
+const ShopifyManagedBanner: Component<{ note?: string; }> = (props,) => {
+    // Re-fetch the enabled-plugins store on arrival so the banner reflects the
+    // current plugin state without a full page refresh (e.g. right after the
+    // plugin was disabled on the Plugins page). The store is reactive, so the
+    // banner re-renders when fresh data lands.
+    onMount(() => { void loadEnabledPlugins(true,); },);
+
+    return (
+        <>
         <Show when={isShopifyActive()}>
             <div class="shopify-banner">
                 <span class="shopify-banner__icon" aria-hidden="true">🛍</span>
@@ -39,6 +47,7 @@ const ShopifyManagedBanner: Component<{ note?: string; }> = (props,) => (
             </div>
         </Show>
     </>
-);
+    );
+};
 
 export default ShopifyManagedBanner;

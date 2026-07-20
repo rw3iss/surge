@@ -3,6 +3,7 @@ import { A, } from '@solidjs/router';
 import { Component, createResource, createSignal, For, Show, } from 'solid-js';
 import type { MarketplacePlugin, Plugin, } from '@sitesurge/types';
 import { cms, } from '../../services/cmsClient';
+import { loadEnabledPlugins, } from '../../stores/plugins';
 
 const AdminPlugins: Component = () => {
     const [plugins, { refetch, },] = createResource(async () => {
@@ -16,8 +17,18 @@ const AdminPlugins: Component = () => {
 
     async function run(name: string, fn: () => Promise<unknown>,): Promise<void> {
         setBusy(name,); setError(null,);
-        try { await fn(); await refetch(); } catch (e) { setError((e as Error).message,); }
-        finally { setBusy(null,); }
+        try {
+            await fn();
+            await refetch();
+            // Refresh the shared enabled-plugins store so plugin-gated UI
+            // elsewhere (e.g. the Shop's ShopifyManagedBanner) updates live
+            // instead of staying stale until a full page reload.
+            await loadEnabledPlugins(true,);
+        } catch (e) {
+            setError((e as Error).message,);
+        } finally {
+            setBusy(null,);
+        }
     }
 
     async function onUpload(e: Event,): Promise<void> {
