@@ -86,19 +86,20 @@ describe('shop settings service', () => {
         expect(flat,).not.toContain('acct_LEAK',);
         expect(flat,).not.toContain('businessAddress',);
         expect(flat,).not.toContain('1 Secret Way',);
-        // The safe subset IS present.
-        expect(pub.settings,).toEqual({
+        // The safe subset IS present (the public — non-secret — Stripe
+        // publishable key may also be included; it's meant for the client).
+        expect(pub.settings,).toMatchObject({
             currency: 'usd',
             taxEnabled: true,
             storeEnabled: true,
             businessName: 'Acme',
-            currencyDisplay: undefined,
         },);
+        expect(flat,).not.toContain('sk_test',);
         expect(pub.appearance.gridColumns,).toBe(3,);
-        // No stray keys on the settings projection.
-        expect(Object.keys(pub.settings,).sort(),).toEqual(
-            ['businessName', 'currency', 'currencyDisplay', 'storeEnabled', 'taxEnabled',],
-        );
+        // No stray keys on the settings projection (stripePublishableKey is an
+        // allowed public field; every other key must be in the safe subset).
+        const allowed = ['businessName', 'currency', 'currencyDisplay', 'storeEnabled', 'stripePublishableKey', 'taxEnabled',];
+        expect(Object.keys(pub.settings,).every((k,) => allowed.includes(k,)),).toBe(true,);
     },);
 
     it('update merges the partial, persists both rows, and busts the caches', async () => {

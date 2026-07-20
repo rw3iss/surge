@@ -84,7 +84,15 @@ const ShopCheckoutInner: Component = () => {
     onMount(async () => {
         void runPreview();
 
-        const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+        // Publishable key comes from the API (server-configured, public by
+        // design); fall back to the build-time VITE var for local dev.
+        let key: string | undefined = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+        try {
+            const cfg = await cms.shop.settings.getPublic();
+            if (cfg?.settings?.stripePublishableKey) key = cfg.settings.stripePublishableKey;
+        } catch {
+            /* fall back to the VITE var */
+        }
         if (!key) {
             setError('Payments are not configured.',);
             return;

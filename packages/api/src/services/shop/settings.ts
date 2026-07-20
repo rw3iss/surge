@@ -19,6 +19,7 @@
  * so they cannot leak through any of these reads.
  */
 import type { ShopAppearance, ShopPublicSettings, ShopSettings, } from '@sitesurge/types';
+import { config as appConfig, } from '../../config';
 import { query, } from '../../db';
 import { ValidationError, } from '../../core/errors';
 import { logAudit, } from '../audit';
@@ -98,6 +99,9 @@ export async function getPublic(): Promise<{ settings: ShopPublicSettings; appea
             storeEnabled: settings.storeEnabled,
             businessName: settings.businessName,
             currencyDisplay: appearance.currencyDisplay,
+            // Publishable key is public by design — the checkout page needs it
+            // at runtime to load Stripe Elements.
+            stripePublishableKey: appConfig.stripe.publishableKey || undefined,
         },
         appearance,
     };

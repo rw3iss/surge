@@ -256,4 +256,7 @@ export interface ShopPublicSettings {
     storeEnabled: boolean;
     businessName: string;
     currencyDisplay?: string;
+    /** Stripe publishable key (public by design) — the checkout page loads
+     *  Stripe Elements with it. Empty/undefined when Stripe isn't configured. */
+    stripePublishableKey?: string;
 }

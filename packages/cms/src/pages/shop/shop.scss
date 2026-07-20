@@ -555,7 +555,8 @@
 // summary have room to breathe. Override the .shop-store max-width (compound
 // selector to win) and let the site gutter provide the horizontal padding.
 .shop-store.shop-checkout {
-    max-width: 2600px;
+    // Compact, centered checkout — the 2600px full-bleed was far too wide.
+    max-width: 980px;
 }
 
 .shop-checkout {
@@ -571,6 +572,12 @@
     }
 
     &__form {
+        // Keep the form column narrow and centered in its cell so it sits
+        // closer to the order summary rather than stretching full width.
+        max-width: 500px;
+        margin: 0 auto;
+        width: 100%;
+
         h2 {
             font-size: $font-size-lg;
             margin: $spacing-lg 0 $spacing-md;
