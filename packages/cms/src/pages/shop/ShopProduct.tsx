@@ -1,5 +1,5 @@
-import { useParams, } from '@solidjs/router';
-import type { ShopProductDetail, ShopProductMediaDetail, ShopReview, ShopVariant, } from '@sitesurge/types';
+import { A, useParams, } from '@solidjs/router';
+import type { ShopCollection, ShopProductDetail, ShopProductMediaDetail, ShopReview, ShopVariant, } from '@sitesurge/types';
 import { Component, createMemo, createResource, createSignal, For, Show, } from 'solid-js';
 import SeoHead from '../../components/common/seo/SeoHead';
 import { cms, } from '../../services/cmsClient';
@@ -52,6 +52,22 @@ const ShopProductInner: Component = () => {
 
 const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean; }> = (props,) => {
     const product = () => props.product;
+
+    // The product's first collection (for the breadcrumb link). Built-in shop
+    // only — Shopify products don't carry collectionIds here.
+    const [collections] = createResource<ShopCollection[]>(async () => {
+        if (isShopifyActive()) return [];
+        try {
+            return await cms.shop.collections.list() as ShopCollection[];
+        } catch {
+            return [];
+        }
+    },);
+    const productCollection = (): ShopCollection | undefined => {
+        const ids = product().collectionIds ?? [];
+        if (!ids.length) return undefined;
+        return (collections() ?? []).find((c,) => ids.includes(c.id,),);
+    };
 
     // ── Media gallery ────────────────────────────────────────────────
     const media = createMemo(() =>
@@ -217,6 +233,25 @@ const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean
 
                 {/* Info */}
                 <div class="shop-product__info">
+                    <nav class="shop-product__breadcrumb" aria-label="Breadcrumb">
+                        <A href="/shop" class="shop-product__breadcrumb-link shop-product__breadcrumb-back">
+                            ← Shop
+                        </A>
+                        <Show when={productCollection()}>
+                            {(c,) => (
+                                <>
+                                    <span class="shop-product__breadcrumb-sep" aria-hidden="true">/</span>
+                                    <A
+                                        href={`/shop?collection=${encodeURIComponent(c().slug,)}`}
+                                        class="shop-product__breadcrumb-link"
+                                    >
+                                        {c().title}
+                                    </A>
+                                </>
+                            )}
+                        </Show>
+                    </nav>
+
                     <h1 class="shop-product__title">{product().title}</h1>
 
                     <Show when={product().ratingCount > 0}>

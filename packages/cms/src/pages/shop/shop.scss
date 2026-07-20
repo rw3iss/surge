@@ -9,6 +9,46 @@
     margin: 0 auto;
     color: var(--site-text, #{$text-color});
 
+    // Public storefront buttons. `.btn` is only defined in the ADMIN stylesheet,
+    // so on the public site these rendered as bare browser buttons (the "Add to
+    // Cart" had no background). Define them here using the site's brand token.
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: 1px solid transparent;
+        border-radius: var(--site-radius, 6px);
+        font: inherit;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+
+        &:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        &--primary {
+            background: var(--site-primary, #{$primary-color});
+            border-color: var(--site-primary, #{$primary-color});
+            color: #fff;
+
+            &:hover:not(:disabled) { filter: brightness(0.94); }
+        }
+
+        &--secondary {
+            background: var(--site-bg-subtle, #{$background-dark});
+            border-color: var(--site-border, #{$border-color});
+            color: var(--site-text, #{$text-color});
+
+            &:hover:not(:disabled) { border-color: var(--site-primary, #{$primary-color}); }
+        }
+    }
+
     &__header {
         margin-bottom: $spacing-xl;
 
@@ -186,6 +226,28 @@
             grid-template-columns: 1fr;
         }
     }
+
+    // Breadcrumb above the product title: "← Shop / Collection".
+    &__breadcrumb {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: $spacing-xs;
+        margin-bottom: $spacing-sm;
+        font-size: $font-size-sm;
+    }
+
+    &__breadcrumb-link {
+        color: var(--site-link, var(--site-primary, #{$primary-color}));
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover { text-decoration: underline; }
+    }
+
+    &__breadcrumb-back { font-weight: 600; }
+
+    &__breadcrumb-sep { color: var(--site-text-muted, #6b7280); }
 
     &__gallery-main {
         aspect-ratio: 1 / 1;
@@ -691,10 +753,65 @@
 
 // ── Index search ───────────────────────────────────────────────────
 .shop-index {
+    // Collections sidebar (left) + search/grid (right). Collapses to a single
+    // column on narrow viewports. When no collections exist the sidebar isn't
+    // rendered and the main column spans the full width.
+    &__body {
+        display: flex;
+        align-items: flex-start;
+        gap: $spacing-xl;
+
+        @media (max-width: $breakpoint-md) {
+            flex-direction: column;
+            gap: $spacing-lg;
+        }
+    }
+
+    &__collections {
+        flex: 0 0 auto;
+        width: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        position: sticky;
+        top: $spacing-lg;
+
+        @media (max-width: $breakpoint-md) {
+            position: static;
+            width: 100%;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+    }
+
+    &__collection {
+        display: block;
+        padding: $spacing-sm $spacing-md;
+        border-radius: var(--site-radius, 6px);
+        color: var(--site-text, #{$text-color});
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.12s ease, color 0.12s ease;
+
+        &:hover {
+            background: var(--site-bg-subtle, #{$background-dark});
+        }
+
+        &.is-active {
+            background: var(--site-primary, #{$primary-color});
+            color: #fff;
+        }
+    }
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+    }
+
     &__search {
         display: flex;
         gap: $spacing-sm;
-        margin-top: $spacing-md;
+        margin-bottom: $spacing-lg;
         max-width: 480px;
 
         input {
