@@ -114,7 +114,7 @@ export async function fetchYouTubeVideos(maxResults = 10,): Promise<FetchedPost[
     }
 }
 
-export async function fetchTwitterPosts(maxResults = 10,): Promise<FetchedPost[]> {
+export async function fetchTwitterPosts(maxResults = 10, sinceId?: string,): Promise<FetchedPost[]> {
     if (!config.social.twitter.bearerToken || !config.social.twitter.username) {
         logger.warn('Twitter configuration not set',);
         return [];
@@ -136,9 +136,11 @@ export async function fetchTwitterPosts(maxResults = 10,): Promise<FetchedPost[]
         const userData = await userResponse.json() as any;
         const userId = userData.data.id;
 
-        // Get tweets
+        // Get tweets. `since_id` (paid path) fetches only tweets newer than the
+        // last synced id, keeping usage under the Basic-tier read cap.
+        const sinceParam = sinceId ? `&since_id=${encodeURIComponent(sinceId,)}` : '';
         const tweetsResponse = await fetch(
-            `https://api.twitter.com/2/users/${userId}/tweets?max_results=${maxResults}&tweet.fields=created_at,public_metrics,attachments&expansions=attachments.media_keys&media.fields=url,preview_image_url`,
+            `https://api.twitter.com/2/users/${userId}/tweets?max_results=${maxResults}${sinceParam}&tweet.fields=created_at,public_metrics,attachments&expansions=attachments.media_keys&media.fields=url,preview_image_url`,
             {
                 headers: { Authorization: `Bearer ${config.social.twitter.bearerToken}`, },
             },
@@ -294,11 +296,13 @@ interface ConnectionSettings {
     autoPublishCount: number | null;
     isConnected: boolean;
     isEnabled: boolean;
+    /** Provider-specific settings blob (e.g. X `{ twitterMode, lastTweetId }`). */
+    settings: Record<string, unknown>;
 }
 
 async function getConnectionSettings(platform: SocialPlatform,): Promise<ConnectionSettings | null> {
     const result = await query(
-        `SELECT is_connected, is_enabled, auto_publish, auto_publish_count
+        `SELECT is_connected, is_enabled, auto_publish, auto_publish_count, settings
          FROM social_connections WHERE provider = $1`,
         [platform,],
     );
@@ -311,6 +315,7 @@ async function getConnectionSettings(platform: SocialPlatform,): Promise<Connect
         isEnabled: row.is_enabled,
         autoPublish: row.auto_publish,
         autoPublishCount: row.auto_publish_count,
+        settings: (row.settings ?? {}) as Record<string, unknown>,
     };
 }
 
@@ -430,6 +435,14 @@ export async function syncSocialPosts(platform: SocialPlatform, force = false,):
         return 0;
     }
 
+    // X is capture-first by default: the free path uses compose/manual, which
+    // don't run through here. Only sync-read from the paid API when the operator
+    // has explicitly opted into 'api' mode (a Basic-tier bearer token).
+    if (platform === 'twitter' && settings?.settings?.twitterMode !== 'api') {
+        logger.info('Skipping twitter read-sync: connection is in free mode (use compose / manual capture)',);
+        return 0;
+    }
+
     const maxResults = settings?.autoPublishCount || 10;
 
     const provider = PROVIDERS[platform];
@@ -438,25 +451,40 @@ export async function syncSocialPosts(platform: SocialPlatform, force = false,):
         return 0;
     }
 
-    const posts = await provider.fetch(maxResults,);
+    // Paid X path: pull only tweets newer than the last synced id to stay under
+    // the Basic-tier read cap.
+    const sinceId = platform === 'twitter' ? (settings?.settings?.lastTweetId as string | undefined) : undefined;
+    const posts = platform === 'twitter'
+        ? await fetchTwitterPosts(maxResults, sinceId,)
+        : await provider.fetch(maxResults,);
 
     let synced = 0;
+    let newestId: string | undefined;
 
     for (const post of posts) {
         try {
             await upsertSocialPost(platform, post, { source: 'sync', },);
+            if (!newestId || post.id > newestId) newestId = post.id;
             synced++;
         } catch (error) {
             logger.error('Error syncing social post', { platform, postId: post.id, error, },);
         }
     }
 
-    // Update last_synced_at
+    // Update last_synced_at (+ lastTweetId watermark for the paid X path).
     if (synced > 0) {
         await query(
             `UPDATE social_connections SET last_synced_at = NOW() WHERE provider = $1`,
             [platform,],
         ).catch(() => {});
+        if (platform === 'twitter' && newestId) {
+            await query(
+                `UPDATE social_connections
+                 SET settings = COALESCE(settings, '{}'::jsonb) || jsonb_build_object('lastTweetId', $2::text)
+                 WHERE provider = 'twitter'`,
+                [platform, newestId,],
+            ).catch(() => {});
+        }
     }
 
     logger.info(`Synced ${synced} posts from ${platform}`,);
