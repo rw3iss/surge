@@ -394,121 +394,129 @@ const FormEditor: Component = () => {
                     <section class="form-section">
                         <h2>Form Details</h2>
 
-                        <FormField label="Title *">
-                            <input
-                                type="text"
-                                value={title()}
-                                onInput={handleTitleChange}
-                                required
-                                placeholder="Form title"
-                            />
-                        </FormField>
+                        <div class="form-columns">
+                            {/* Left column (3/4) — the form's content fields */}
+                            <div class="form-columns__main">
+                                <FormField label="Title *" class="form-field--block">
+                                    <input
+                                        type="text"
+                                        value={title()}
+                                        onInput={handleTitleChange}
+                                        required
+                                        placeholder="Form title"
+                                    />
+                                </FormField>
 
-                        <FormField label="URL Slug *" hint={`Used in the URL: /forms/${slug() || 'slug'}`}>
-                            <input
-                                type="text"
-                                value={slug()}
-                                onInput={(e,) => {
-                                    setSlug((e.target as HTMLInputElement).value,);
-                                    markDirty();
-                                }}
-                                required
-                                placeholder="form-url-slug"
-                            />
-                        </FormField>
-
-                        <FormField label="Description">
-                            <textarea
-                                value={description()}
-                                onInput={(e,) => {
-                                    setDescription((e.target as HTMLTextAreaElement).value,);
-                                    markDirty();
-                                }}
-                                placeholder="Instructions or description for respondents..."
-                                rows={3}
-                            />
-                        </FormField>
-
-                        <FormField label="Success Message">
-                            <input
-                                type="text"
-                                value={successMessage()}
-                                onInput={(e,) => {
-                                    setSuccessMessage((e.target as HTMLInputElement).value,);
-                                    markDirty();
-                                }}
-                                placeholder="Thank you for your submission!"
-                            />
-                        </FormField>
-
-                        <FormField label="Submit Button Text">
-                            <input
-                                type="text"
-                                value={submitButtonText()}
-                                onInput={(e,) => {
-                                    setSubmitButtonText((e.target as HTMLInputElement).value,);
-                                    markDirty();
-                                }}
-                                placeholder="Submit"
-                            />
-                        </FormField>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="status">Status</label>
-                                <select
-                                    id="status"
-                                    value={status()}
-                                    onChange={(e,) => {
-                                        setStatus((e.target as HTMLSelectElement).value,);
-                                        markDirty();
-                                    }}
+                                <FormField
+                                    label="URL Slug *"
+                                    hint={`Used in the URL: /forms/${slug() || 'slug'}`}
+                                    class="form-field--block"
                                 >
-                                    <option value="draft">Draft</option>
-                                    <option value="published">Published</option>
-                                    <option value="closed">Closed</option>
-                                    <option value="archived">Archived</option>
-                                </select>
+                                    <input
+                                        type="text"
+                                        value={slug()}
+                                        onInput={(e,) => {
+                                            setSlug((e.target as HTMLInputElement).value,);
+                                            markDirty();
+                                        }}
+                                        required
+                                        placeholder="form-url-slug"
+                                    />
+                                </FormField>
+
+                                <FormField label="Description" class="form-field--block">
+                                    <textarea
+                                        value={description()}
+                                        onInput={(e,) => {
+                                            setDescription((e.target as HTMLTextAreaElement).value,);
+                                            markDirty();
+                                        }}
+                                        placeholder="Instructions or description for respondents..."
+                                        rows={3}
+                                    />
+                                </FormField>
+
+                                <FormField label="Success Message" class="form-field--block">
+                                    <input
+                                        type="text"
+                                        value={successMessage()}
+                                        onInput={(e,) => {
+                                            setSuccessMessage((e.target as HTMLInputElement).value,);
+                                            markDirty();
+                                        }}
+                                        placeholder="Thank you for your submission!"
+                                    />
+                                </FormField>
+
+                                <FormField label="Submit Button Text" class="form-field--narrow">
+                                    <input
+                                        type="text"
+                                        value={submitButtonText()}
+                                        onInput={(e,) => {
+                                            setSubmitButtonText((e.target as HTMLInputElement).value,);
+                                            markDirty();
+                                        }}
+                                        placeholder="Submit"
+                                    />
+                                </FormField>
+
+                                <FormField
+                                    label="Max submissions"
+                                    tooltip="Stop accepting submissions after this many. Leave blank for unlimited. (An accidental double-submit from the same page load is always de-duplicated automatically.)"
+                                >
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={maxSubmissions()}
+                                        onInput={(e,) => { setMaxSubmissions(e.currentTarget.value,); markDirty(); }}
+                                        placeholder="Unlimited"
+                                        style={{ 'max-width': '200px', }}
+                                    />
+                                </FormField>
+
+                                {/* Boolean options — switch first, then label */}
+                                <div class="form-details__toggles">
+                                    <Toggle
+                                        class="toggle-control--switch-first"
+                                        checked={showResults()}
+                                        onChange={(next,) => { setShowResults(next,); markDirty(); }}
+                                        label="Show results to respondents after submission"
+                                    />
+                                    <Toggle
+                                        class="toggle-control--switch-first"
+                                        checked={allowMultiple()}
+                                        onChange={(next,) => { setAllowMultiple(next,); markDirty(); }}
+                                        label="Allow multiple submissions per user"
+                                    />
+                                    <Toggle
+                                        class="toggle-control--switch-first"
+                                        checked={requiresAuth()}
+                                        onChange={(next,) => { setRequiresAuth(next,); markDirty(); }}
+                                        label="Require sign-in to submit"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Right column (1/4) — status / meta at the top */}
+                            <div class="form-columns__side">
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select
+                                        id="status"
+                                        value={status()}
+                                        onChange={(e,) => {
+                                            setStatus((e.target as HTMLSelectElement).value,);
+                                            markDirty();
+                                        }}
+                                    >
+                                        <option value="draft">Draft</option>
+                                        <option value="published">Published</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="archived">Archived</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="form-group">
-                            <Toggle
-                                checked={showResults()}
-                                onChange={(next,) => { setShowResults(next,); markDirty(); }}
-                                label="Show results to respondents after submission"
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <Toggle
-                                checked={allowMultiple()}
-                                onChange={(next,) => { setAllowMultiple(next,); markDirty(); }}
-                                label="Allow multiple submissions per user"
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <Toggle
-                                checked={requiresAuth()}
-                                onChange={(next,) => { setRequiresAuth(next,); markDirty(); }}
-                                label="Require sign-in to submit"
-                            />
-                        </div>
-
-                        <FormField
-                            label="Max submissions"
-                            tooltip="Stop accepting submissions after this many. Leave blank for unlimited. (An accidental double-submit from the same page load is always de-duplicated automatically.)"
-                        >
-                            <input
-                                type="number"
-                                min="0"
-                                value={maxSubmissions()}
-                                onInput={(e,) => { setMaxSubmissions(e.currentTarget.value,); markDirty(); }}
-                                placeholder="Unlimited"
-                                style={{ 'max-width': '200px', }}
-                            />
-                        </FormField>
                     </section>
 
                     {/* On-submit action */}

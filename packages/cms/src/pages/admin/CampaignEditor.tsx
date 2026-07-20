@@ -341,7 +341,7 @@ const CampaignEditor: Component = () => {
                         the left, publishing controls + schedule on the right */}
                     <div class="form-section form-columns">
                         <div class="form-columns__main">
-                            <FormField label="Title *">
+                            <FormField label="Title *" class="form-field--block">
                                 <input
                                     type="text"
                                     value={title()}
@@ -351,7 +351,7 @@ const CampaignEditor: Component = () => {
                                 />
                             </FormField>
 
-                            <FormField label="URL Slug *">
+                            <FormField label="URL Slug *" class="form-field--block">
                                 <input
                                     type="text"
                                     value={slug()}
@@ -365,7 +365,7 @@ const CampaignEditor: Component = () => {
                                 <small class="form-help">Used in the URL: /campaigns/{slug() || 'slug'}</small>
                             </FormField>
 
-                            <FormField label="Short Description">
+                            <FormField label="Short Description" class="form-field--block">
                                 <input
                                     type="text"
                                     value={shortDescription()}
@@ -378,7 +378,7 @@ const CampaignEditor: Component = () => {
                                 />
                             </FormField>
 
-                            <FormField label="Full Description *">
+                            <FormField label="Full Description *" class="form-field--block">
                                 <textarea
                                     value={description()}
                                     onInput={(e,) => {
@@ -391,7 +391,7 @@ const CampaignEditor: Component = () => {
                                 />
                             </FormField>
 
-                            <FormField label="Featured Image URL">
+                            <FormField label="Featured Image URL" class="form-field--block">
                                 <input
                                     type="url"
                                     value={featuredImage()}
@@ -405,6 +405,7 @@ const CampaignEditor: Component = () => {
 
                             <div class="form-group">
                                 <Toggle
+                                    class="toggle-control--switch-first"
                                     checked={hasGoal()}
                                     onChange={(next,) => { setHasGoal(next,); markDirty(); }}
                                     label="Set a fundraising goal"
@@ -413,6 +414,7 @@ const CampaignEditor: Component = () => {
 
                             <div class="form-group">
                                 <Toggle
+                                    class="toggle-control--switch-first"
                                     checked={showRaisedAmount()}
                                     onChange={(next,) => { setShowRaisedAmount(next,); markDirty(); }}
                                     label="Show raised amount"
@@ -443,6 +445,7 @@ const CampaignEditor: Component = () => {
                         <div class="form-columns__side">
                             <div class="form-group">
                                 <Toggle
+                                    class="toggle-control--switch-first"
                                     checked={isPublished()}
                                     onChange={(next,) => { setIsPublished(next,); markDirty(); }}
                                     label="Published (visible to the public)"
