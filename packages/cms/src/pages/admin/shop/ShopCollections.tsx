@@ -2,7 +2,8 @@ import { Title, } from '@solidjs/meta';
 import { Component, createSignal, For, Show, } from 'solid-js';
 import { createSafeResource, } from '../../../hooks/createSafeResource';
 import type { ShopCollection, ShopCollectionCreateBody, ShopProduct, } from '@sitesurge/types';
-import { FormCheck, FormField, } from '../../../components/admin/forms';
+import { FormField, } from '../../../components/admin/forms';
+import Toggle from '../../../components/admin/common/Toggle';
 import { useToast, } from '../../../components/common/toast';
 import { cms, } from '../../../services/cmsClient';
 import ShopGuard from './ShopGuard';
@@ -27,7 +28,9 @@ const ShopCollectionsInner: Component = () => {
         [] as ShopCollection[],
     );
     const [products,] = createSafeResource(
-        async () => (await cms.shop.products.list({ limit: 200, },)).data as ShopProduct[],
+        // limit is capped at 100 server-side — 200 was rejected (400), which is
+        // why the picker always showed "No products".
+        async () => (await cms.shop.products.list({ limit: 100, },)).data as ShopProduct[],
         [] as ShopProduct[],
     );
 
@@ -126,7 +129,7 @@ const ShopCollectionsInner: Component = () => {
                 fallback={<div class="empty-state">No collections yet.</div>}
             >
                 <div class="admin-table-container">
-                    <table class="admin-table">
+                    <table class="admin-table shop-collections-table">
                         <thead>
                             <tr>
                                 <th>Title</th>
@@ -147,8 +150,10 @@ const ShopCollectionsInner: Component = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <button class="btn btn--small btn--secondary" onClick={() => openEdit(c,)}>Edit</button>
-                                            <button class="btn btn--small btn--danger" onClick={() => remove(c,)}>Delete</button>
+                                            <div class="table-actions">
+                                                <button class="btn btn--small btn--secondary" onClick={() => openEdit(c,)}>Edit</button>
+                                                <button class="btn btn--small btn--danger" onClick={() => remove(c,)}>Delete</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
@@ -159,48 +164,61 @@ const ShopCollectionsInner: Component = () => {
             </Show>
 
             <Show when={draft()}>
-                <div class="confirm-modal-overlay" onClick={(e,) => { if (e.target === e.currentTarget) setDraft(null,); }}>
-                    <div class="confirm-modal shop-admin__edit-modal">
+                {/* Backdrop click does NOT close the modal — the user must click
+                    Cancel (prevents losing edits by an accidental click-out). */}
+                <div class="confirm-modal-overlay">
+                    <div class="confirm-modal shop-admin__edit-modal shop-collection-modal">
                         <h3 class="confirm-modal__title">{draft()!.id ? 'Edit' : 'New'} Collection</h3>
-                        <FormField label="Title">
-                            <input type="text" value={draft()!.title} onInput={(e,) => setTitle(e.currentTarget.value,)} />
-                        </FormField>
-                        <FormField label="Slug">
-                            <input type="text" value={draft()!.slug} onInput={(e,) => setDraft({ ...draft()!, slug: e.currentTarget.value, },)} />
-                        </FormField>
-                        <FormField label="Description">
-                            <textarea rows={2} value={draft()!.description} onInput={(e,) => setDraft({ ...draft()!, description: e.currentTarget.value, },)} />
-                        </FormField>
-                        <FormCheck
-                            label="Published"
-                            checked={draft()!.isPublished}
-                            onChange={(v,) => setDraft({ ...draft()!, isPublished: v, },)}
-                        />
-                        <FormField label="Products">
-                            <input
-                                type="text"
-                                placeholder="Filter products..."
-                                value={productFilter()}
-                                onInput={(e,) => setProductFilter(e.currentTarget.value,)}
-                            />
-                            <div class="shop-admin__product-picker">
-                                <For each={filteredProducts()}>
-                                    {(p,) => (
-                                        <label class="shop-product-editor__check">
-                                            <input
-                                                type="checkbox"
-                                                checked={draft()!.productIds.includes(p.id,)}
-                                                onChange={() => toggleProduct(p.id,)}
-                                            />
-                                            {p.title}
-                                        </label>
-                                    )}
-                                </For>
-                                <Show when={!filteredProducts().length}>
-                                    <span class="form-help-muted">No products.</span>
-                                </Show>
+                        <div class="shop-collection-modal__fields">
+                            <FormField label="Title" class="form-field--block">
+                                <input type="text" value={draft()!.title} onInput={(e,) => setTitle(e.currentTarget.value,)} />
+                            </FormField>
+                            <FormField label="Slug" class="form-field--block">
+                                <input type="text" value={draft()!.slug} onInput={(e,) => setDraft({ ...draft()!, slug: e.currentTarget.value, },)} />
+                            </FormField>
+                            <FormField label="Description" class="form-field--block">
+                                <textarea rows={2} value={draft()!.description} onInput={(e,) => setDraft({ ...draft()!, description: e.currentTarget.value, },)} />
+                            </FormField>
+                            <div class="form-group">
+                                <Toggle
+                                    label="Published"
+                                    checked={draft()!.isPublished}
+                                    onChange={(v,) => setDraft({ ...draft()!, isPublished: v, },)}
+                                />
                             </div>
-                        </FormField>
+                            <FormField label="Products" class="form-field--block">
+                                <input
+                                    type="text"
+                                    placeholder="Search products…"
+                                    value={productFilter()}
+                                    onInput={(e,) => setProductFilter(e.currentTarget.value,)}
+                                />
+                                <div class="shop-admin__product-picker">
+                                    <Show
+                                        when={!products.loading}
+                                        fallback={<span class="form-help-muted">Searching products…</span>}
+                                    >
+                                        <For each={filteredProducts()}>
+                                            {(p,) => (
+                                                <label class="shop-product-editor__check">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={draft()!.productIds.includes(p.id,)}
+                                                        onChange={() => toggleProduct(p.id,)}
+                                                    />
+                                                    {p.title}
+                                                </label>
+                                            )}
+                                        </For>
+                                        <Show when={!filteredProducts().length}>
+                                            <span class="form-help-muted">
+                                                {productFilter() ? 'No products match your search.' : 'No products yet.'}
+                                            </span>
+                                        </Show>
+                                    </Show>
+                                </div>
+                            </FormField>
+                        </div>
                         <div class="confirm-modal__actions">
                             <button class="btn btn--secondary" onClick={() => setDraft(null,)}>Cancel</button>
                             <button class="btn btn--primary" onClick={save} disabled={saving()}>

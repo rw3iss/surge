@@ -542,3 +542,36 @@
         }
     }
 }
+
+// ─── Collections review fixes (PageLoop) ───────────────────────────────
+
+// Row-action button cluster (Edit / Delete) — a small gap so they don't touch.
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+}
+
+// Collections table: drop the per-row bottom border under the slug entries.
+.shop-collections-table tbody td {
+    border-bottom: none;
+}
+
+// Edit/New Collection modal — taller to fit the product picker, full-width
+// fields, and breathing room above the action buttons so they don't touch.
+.shop-collection-modal {
+    max-width: 40rem;
+
+    &__fields {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+        // Space between the last field and the Cancel/Save row.
+        padding-bottom: $spacing-lg;
+    }
+
+    // Give the product picker more height in this taller modal.
+    .shop-admin__product-picker {
+        max-height: 22rem;
+    }
+}

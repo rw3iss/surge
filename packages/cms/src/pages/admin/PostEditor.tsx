@@ -255,55 +255,60 @@ const AdminPostEditor: Component = () => {
                         />
                     </FormField>
                     <div class="form-group">
-                        <div class="u-flex-between">
-                            <label style={{ 'margin-bottom': 0, }}>Banner Image</label>
-                            {/* Image layout selector — only meaningful with a banner set. */}
-                            <Show when={featuredImage()}>
-                                <div class="u-flex-row u-gap-xs">
-                                    <label style={{ 'margin-bottom': 0, 'font-size': '11px', }}>Image Layout</label>
-                                    <select
-                                        value={bannerLayout()}
-                                        onChange={(e,) => {
-                                            setBannerLayout(e.currentTarget.value as 'hero' | 'hero-full' | 'standalone' | 'thumbnail',);
-                                            editor.markDirty();
-                                        }}
-                                    >
-                                        <option value="hero">Hero</option>
-                                        <option value="hero-full">Hero Full</option>
-                                        <option value="standalone">Standalone</option>
-                                        <option value="thumbnail">Thumbnail</option>
-                                    </select>
-                                    <Tooltip
-                                        header="Image Layout"
-                                        content="How the banner image + title/meta render at the top of the post. Hero: full-width image with the title & meta over it (white text). Hero Full: same as Hero, but the banner background spans the ENTIRE page width edge-to-edge (no left/right gap) while the title & meta stay within the centered content column. Standalone: title & meta on top, image full-width below. Thumbnail: a small image beside the title & meta in a single row. The post content renders below either way."
-                                    />
-                                    <label style={{ 'margin-bottom': 0, 'font-size': '11px', 'margin-left': '8px', }}>Vertical Position</label>
-                                    <select
-                                        value={bannerImagePosition()}
-                                        onChange={(e,) => {
-                                            setBannerImagePosition(e.currentTarget.value as 'start' | 'center' | 'end',);
-                                            editor.markDirty();
-                                        }}
-                                    >
-                                        <option value="start">Start (top)</option>
-                                        <option value="center">Center</option>
-                                        <option value="end">End (bottom)</option>
-                                    </select>
-                                    <Tooltip
-                                        header="Vertical Position"
-                                        content="Where a large banner image is anchored when it's cropped. Start shows the TOP of the image, End shows the BOTTOM, Center (default) shows the middle. Useful when centering cuts off the top of the subject."
-                                    />
-                                </div>
-                            </Show>
-                        </div>
+                        <label style={{ 'margin-bottom': '4px', }}>Banner Image</label>
                         <div class="post-banner-field">
-                            <Show when={featuredImage()}>
-                                <img
-                                    class="post-banner-field__preview"
-                                    src={featuredImage()}
-                                    alt="Banner preview"
-                                />
-                            </Show>
+                            {/* Preview + the layout/position controls sit side by side,
+                                directly next to the image. */}
+                            <div class="post-banner-field__row">
+                                <Show when={featuredImage()}>
+                                    <img
+                                        class="post-banner-field__preview"
+                                        src={featuredImage()}
+                                        alt="Banner preview"
+                                    />
+                                </Show>
+                                <Show when={featuredImage()}>
+                                    <div class="post-banner-field__layout">
+                                        <div class="post-banner-field__layout-row">
+                                            <label>Image Layout</label>
+                                            <select
+                                                value={bannerLayout()}
+                                                onChange={(e,) => {
+                                                    setBannerLayout(e.currentTarget.value as 'hero' | 'hero-full' | 'standalone' | 'thumbnail',);
+                                                    editor.markDirty();
+                                                }}
+                                            >
+                                                <option value="hero">Hero</option>
+                                                <option value="hero-full">Hero Full</option>
+                                                <option value="standalone">Standalone</option>
+                                                <option value="thumbnail">Thumbnail</option>
+                                            </select>
+                                            <Tooltip
+                                                header="Image Layout"
+                                                content="How the banner image + title/meta render at the top of the post. Hero: full-width image with the title & meta over it (white text). Hero Full: same as Hero, but the banner background spans the ENTIRE page width edge-to-edge (no left/right gap) while the title & meta stay within the centered content column. Standalone: title & meta on top, image full-width below. Thumbnail: a small image beside the title & meta in a single row. The post content renders below either way."
+                                            />
+                                        </div>
+                                        <div class="post-banner-field__layout-row">
+                                            <label>Vertical Position</label>
+                                            <select
+                                                value={bannerImagePosition()}
+                                                onChange={(e,) => {
+                                                    setBannerImagePosition(e.currentTarget.value as 'start' | 'center' | 'end',);
+                                                    editor.markDirty();
+                                                }}
+                                            >
+                                                <option value="start">Start (top)</option>
+                                                <option value="center">Center</option>
+                                                <option value="end">End (bottom)</option>
+                                            </select>
+                                            <Tooltip
+                                                header="Vertical Position"
+                                                content="Where a large banner image is anchored when it's cropped. Start shows the TOP of the image, End shows the BOTTOM, Center (default) shows the middle. Useful when centering cuts off the top of the subject."
+                                            />
+                                        </div>
+                                    </div>
+                                </Show>
+                            </div>
                             <div class="post-banner-field__actions">
                                 <button
                                     type="button"
@@ -336,27 +341,30 @@ const AdminPostEditor: Component = () => {
                         </small>
                     </div>
                     <div class="form-group">
-                        <div class="u-flex-row">
-                            <Toggle
-                                checked={applyPostPadding()}
-                                onChange={(next,) => { setApplyPostPadding(next,); editor.markDirty(); }}
-                                label="Apply Post Padding"
-                            />
-                            <Tooltip
-                                header="Apply Post Padding"
-                                content="Apply the site's Post Padding (Settings → Appearance → Layout) to this post — primarily top/bottom. Default 0 until you set a value there."
-                            />
-                        </div>
-                        <div class="u-flex-row" style={{ 'margin-top': '8px', }}>
-                            <Toggle
-                                checked={applySiteGutter()}
-                                onChange={(next,) => { setApplySiteGutter(next,); editor.markDirty(); }}
-                                label="Apply Site Gutter"
-                            />
-                            <Tooltip
-                                header="Apply Site Gutter"
-                                content="Apply the site's Gutter (left/right padding) to this post's content. Turn off for a full-bleed post."
-                            />
+                        {/* Both toggles on one row. */}
+                        <div class="u-flex-row post-padding-toggles">
+                            <div class="u-flex-row">
+                                <Toggle
+                                    checked={applyPostPadding()}
+                                    onChange={(next,) => { setApplyPostPadding(next,); editor.markDirty(); }}
+                                    label="Apply Post Padding"
+                                />
+                                <Tooltip
+                                    header="Apply Post Padding"
+                                    content="Apply the site's Post Padding (Settings → Appearance → Layout) to this post — primarily top/bottom. Default 0 until you set a value there."
+                                />
+                            </div>
+                            <div class="u-flex-row">
+                                <Toggle
+                                    checked={applySiteGutter()}
+                                    onChange={(next,) => { setApplySiteGutter(next,); editor.markDirty(); }}
+                                    label="Apply Site Gutter"
+                                />
+                                <Tooltip
+                                    header="Apply Site Gutter"
+                                    content="Apply the site's Gutter (left/right padding) to this post's content. Turn off for a full-bleed post."
+                                />
+                            </div>
                         </div>
                     </div>
                     <div class="page-editor__header-row">
