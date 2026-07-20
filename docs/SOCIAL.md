@@ -18,35 +18,35 @@ hub has three tabs:
 
 | Source | How | Cost | Providers |
 |--------|-----|------|-----------|
-| `posse` | Compose in the CMS → published via the provider's write API → the created post is captured back | Free | X (today) |
-| `manual` | Paste a post's permalink on the Posts tab | Free | X (today) |
+| `manual` | Paste a post's permalink on the Posts tab → rendered via oEmbed | **Free** | X (today) |
+| `posse` | Compose in the CMS → published via the provider's write API → captured back | **Paid** for X (write API) | X (today) |
 | `sync` | Pulled from a provider read API on a schedule / manual "Sync now" | Free for IG/FB/YT; **paid** for X | IG, FB, YT, (X in API mode) |
 
-Manual + POSSE cover the free X feed with no read-API access at all.
+> **X has no usable free API tier.** X monetized both reading *and* writing. The
+> free developer plan's posting allowance is tiny and, once used, `POST /2/tweets`
+> returns `402 credits depleted`. So on X: **composing/publishing and auto-sync
+> are paid-plan only.** The **free** way to build an X feed is `manual` capture —
+> paste post URLs on the Posts tab.
 
-## X / Twitter — the free path (default)
+## X / Twitter — the free path: paste-by-URL (default)
 
-X monetized *reading* timelines (Basic tier ≈ $100/mo) but **writing is still
-free**. So SiteSurge defaults X to **free mode**:
-
-- **Compose** posts in the CMS → published via `POST /2/tweets` (free write tier,
-  user-context OAuth 1.0a) → the new tweet is captured as a `posse` post.
-- **Paste** any tweet URL on the Posts tab to add an existing tweet.
-
-Both are rendered by hydrating the tweet server-side via
+No X API plan required. On the **Posts** tab, pick X/Twitter and paste a tweet's
+URL. It's rendered by hydrating the tweet server-side via
 `cdn.syndication.twimg.com/tweet-result` (the same public endpoint `react-tweet`
 uses) into a native `SocialEmbed` card — cached in Redis, no X JavaScript. If a
 tweet can't be hydrated, we fall back to X's official **oEmbed** HTML
-(sanitized).
+(sanitized). This path never calls the paid API.
 
 > **Reliability caveat:** the `tweet-result` endpoint is public but undocumented;
 > X can change it. The oEmbed fallback and the stored text/permalink mean a post
 > never disappears — worst case it renders as a minimal card / link.
 
-### Free-mode credentials (compose)
+## X / Twitter — composing (paid plan required)
 
-To compose to X you need a free X developer app with **user-context** OAuth 1.0a
-credentials. In Configuration → Twitter/X, save (in the credentials blob):
+Composing/publishing a *new* tweet from the CMS (the Compose tab) calls
+`POST /2/tweets`, which **consumes X API credits — a paid plan is required.** With
+the free plan you'll get `402 credits depleted`. If you do have a paid plan, save
+**user-context** OAuth 1.0a credentials in Configuration → Twitter/X:
 
 - `apiKey` / `apiSecret` — the app's consumer key/secret
 - `accessToken` / `accessSecret` — your user access token/secret (with

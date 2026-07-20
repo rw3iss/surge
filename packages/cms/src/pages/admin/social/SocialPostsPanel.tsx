@@ -2,8 +2,17 @@ import { Component, createResource, createSignal, For, Show, } from 'solid-js';
 import type { SocialPost, } from '@sitesurge/types';
 import { cms, } from '../../../services/cmsClient';
 
-/** Platforms the manager can list. Capture (add-by-URL) is X-only today. */
-const PLATFORMS = ['twitter', 'youtube', 'instagram', 'facebook', 'tiktok', 'patreon',];
+/** Platforms the manager can list, with display labels. */
+const PLATFORMS = [
+    { value: 'twitter', label: 'X/Twitter', },
+    { value: 'youtube', label: 'YouTube', },
+    { value: 'instagram', label: 'Instagram', },
+    { value: 'facebook', label: 'Facebook', },
+    { value: 'tiktok', label: 'TikTok', },
+    { value: 'patreon', label: 'Patreon', },
+];
+/** Platforms that support free add-by-URL (oEmbed capture) today. */
+const MANUAL_ADD = new Set(['twitter',],);
 
 const SocialPostsPanel: Component = () => {
     const [platform, setPlatform,] = createSignal('twitter',);
@@ -28,6 +37,13 @@ const SocialPostsPanel: Component = () => {
         setMsg({ text, error, },);
         setTimeout(() => setMsg(null,), 4000,);
     };
+
+    const platformLabel = (): string => PLATFORMS.find((p,) => p.value === platform())?.label ?? platform();
+    const canManualAdd = (): boolean => MANUAL_ADD.has(platform(),);
+    const addPlaceholder = (): string =>
+        canManualAdd()
+            ? `Paste an ${platformLabel()} post URL, e.g. https://x.com/user/status/123`
+            : `Add-by-URL isn't available for ${platformLabel()} yet`;
 
     const addByUrl = async (e: Event,): Promise<void> => {
         e.preventDefault();
@@ -91,26 +107,33 @@ const SocialPostsPanel: Component = () => {
                 <label class="social-posts__filter">
                     <span>Platform</span>
                     <select value={platform()} onChange={(e,) => setPlatform(e.currentTarget.value,)}>
-                        <For each={PLATFORMS}>{(p,) => <option value={p}>{p}</option>}</For>
+                        <For each={PLATFORMS}>{(p,) => <option value={p.value}>{p.label}</option>}</For>
                     </select>
                 </label>
 
                 <form class="social-posts__add" onSubmit={addByUrl}>
                     <input
                         type="url"
-                        placeholder="Paste an X/Twitter post URL, e.g. https://x.com/user/status/123"
+                        placeholder={addPlaceholder()}
                         value={url()}
+                        disabled={!canManualAdd()}
                         onInput={(e,) => setUrl(e.currentTarget.value,)}
                     />
-                    <button type="submit" class="btn btn--primary btn--small" disabled={busy()}>
+                    <button type="submit" class="btn btn--primary btn--small" disabled={busy() || !canManualAdd()}>
                         {busy() ? 'Adding…' : 'Add post'}
                     </button>
                 </form>
             </div>
 
             <p class="form-help">
-                Paste a post's URL to add it to the feed. It's hydrated + cached, then rendered as a
-                native card (no third-party scripts). Compose new posts on the Compose tab.
+                <Show
+                    when={canManualAdd()}
+                    fallback={<>Add-by-URL currently supports X/Twitter. Other platforms populate the feed via their connection sync (Configuration).</>}
+                >
+                    This is the free way to add {platformLabel()} posts: paste a post's URL and it's
+                    cached + rendered as a native card (via oEmbed, no third-party scripts, no API plan
+                    needed). Composing new posts to X requires a paid X API plan — see the Compose tab.
+                </Show>
             </p>
 
             <Show when={msg()}>

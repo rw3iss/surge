@@ -183,10 +183,15 @@ const SocialComposePanel: Component = () => {
                 </button>
             </div>
 
+            <div class="alert alert--warning" style={{ 'margin-top': '1rem', }}>
+                <strong>Publishing to X requires a paid X API plan.</strong> X no longer offers a
+                usable free posting tier — the free plan's write allowance is exhausted quickly and
+                then returns a “credits depleted” error. To add X posts for free, paste their URLs on
+                the <strong>Posts</strong> tab instead.
+            </div>
             <p class="form-help">
-                Posts you publish here are captured back into the feed automatically. X uses the free
-                write tier — no paid API needed. Attach up to 4 photos, or one video/GIF; videos may
-                take a few seconds to process on publish.
+                Posts you publish here are captured back into the feed automatically. Attach up to 4
+                photos, or one video/GIF; videos may take a few seconds to process on publish.
             </p>
 
             <Show when={showMediaModal()}>

@@ -323,7 +323,7 @@ const ConnectionsPanel: Component = () => {
                                             <Show when={provider.id === 'twitter'}>
                                                 <FormField
                                                     label="Feed mode"
-                                                    hint="Free (default): compose + paste posts — uses the four keys below, no bearer token needed. API: also auto-syncs your recent posts via the paid X read API, which reads a Bearer token from the server's TWITTER_BEARER_TOKEN env var (not entered here)."
+                                                    hint="Free (default): no X API plan needed — add posts by pasting their URLs on the Posts tab (rendered via oEmbed). No composing/publishing to X. API: requires a PAID X API plan — composing posts and auto-syncing your recent posts both consume X API credits. Paid auto-sync reads a Bearer token from the server's TWITTER_BEARER_TOKEN env var."
                                                     class="form-field--block"
                                                 >
                                                     <select
@@ -389,7 +389,7 @@ const ConnectionsPanel: Component = () => {
                                                     label="Access Token"
                                                     tooltip={
                                                         <span>
-                                                            Your X app's user Access Token. Create a free app at{' '}
+                                                            Your X app's user Access Token, from{' '}
                                                             <a
                                                                 href="https://developer.x.com"
                                                                 target="_blank"
@@ -398,9 +398,10 @@ const ConnectionsPanel: Component = () => {
                                                                 developer.x.com
                                                             </a>{' '}
                                                             → set the app to <strong>Read and Write</strong> → the{' '}
-                                                            <strong>Keys &amp; tokens</strong> tab. Posting needs all
-                                                            four: API Key, API Key Secret, Access Token, and Access
-                                                            Token Secret.
+                                                            <strong>Keys &amp; tokens</strong> tab. All four are needed
+                                                            to compose (API Key, API Key Secret, Access Token, Access
+                                                            Token Secret) — and note X requires a <strong>paid API
+                                                            plan</strong> to actually post; the free plan can't publish.
                                                         </span>
                                                     }
                                                     value={accessToken}
