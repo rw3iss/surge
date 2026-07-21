@@ -137,14 +137,78 @@ export async function deleteReview(id: string,): Promise<void> {
     return deleteById('shop_reviews', id, 'Review',);
 }
 
-/** Increment the helpful counter, returning the new count. */
-export async function incrementHelpful(id: string,): Promise<number> {
+// ─── Helpful marks (deduped by user_id OR ip_address) ─────────────
+
+/** True when this review already has a helpful mark from this user or IP. */
+export async function hasHelpfulMark(
+    reviewId: string,
+    userId: string | null,
+    ip: string | null,
+): Promise<boolean> {
+    const result = await query(
+        `SELECT 1 FROM shop_review_helpful
+         WHERE review_id = $1
+           AND (($2::uuid IS NOT NULL AND user_id = $2::uuid) OR ($3::text IS NOT NULL AND ip_address = $3::text))
+         LIMIT 1`,
+        [reviewId, uuidOrNull(userId,), ip || null,],
+    );
+    return result.rows.length > 0;
+}
+
+/** Record a helpful mark + increment the review's count. Returns new count. */
+export async function addHelpfulMark(
+    reviewId: string,
+    userId: string | null,
+    ip: string | null,
+): Promise<number> {
+    await query(
+        `INSERT INTO shop_review_helpful (review_id, user_id, ip_address) VALUES ($1, $2, $3)`,
+        [reviewId, uuidOrNull(userId,), ip || null,],
+    );
     const result = await query(
         `UPDATE shop_reviews SET helpful_count = helpful_count + 1 WHERE id = $1 RETURNING helpful_count`,
-        [id,],
+        [reviewId,],
     );
-    if (result.rows.length === 0) return 0;
-    return result.rows[0].helpful_count as number;
+    return (result.rows[0]?.helpful_count as number) ?? 0;
+}
+
+/** Remove this user/IP's helpful mark(s) + decrement the count (clamped ≥ 0).
+ *  Returns the new count. */
+export async function removeHelpfulMark(
+    reviewId: string,
+    userId: string | null,
+    ip: string | null,
+): Promise<number> {
+    const del = await query(
+        `DELETE FROM shop_review_helpful
+         WHERE review_id = $1
+           AND (($2::uuid IS NOT NULL AND user_id = $2::uuid) OR ($3::text IS NOT NULL AND ip_address = $3::text))
+         RETURNING id`,
+        [reviewId, uuidOrNull(userId,), ip || null,],
+    );
+    const removed = del.rows.length;
+    const result = await query(
+        `UPDATE shop_reviews SET helpful_count = GREATEST(0, helpful_count - $2) WHERE id = $1 RETURNING helpful_count`,
+        [reviewId, removed,],
+    );
+    return (result.rows[0]?.helpful_count as number) ?? 0;
+}
+
+/** Review ids under a product that this user/IP has marked helpful. */
+export async function findHelpfulReviewIds(
+    productId: string,
+    userId: string | null,
+    ip: string | null,
+): Promise<string[]> {
+    const result = await query(
+        `SELECT DISTINCT h.review_id
+         FROM shop_review_helpful h
+         JOIN shop_reviews r ON r.id = h.review_id
+         WHERE r.product_id = $1
+           AND (($2::uuid IS NOT NULL AND h.user_id = $2::uuid) OR ($3::text IS NOT NULL AND h.ip_address = $3::text))`,
+        [productId, uuidOrNull(userId,), ip || null,],
+    );
+    return result.rows.map((r,) => r.review_id as string);
 }
 
 /**

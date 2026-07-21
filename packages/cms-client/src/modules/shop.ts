@@ -43,6 +43,7 @@ import type {
     ShopReviewCreateResponse,
     ShopReviewDeleteResponse,
     ShopReviewHelpfulResponse,
+    ShopReviewHelpfulMineResponse,
     ShopReviewListQuery,
     ShopReviewListResponse,
     ShopReviewModerateBody,
@@ -157,10 +158,17 @@ export class ShopModule extends ModuleBase {
                 params: { productId, }, body, invalidates: ['shop',],
             },),
 
-        /** POST /shop/reviews/:id/helpful — increment helpful count. */
-        markHelpful: (reviewId: string,): Promise<ShopReviewHelpfulResponse> =>
+        /** POST /shop/reviews/:id/helpful — toggle the current user/IP's helpful mark. */
+        toggleHelpful: (reviewId: string,): Promise<ShopReviewHelpfulResponse> =>
             this.mutate<ShopReviewHelpfulResponse>('POST', '/shop/reviews/:id/helpful', {
                 params: { id: reviewId, }, invalidates: ['shop',],
+            },),
+
+        /** GET /shop/products/:productId/reviews/helpful-mine — review ids the
+         *  current user/IP has marked helpful. */
+        helpfulMine: (productId: string,): Promise<ShopReviewHelpfulMineResponse> =>
+            this.get<ShopReviewHelpfulMineResponse>('/shop/products/:productId/reviews/helpful-mine', {
+                params: { productId, },
             },),
 
         /** GET /shop/reviews (admin) — any-status moderation queue. */

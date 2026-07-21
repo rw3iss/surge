@@ -194,12 +194,35 @@ const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean
         }
     };
 
-    const markHelpful = async (id: string,) => {
+    // Which reviews the current user/IP has marked helpful (seeded from the
+    // server on load, then updated locally as the user toggles).
+    const [myHelpful] = createResource(
+        () => isShopifyActive() ? null : product().id,
+        async (productId,) => {
+            try { return await cms.shop.reviews.helpfulMine(productId,); } catch { return [] as string[]; }
+        },
+    );
+    // Local overrides applied on top of the server state after a toggle.
+    const [helpfulLocal, setHelpfulLocal,] = createSignal<Record<string, { helpful: boolean; count: number; }>>({},);
+
+    const isHelpful = (id: string,): boolean => {
+        const local = helpfulLocal()[id];
+        if (local) return local.helpful;
+        return (myHelpful() ?? []).includes(id,);
+    };
+    const helpfulCount = (r: ShopReview,): number => helpfulLocal()[r.id]?.count ?? r.helpfulCount;
+
+    const toggleHelpful = async (r: ShopReview,) => {
+        // Optimistic flip so the button responds immediately.
+        const wasHelpful = isHelpful(r.id,);
+        const prevCount = helpfulCount(r,);
+        setHelpfulLocal((s,) => ({ ...s, [r.id]: { helpful: !wasHelpful, count: prevCount + (wasHelpful ? -1 : 1), }, }),);
         try {
-            await cms.shop.reviews.markHelpful(id,);
-            void refetchReviews();
+            const res = await cms.shop.reviews.toggleHelpful(r.id,);
+            setHelpfulLocal((s,) => ({ ...s, [r.id]: { helpful: res.helpful, count: res.helpfulCount, }, }),);
         } catch {
-            /* ignore */
+            // Revert on failure.
+            setHelpfulLocal((s,) => ({ ...s, [r.id]: { helpful: wasHelpful, count: prevCount, }, }),);
         }
     };
 
@@ -381,10 +404,11 @@ const ProductDetail: Component<{ product: ShopProductDetail; isLoggedIn: boolean
                                     </Show>
                                     <button
                                         type="button"
-                                        class="shop-review__helpful"
-                                        onClick={() => markHelpful(r.id,)}
+                                        class={`shop-review__helpful ${isHelpful(r.id,) ? 'is-marked' : ''}`}
+                                        aria-pressed={isHelpful(r.id,)}
+                                        onClick={() => toggleHelpful(r,)}
                                     >
-                                        Helpful ({r.helpfulCount})
+                                        {isHelpful(r.id,) ? '✓ Helpful' : 'Helpful'} ({helpfulCount(r,)})
                                     </button>
                                 </li>
                             )}

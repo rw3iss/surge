@@ -176,11 +176,31 @@ export async function remove(id: string, ctx: AuditContext,): Promise<ShopReview
     return existing;
 }
 
-/** Increment a review's helpful count. Public; busts that product's
- *  review cache lightly. */
-export async function markHelpful(id: string,): Promise<{ helpfulCount: number; }> {
+/** Toggle a review's "helpful" mark for the current actor (user id OR IP).
+ *  If the actor already marked it → un-mark (delete + decrement); else mark
+ *  (insert + increment). Deduped so one actor counts at most once. Public. */
+export async function toggleHelpful(
+    id: string,
+    ctx: { userId?: string | null; ipAddress?: string | null; },
+): Promise<{ helpful: boolean; helpfulCount: number; }> {
     const review = await repo.findReviewById(id,);
-    const helpfulCount = await repo.incrementHelpful(id,);
+    const userId = ctx.userId || null;
+    const ip = ctx.ipAddress || null;
+
+    const already = await repo.hasHelpfulMark(id, userId, ip,);
+    const helpfulCount = already
+        ? await repo.removeHelpfulMark(id, userId, ip,)
+        : await repo.addHelpfulMark(id, userId, ip,);
+
     await cache.invalidateShopReviewCache(review.productId,);
-    return { helpfulCount, };
+    return { helpful: !already, helpfulCount, };
+}
+
+/** Review ids under a product that the current actor (user id OR IP) has
+ *  marked helpful — for highlighting the buttons on load. */
+export async function myHelpfulForProduct(
+    productId: string,
+    ctx: { userId?: string | null; ipAddress?: string | null; },
+): Promise<string[]> {
+    return repo.findHelpfulReviewIds(productId, ctx.userId || null, ctx.ipAddress || null,);
 }

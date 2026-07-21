@@ -290,6 +290,7 @@ export const ROUTE_COVERAGE: string[] = [
 
     // ── shop reviews (feature-gated) ──
     'GET /api/v1/shop/products/:productId/reviews',
+    'GET /api/v1/shop/products/:productId/reviews/helpful-mine',
     'POST /api/v1/shop/products/:productId/reviews',
     'POST /api/v1/shop/reviews/:id/helpful',
     'GET /api/v1/shop/reviews',

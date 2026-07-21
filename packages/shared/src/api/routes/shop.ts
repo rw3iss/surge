@@ -305,8 +305,14 @@ export interface ShopReviewIdParams {
 
 /** POST /shop/reviews/:id/helpful — new helpful count. */
 export interface ShopReviewHelpfulResponse {
+    /** Whether the current user/IP now has a helpful mark (toggled state). */
+    helpful: boolean;
     helpfulCount: number;
 }
+
+/** GET /shop/products/:productId/reviews/helpful-mine — review ids the current
+ *  user/IP has marked helpful for that product. */
+export type ShopReviewHelpfulMineResponse = string[];
 
 /** Query accepted by GET /shop/reviews (admin moderation queue). */
 export interface ShopReviewAdminListQuery {

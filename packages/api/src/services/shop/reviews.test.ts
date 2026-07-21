@@ -44,7 +44,10 @@ vi.mock('../../repositories/shop/shopReviews.repo', () => ({
     updateReviewStatus: (...a: unknown[]) => updateReviewStatusMock(...a),
     recomputeProductRating: (...a: unknown[]) => recomputeProductRatingMock(...a),
     deleteReview: (...a: unknown[]) => deleteReviewMock(...a),
-    incrementHelpful: vi.fn().mockResolvedValue(1,),
+    hasHelpfulMark: vi.fn().mockResolvedValue(false,),
+    addHelpfulMark: vi.fn().mockResolvedValue(1,),
+    removeHelpfulMark: vi.fn().mockResolvedValue(0,),
+    findHelpfulReviewIds: vi.fn().mockResolvedValue([],),
     findPublicReviews: vi.fn().mockResolvedValue({ data: [], total: 0, }),
     findAllReviews: vi.fn().mockResolvedValue({ data: [], total: 0, },),
 }),);

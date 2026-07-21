@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-21T03:12:42.562Z",
+  "generatedAt": "2026-07-21T03:50:37.746Z",
   "totalModules": 31,
-  "totalRoutes": 262,
+  "totalRoutes": 263,
   "modules": [
     {
       "module": "api-keys",
@@ -1663,11 +1663,18 @@
           "summary": "Submit a product review (user tier). Created pending for moderation."
         },
         {
+          "method": "GET",
+          "path": "/products/:productId/reviews/helpful-mine",
+          "absolutePath": "/api/v1/shop/products/:productId/reviews/helpful-mine",
+          "auth": "optional",
+          "summary": "Review ids under a product that the current user/IP marked helpful."
+        },
+        {
           "method": "POST",
           "path": "/reviews/:id/helpful",
           "absolutePath": "/api/v1/shop/reviews/:id/helpful",
           "auth": "optional",
-          "summary": "Increment a review's helpful count."
+          "summary": "Toggle a review's helpful mark for the current user/IP."
         },
         {
           "method": "GET",

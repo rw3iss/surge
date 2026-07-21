@@ -485,12 +485,22 @@ export const shopRoutes = [
         },
     },),
 
-    // Mark a review helpful (public).
+    // Review ids the current actor (user id OR IP) has marked helpful for a
+    // product — used to highlight the buttons on load. Public.
+    defineRoute({
+        method: 'get', path: '/products/:productId/reviews/helpful-mine', auth: 'optional',
+        summary: 'Review ids under a product that the current user/IP marked helpful.',
+        input: { params: reviewProductParams, },
+        handler: ({ params, audit, },) => reviews.myHelpfulForProduct(params.productId, audit(),),
+    },),
+
+    // Toggle a review's "helpful" mark (public). Deduped by user id OR IP so an
+    // actor counts once; clicking again removes their mark.
     defineRoute({
         method: 'post', path: '/reviews/:id/helpful', auth: 'optional',
-        summary: 'Increment a review\'s helpful count.',
+        summary: 'Toggle a review\'s helpful mark for the current user/IP.',
         input: { params: idParams, },
-        handler: ({ params, },) => reviews.markHelpful(params.id,),
+        handler: ({ params, audit, },) => reviews.toggleHelpful(params.id, audit(),),
     },),
 
     // Moderation queue (admin, any status, filters).
