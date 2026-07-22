@@ -615,9 +615,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      // Match the mobile header container: same height and horizontal padding
-      // so the logo sits in exactly the same position when the flyout opens.
-      height: 64px;
+      // Match the CLOSED mobile header container exactly: it is height:auto with
+      // the operator's vertical + horizontal padding (applied inline via
+      // flyoutHeadStyle), so this head is also height:auto with the SAME padding.
+      // The default horizontal padding is a fallback for when no gutter is set.
       padding: 0 $container-padding;
       border-bottom: 1px solid $border-color;
       flex-shrink: 0;
@@ -625,7 +626,9 @@
 
     // Sits exactly where the closed header's hamburger was: same footprint
     // (46×46), same corner hug (-8px), borderless, inheriting the header text
-    // color — so the icon doesn't jump when the menu opens/closes.
+    // color — so the icon doesn't jump when the menu opens/closes. The X is an
+    // SVG (not the ✕ glyph) so it's pixel-centered in the button, matching the
+    // centered hamburger bars.
     &-close {
       display: flex;
       align-items: center;
@@ -637,10 +640,14 @@
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 22px;
       color: inherit;
-      line-height: 1;
       transition: opacity $transition-fast;
+
+      svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
 
       &:hover { opacity: 0.7; }
     }

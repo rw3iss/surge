@@ -20,6 +20,9 @@ export interface SiteHeaderItem {
      *  text-rendering items (text / text_link / button / menu). */
     textColorAlt?: string;
     width?: string;
+    /** Minimum width for image / image_link items — keeps the logo from
+     *  flexing/shrinking too small on narrow screens. Any CSS width value. */
+    minWidth?: string;
     alignment?: string; // 'left' | 'center' | 'right'
     margin?: string;
     padding?: string;

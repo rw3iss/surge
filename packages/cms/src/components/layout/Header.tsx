@@ -33,6 +33,9 @@ interface SiteHeaderItem {
      *  `textColor`. */
     textColorAlt?: string;
     width?: string;
+    /** Minimum width (image/image_link) — keeps the image from flexing/shrinking
+     *  too small on narrow screens. Any CSS width value. */
+    minWidth?: string;
     alignment?: string;
     verticalAlignment?: string;
     margin?: string;
@@ -197,15 +200,27 @@ function HeaderItem(props: { item: SiteHeaderItem; },) {
                     'align-items': alignMap[hAlign] || 'center',
                 };
                 if (item().width) s['width'] = item().width!;
+                // Min width keeps the logo from flexing/shrinking too small on
+                // narrow screens — pin the flex item so it never drops below it.
+                if (item().minWidth) {
+                    s['min-width'] = item().minWidth!;
+                    s['flex-shrink'] = '0';
+                }
                 if (item().margin) s['margin'] = item().margin!;
                 if (item().padding) s['padding'] = item().padding!;
                 return s;
             };
-            const imgStyle = () => ({
-                display: 'block',
-                'max-width': '100%',
-                height: 'auto',
-            });
+            const imgStyle = () => {
+                const s: Record<string, string> = {
+                    display: 'block',
+                    'max-width': '100%',
+                    height: 'auto',
+                };
+                // Ensure the image itself honors the minimum too (it fills the
+                // link's min-width when the natural image is wider).
+                if (item().minWidth) s['min-width'] = item().minWidth!;
+                return s;
+            };
             return (
                 <a
                     href={item().url || '#'}
@@ -698,13 +713,18 @@ export const Header: Component<HeaderProps> = (props,) => {
         return s;
     };
 
-    // Flyout head padding mirrors the header container's horizontal padding so
-    // the logo sits in the exact same position when the flyout opens.
+    // Flyout head padding mirrors the CLOSED header container's padding exactly —
+    // horizontal AND vertical — so the head is the same height and the logo sits
+    // in the identical spot when the menu opens (no jump). The closed custom
+    // header container is height:auto + this padding, so the flyout head (also
+    // height:auto in SCSS) matches it.
     const flyoutHeadStyle = () => {
         const cs = containerStyle();
         const s: Record<string, string> = {};
         if (cs['padding-left']) s['padding-left'] = cs['padding-left'];
         if (cs['padding-right']) s['padding-right'] = cs['padding-right'];
+        if (cs['padding-top']) s['padding-top'] = cs['padding-top'];
+        if (cs['padding-bottom']) s['padding-bottom'] = cs['padding-bottom'];
         return s;
     };
 
@@ -722,7 +742,8 @@ export const Header: Component<HeaderProps> = (props,) => {
                     {/* Custom header: mobile-only logo (hidden on desktop, custom items handle it) */}
                     <Show when={hasCustomHeader()}>
                         <A href="/" class="header__mobile-logo" onClick={closeMobileMenu}>
-                            <SiteLogo name={props.siteName} logoSrc={props.logo} />
+                            {/* Logo image only on mobile — no site-name wordmark. */}
+                            <SiteLogo logoSrc={props.logo} />
                         </A>
                     </Show>
 
@@ -865,14 +886,18 @@ export const Header: Component<HeaderProps> = (props,) => {
                     {/* Flyout header row */}
                     <div class="header__mobile-flyout-head" style={flyoutHeadStyle()}>
                         <A href="/" class="header__logo" onClick={closeMobileMenu}>
-                            <SiteLogo name={props.siteName} logoSrc={props.logo} />
+                            {/* Match the closed mobile header exactly: logo only. */}
+                            <SiteLogo logoSrc={props.logo} />
                         </A>
                         <button
                             class="header__mobile-flyout-close"
                             onClick={closeMobileMenu}
                             aria-label="Close menu"
                         >
-                            ✕
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                            </svg>
                         </button>
                     </div>
 

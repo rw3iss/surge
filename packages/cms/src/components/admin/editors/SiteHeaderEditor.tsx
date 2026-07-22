@@ -34,6 +34,9 @@ interface SiteHeaderItem {
      *  style. Falls back to `textColor`. */
     textColorAlt?: string;
     width?: string;
+    /** Minimum width for image / image_link items (keeps the logo from
+     *  shrinking too small on narrow screens). Any CSS width value. */
+    minWidth?: string;
     alignment?: string;
     verticalAlignment?: string;
     margin?: string;
@@ -424,6 +427,7 @@ const SiteHeaderEditor: Component = () => {
                                 'flex-direction': 'column',
                                 'align-items': alignMap[hAlign] || 'center',
                                 width: '100%',
+                                ...(item.minWidth ? { 'min-width': item.minWidth, } : {}),
                             }}
                         >
                             <img
@@ -434,6 +438,7 @@ const SiteHeaderEditor: Component = () => {
                                     display: 'block',
                                     'max-width': '100%',
                                     height: 'auto',
+                                    ...(item.minWidth ? { 'min-width': item.minWidth, } : {}),
                                 }}
                             />
                         </div>
@@ -1323,7 +1328,7 @@ const SiteHeaderEditor: Component = () => {
                                                             {(val,) => <option value={val}>{val}</option>}
                                                         </For>
                                                     </select>
-                                                    <button
+                                    <button
                                                         class="btn btn--small btn--link"
                                                         onClick={() => setCustomWidth(true,)}
                                                     >
@@ -1331,6 +1336,31 @@ const SiteHeaderEditor: Component = () => {
                                                     </button>
                                                 </div>
                                             </Show>
+                                        </div>
+                                    </div>
+                                </Show>
+
+                                {/* Min Width — image / image_link only: keeps the
+                                    logo from flexing/shrinking too small on narrow
+                                    screens (applies on desktop + mobile). */}
+                                <Show when={currentType() === 'image_link' || currentType() === 'image'}>
+                                    <div class="site-header-edit-panel__field">
+                                        <label class="site-header-edit-panel__label">Min Width</label>
+                                        <div class="site-header-edit-panel__field-right">
+                                            <div class="site-header-edit-panel__custom-input-row">
+                                                <input
+                                                    type="text"
+                                                    class="site-header-edit-panel__input site-header-edit-panel__input--short"
+                                                    value={item().minWidth || ''}
+                                                    onInput={(e,) =>
+                                                        updateEditField('minWidth', e.currentTarget.value || undefined,)}
+                                                    placeholder="e.g. 120px"
+                                                />
+                                                <Tooltip
+                                                    header="Minimum Width"
+                                                    content="The image never shrinks below this width, on any screen size. Any CSS width value (px, rem, %). Leave empty for no minimum."
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </Show>
