@@ -8,6 +8,7 @@ const blockStyleSchema = z.object({
     isDefault: z.boolean().optional(),
     backgroundColor: z.string().nullable().optional(),
     backgroundImage: z.string().nullable().optional(),
+    backgroundPosition: z.string().nullable().optional(),
     textColor: z.string().nullable().optional(),
     textAlign: z.string().nullable().optional(),
     verticalAlign: z.string().nullable().optional(),

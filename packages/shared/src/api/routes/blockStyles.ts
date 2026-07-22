@@ -27,6 +27,7 @@ export interface BlockStyleCreateBody {
     isDefault?: boolean;
     backgroundColor?: string | null;
     backgroundImage?: string | null;
+    backgroundPosition?: string | null;
     textColor?: string | null;
     textAlign?: string | null;
     verticalAlign?: string | null;

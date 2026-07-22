@@ -236,6 +236,30 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
                     </Show>
                 </div>
 
+                {/* Background Position — only relevant when a background image is set */}
+                <Show when={props.style.backgroundImage}>
+                    <div class="block-style-editor__field block-style-editor__field--full">
+                        <label class="block-style-editor__label">
+                            Background Position
+                            <Tooltip
+                                header="CSS Background Position"
+                                content="How the background image is positioned within the block. Any valid CSS background-position value: 'center', 'center center', 'center 100%', 'top left', '50% 25%', etc. Defaults to 'center'."
+                            />
+                        </label>
+                        <div class="block-style-editor__field-right">
+                            <div class="block-style-editor__custom-input-row">
+                                <input
+                                    type="text"
+                                    class="block-style-editor__custom-input"
+                                    value={props.style.backgroundPosition || ''}
+                                    onChange={(e,) => update('backgroundPosition', e.currentTarget.value,)}
+                                    placeholder="e.g. center, center 100%, top left"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </Show>
+
                 {/* Text Alignment */}
                 <div class="block-style-editor__field">
                     <label class="block-style-editor__label">Text Alignment</label>

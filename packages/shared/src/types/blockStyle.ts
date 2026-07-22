@@ -7,6 +7,9 @@ export interface BlockStyle {
      *  (the image wins visually) and covers the block's full box — content
      *  is inset by `padding`, the image is not clipped by it. */
     backgroundImage?: string;
+    /** CSS background-position for the background image (e.g. 'center',
+     *  'center center', 'center 100%', 'top left'). Defaults to 'center'. */
+    backgroundPosition?: string;
     textColor?: string; // hex color
     textAlign?: string; // 'left' | 'center' | 'right' | 'justify'
     verticalAlign?: string; // 'top' | 'center' | 'bottom'

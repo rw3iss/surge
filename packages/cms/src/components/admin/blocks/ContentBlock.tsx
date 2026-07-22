@@ -150,7 +150,7 @@ const ContentBlock: Component<ContentBlockProps> = (props,) => {
         if (st.backgroundImage) {
             out['background-image'] = `url("${st.backgroundImage}")`;
             out['background-size'] = 'cover';
-            out['background-position'] = 'center';
+            out['background-position'] = st.backgroundPosition || 'center';
             out['background-repeat'] = 'no-repeat';
         }
         const fg = colorCssValue(st.textColor, '',);

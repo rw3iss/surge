@@ -116,7 +116,7 @@ export const BlockRenderer: Component<BlockRendererProps> = (props,) => {
                     ? {
                         'background-image': `url("${bgImageValue()}")`,
                         'background-size': 'cover',
-                        'background-position': 'center',
+                        'background-position': (s().backgroundPosition as string) || 'center',
                         'background-repeat': 'no-repeat',
                     }
                     : (bgColorValue() ? { background: bgColorValue(), } : {})),

@@ -9,6 +9,9 @@ export interface BlockStyleData {
     /** Background image URL. Renders over the background color and covers the
      *  block's full box; content is inset by `padding`, the image is not. */
     backgroundImage?: string;
+    /** CSS background-position for the background image (e.g. 'center',
+     *  'center center', 'center 100%'). Defaults to 'center'. */
+    backgroundPosition?: string;
     textColor?: string;
     textAlign?: string;
     verticalAlign?: string;
@@ -36,11 +39,12 @@ export interface BlockStyleData {
 export const BLOCK_STYLE_DEFAULTS: Required<
     Pick<
         BlockStyleData,
-        'backgroundColor' | 'backgroundImage' | 'textColor' | 'textAlign' | 'verticalAlign' | 'horizontalAlign' | 'fontFamily' | 'fontSize' | 'lineHeight' | 'width' | 'maxWidth' | 'minHeight' | 'height' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
+        'backgroundColor' | 'backgroundImage' | 'backgroundPosition' | 'textColor' | 'textAlign' | 'verticalAlign' | 'horizontalAlign' | 'fontFamily' | 'fontSize' | 'lineHeight' | 'width' | 'maxWidth' | 'minHeight' | 'height' | 'padding' | 'margin' | 'gap' | 'overflowX' | 'overflowY'
     >
 > = {
     backgroundColor: '',
     backgroundImage: '',
+    backgroundPosition: '',
     textColor: '',
     textAlign: 'left',
     verticalAlign: 'top',
