@@ -26,6 +26,16 @@ export interface PluginCspOrigins {
 
 const EMPTY: PluginCspOrigins = { connectSrc: [], scriptSrc: [], styleSrc: [], imgSrc: [], frameSrc: [] };
 
+// Video / social embeds the CMS renders as <iframe>: the social block embeds
+// YouTube (`www.youtube.com/embed/…`), and the video block embeds arbitrary
+// YouTube/Vimeo URLs. Without these in frame-src the browser shows the embed as
+// "This content is blocked. Contact the site owner to fix the issue."
+const EMBED_FRAME_SRC = [
+    'https://www.youtube.com',
+    'https://www.youtube-nocookie.com',
+    'https://player.vimeo.com',
+];
+
 let pluginOrigins: PluginCspOrigins = EMPTY;
 
 function buildDirectives(): Record<string, string[]> {
@@ -38,7 +48,7 @@ function buildDirectives(): Record<string, string[]> {
         scriptSrc: ["'self'", ...pluginOrigins.scriptSrc],
         imgSrc: ["'self'", 'data:', 'blob:', 'https:', ...pluginOrigins.imgSrc],
         connectSrc: ["'self'", 'https://api.stripe.com', ...pluginOrigins.connectSrc],
-        frameSrc: ["'self'", 'https://js.stripe.com', ...pluginOrigins.frameSrc],
+        frameSrc: ["'self'", 'https://js.stripe.com', ...EMBED_FRAME_SRC, ...pluginOrigins.frameSrc],
     };
 }
 
