@@ -92,7 +92,12 @@
     }
   }
 
-  button {
+  .ui-toggle {
+    flex-shrink: 0;
+  }
+
+  // Action buttons only — exclude the Toggle's internal <button> (.ui-toggle).
+  button:not(.ui-toggle) {
     height: 32px;
     padding: 0 $spacing-md;
     border: 1px solid $border-color;
@@ -103,7 +108,9 @@
     cursor: pointer;
     white-space: nowrap;
 
-    &:first-of-type {
+    // Primary styling on the Insert action (was `:first-of-type`, which the
+    // Toggle button would have stolen once added before it).
+    &.rte-link-dialog__insert {
       background: var(--site-primary, #{$primary-color});
       border-color: var(--site-primary, #{$primary-color});
       color: white;

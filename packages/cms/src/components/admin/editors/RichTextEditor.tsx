@@ -1,4 +1,5 @@
 import { createEffect, createSignal, type JSX, Show, } from 'solid-js';
+import Toggle from '../../ui/Toggle';
 import './RichTextEditor.scss';
 
 interface RichTextEditorProps {
@@ -15,6 +16,8 @@ export default function RichTextEditor(props: RichTextEditorProps,) {
     let editorRef: HTMLDivElement | undefined;
     const [showLinkDialog, setShowLinkDialog,] = createSignal(false,);
     const [linkUrl, setLinkUrl,] = createSignal('',);
+    // Whether the link should open in a new tab (adds target="_blank").
+    const [linkNewWindow, setLinkNewWindow,] = createSignal(false,);
 
     // The selection is lost once focus moves to the link URL input, so we
     // snapshot the editor's Range when the dialog opens and restore it before
@@ -57,15 +60,27 @@ export default function RichTextEditor(props: RichTextEditorProps,) {
         return null;
     };
 
+    /** All anchor elements that intersect the current selection (the freshly
+     *  created link after createLink, or existing links being edited). */
+    const anchorsInSelection = (): HTMLAnchorElement[] => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || !editorRef) return [];
+        const range = sel.getRangeAt(0,);
+        return Array.from(editorRef.querySelectorAll('a',),).filter(a => range.intersectsNode(a,),);
+    };
+
     const openLinkDialog = () => {
         if (showLinkDialog()) {
             setShowLinkDialog(false,);
             return;
         }
         // Snapshot the selection NOW, while it's still in the editor, and
-        // prefill the box with the existing link (if the selection is one).
+        // prefill the box + toggle from the existing link (if the selection
+        // is one).
         saveSelection();
-        setLinkUrl(anchorInSelection()?.getAttribute('href',) || '',);
+        const existing = anchorInSelection();
+        setLinkUrl(existing?.getAttribute('href',) || '',);
+        setLinkNewWindow(existing?.getAttribute('target',) === '_blank',);
         setShowLinkDialog(true,);
     };
 
@@ -119,8 +134,20 @@ export default function RichTextEditor(props: RichTextEditorProps,) {
         // nesting anchors.
         document.execCommand('unlink', false,);
         document.execCommand('createLink', false, url,);
+        // Apply (or clear) the new-window target on the just-created link(s).
+        const newWindow = linkNewWindow();
+        for (const a of anchorsInSelection()) {
+            if (newWindow) {
+                a.setAttribute('target', '_blank',);
+                a.setAttribute('rel', 'noopener noreferrer',);
+            } else {
+                a.removeAttribute('target',);
+                a.removeAttribute('rel',);
+            }
+        }
         flush();
         setLinkUrl('',);
+        setLinkNewWindow(false,);
         setShowLinkDialog(false,);
         savedRange = null;
         editorRef?.focus();
@@ -238,8 +265,14 @@ export default function RichTextEditor(props: RichTextEditorProps,) {
                         onInput={(e,) => setLinkUrl(e.currentTarget.value,)}
                         onKeyDown={(e,) => e.key === 'Enter' && insertLink()}
                     />
-                    <button type="button" onClick={insertLink}>Insert</button>
-                    <button type="button" onClick={() => setShowLinkDialog(false,)}>Cancel</button>
+                    <Toggle
+                        size="sm"
+                        checked={linkNewWindow()}
+                        onChange={setLinkNewWindow}
+                        label="New window"
+                    />
+                    <button type="button" class="rte-link-dialog__insert" onClick={insertLink}>Insert</button>
+                    <button type="button" class="rte-link-dialog__cancel" onClick={() => setShowLinkDialog(false,)}>Cancel</button>
                 </div>
             </Show>
 
