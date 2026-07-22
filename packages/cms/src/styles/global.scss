@@ -18,6 +18,11 @@ html {
   font-size: $font-size-base;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  // Never scroll the page horizontally. `clip` (NOT `hidden`) is deliberate:
+  // it prevents horizontal scroll without creating a scroll container, so a
+  // sticky/fixed header still works and vertical scroll is untouched. `hidden`
+  // here would silently break `position: sticky` on the header.
+  overflow-x: clip;
 }
 
 body {
@@ -28,6 +33,12 @@ body {
   background-color: var(--site-bg, #{$background});
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  // The body never exceeds the viewport width; any horizontal overflow is
+  // clipped rather than producing a horizontal scrollbar. (max-width:100vw is
+  // set per request — `overflow-x: clip` masks the fact that 100vw includes
+  // the vertical scrollbar width, which would otherwise overflow by a few px.)
+  max-width: 100vw;
+  overflow-x: clip;
 }
 
 // Typography
