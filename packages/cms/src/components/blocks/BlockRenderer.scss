@@ -8,7 +8,13 @@
       // page wrapper already supplies the outer gutter, and nested blocks (e.g.
       // inside a group) would otherwise each re-add it, cascading. Blocks opt
       // into their own padding via style / the 'use default padding' toggle.
-      max-width: $container-max-width;
+      //
+      // Width comes from the site's "Max Content Width" appearance setting
+      // (--site-max-width) so operators control the basic-block column globally;
+      // the $container-max-width (1200px) is only a fallback when unset. A block
+      // that sets its own style width/max-width uses block__inner--full instead
+      // (see BlockRenderer.innerLayout), so this never fights an explicit width.
+      max-width: var(--site-max-width, #{$container-max-width});
       margin: 0 auto;
     }
 
