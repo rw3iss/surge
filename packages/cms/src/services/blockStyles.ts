@@ -1,36 +1,14 @@
+import type { BlockStyle, } from '@sitesurge/types';
 import { createSignal, } from 'solid-js';
 import { cms, } from './cmsClient';
 
-export interface BlockStyleData {
-    id?: string;
-    name?: string;
-    isDefault?: boolean;
-    backgroundColor?: string;
-    /** Background image URL. Renders over the background color and covers the
-     *  block's full box; content is inset by `padding`, the image is not. */
-    backgroundImage?: string;
-    /** CSS background-position for the background image (e.g. 'center',
-     *  'center center', 'center 100%'). Defaults to 'center'. */
-    backgroundPosition?: string;
-    textColor?: string;
-    textAlign?: string;
-    verticalAlign?: string;
-    horizontalAlign?: string;
-    /** Font — a font `customId` from the Font manager. Empty inherits the
-     *  site font. */
-    fontFamily?: string;
-    fontSize?: string;
-    lineHeight?: string;
-    width?: string;
-    maxWidth?: string;
-    minHeight?: string;
-    height?: string;
-    padding?: string;
-    margin?: string;
-    gap?: string;
-    overflowX?: string;
-    overflowY?: string;
-}
+/**
+ * Block-style shape used across the cms editor. Aliased to the shared
+ * `BlockStyle` entity (minus the server-owned timestamps) so the two
+ * definitions can't drift — a new style property is added ONCE, in
+ * `@sitesurge/types`, and flows to both the client and the API.
+ */
+export type BlockStyleData = Omit<BlockStyle, 'createdAt' | 'updatedAt'>;
 
 /**
  * Default block style values.

@@ -109,26 +109,18 @@ const BlockStyleEditor: Component<BlockStyleEditorProps> = (props,) => {
 
     const handleReset = () => {
         if (!confirm('Reset all style properties to defaults?',)) return;
+        // Clear EVERY style property, driven from the defaults key set so a
+        // newly-added property can't be silently missed. (This previously hand-
+        // listed a subset and left textAlign / backgroundPosition / fontFamily /
+        // gap stale after a reset.)
+        const cleared: Record<string, undefined> = {};
+        for (const key of Object.keys(BLOCK_STYLE_DEFAULTS,)) cleared[key] = undefined;
         props.onChange({
+            ...cleared,
             id: props.style.id,
             name: props.style.name,
             isDefault: props.style.isDefault,
-            backgroundColor: undefined,
-            backgroundImage: undefined,
-            textColor: undefined,
-            fontSize: undefined,
-            lineHeight: undefined,
-            padding: undefined,
-            verticalAlign: undefined,
-            horizontalAlign: undefined,
-            width: undefined,
-            maxWidth: undefined,
-            minHeight: undefined,
-            height: undefined,
-            margin: undefined,
-            overflowX: undefined,
-            overflowY: undefined,
-        },);
+        } as BlockStyleData,);
         setCustomWidth(false,);
         setCustomPadding(false,);
         setCustomMargin(false,);

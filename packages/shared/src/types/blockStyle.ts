@@ -16,6 +16,9 @@ export interface BlockStyle {
     /** Horizontal alignment of the block's item row (justify-content):
      *  'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'space-evenly' | 'stretch'. */
     horizontalAlign?: string;
+    /** Font — a font `customId` from the Font manager; empty inherits the site
+     *  font. Persisted for saved templates via the `font_family` column. */
+    fontFamily?: string;
     fontSize?: string; // e.g. '16px'
     lineHeight?: string; // e.g. '1.5' (unitless) or '24px'
     width?: string; // CSS width value
