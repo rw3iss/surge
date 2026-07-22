@@ -1198,20 +1198,26 @@ const SiteHeaderEditor: Component = () => {
                                             />
                                         </div>
 
-                                        {/* Font Size */}
+                                        {/* Font Size — free text so any CSS value works
+                                            (px, rem, em, %, clamp(), calc(), …). */}
                                         <div class="site-header-edit-panel__field">
                                             <label class="site-header-edit-panel__label">Font Size</label>
-                                            <select
-                                                class="site-header-edit-panel__select"
-                                                value={item().fontSize || ''}
-                                                onChange={(e,) =>
-                                                    updateEditField('fontSize', e.currentTarget.value || undefined,)}
-                                            >
-                                                <option value="">Default (header text size)</option>
-                                                <For each={FONT_SIZE_OPTIONS}>
-                                                    {(size,) => <option value={size}>{size}</option>}
-                                                </For>
-                                            </select>
+                                            <div class="site-header-edit-panel__field-right">
+                                                <div class="site-header-edit-panel__custom-input-row">
+                                                    <input
+                                                        type="text"
+                                                        class="site-header-edit-panel__input site-header-edit-panel__input--short"
+                                                        value={item().fontSize || ''}
+                                                        onInput={(e,) =>
+                                                            updateEditField('fontSize', e.currentTarget.value || undefined,)}
+                                                        placeholder="Default (e.g. 16px, 1.1rem, clamp(...))"
+                                                    />
+                                                    <Tooltip
+                                                        header="CSS Font Size"
+                                                        content="Any valid CSS font-size: px, rem, em, %, vw, clamp() or calc(). Leave empty to inherit the header's default text size."
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Font Weight */}
